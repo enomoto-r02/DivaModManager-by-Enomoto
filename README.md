@@ -1,3 +1,6 @@
+# This DivaMod Manager is forked and isolated.
+Click here for the [original Diva Mod Manager](https://github.com/TekkaGB/DivaModManager).
+
 # DivaModManager
 Diva Mod Manager is a tool that allows gamers to download, install, and manage mods for Hatsune Miku: Project Diva Mega Mix+. This manager relies on [DivaModLoader](https://github.com/blueskythlikesclouds/DivaModLoader) to load mods and is basically a GUI frontend with extra QoL features. This is also a fork of my other project, [Unverum](https://github.com/TekkaGB/Unverum), so if it looks familiar, that's why.
 
