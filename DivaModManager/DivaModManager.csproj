@@ -1,0 +1,83 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <RootNamespace>DivaModManager</RootNamespace>
+    <UseWPF>true</UseWPF>
+    <ApplicationIcon>Assets\miku.ico</ApplicationIcon>
+    <AssemblyName>DivaModManager</AssemblyName>
+    <AssemblyVersion>1.3.0.0</AssemblyVersion>
+    <RuntimeIdentifier>win10-x64</RuntimeIdentifier>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Assets\AnekLatin-Medium.ttf" />
+    <None Remove="Assets\AnekLatin-Regular.ttf" />
+    <None Remove="Assets\AnekLatin-SemiBold.ttf" />
+    <None Remove="Assets\dml.png" />
+    <None Remove="Assets\Icons\mmplus.png" />
+    <None Remove="Assets\KoFi.png" />
+    <None Remove="Assets\load.gif" />
+    <None Remove="Assets\load.webp" />
+    <None Remove="Assets\preview.png" />
+    <None Remove="Assets\RobotoMono-Regular.ttf" />
+    <None Remove="GameBanana.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Assets\miku.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FontAwesome5" Version="2.1.11" />
+    <PackageReference Include="gong-wpf-dragdrop" Version="3.1.1" />
+    <PackageReference Include="Octokit" Version="0.51.0" />
+    <PackageReference Include="Onova" Version="2.6.2" />
+    <PackageReference Include="SevenZipExtractor" Version="1.0.17" />
+    <PackageReference Include="SharpCompress" Version="0.32.0" />
+    <PackageReference Include="Tomlyn" Version="0.14.3" />
+    <PackageReference Include="WpfAnimatedGif" Version="2.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\AnekLatin-Medium.ttf" />
+    <Resource Include="Assets\AnekLatin-Regular.ttf" />
+    <Resource Include="Assets\AnekLatin-SemiBold.ttf" />
+    <Resource Include="Assets\dml.png" />
+    <Resource Include="Assets\GameBanana.png" />
+    <Resource Include="Assets\Icons\mmplus.png" />
+    <Resource Include="Assets\KoFi.png" />
+    <Resource Include="Assets\load.gif" />
+    <Resource Include="Assets\preview.png" />
+    <Resource Include="Assets\RobotoMono-Regular.ttf" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="UI\FetchWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Page Update="UI\ChoiceWindow.xaml">
+      <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="UI\CreateModWindow.xaml">
+      <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
+    </Page>
+    <Page Update="UI\ConfigureModWindow.xaml">
+      <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Update="UI\FetchWindow.xaml">
+      <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="UI\AltLinkWindow.xaml">
+      <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
+    </Page>
+  </ItemGroup>
+
+</Project>
