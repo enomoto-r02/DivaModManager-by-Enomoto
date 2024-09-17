@@ -504,8 +504,11 @@ namespace DivaModManager.UI
                         }
                     }
                 }
-                Global.config.Configs[Global.config.CurrentGame].Loadouts[Global.config.Configs[Global.config.CurrentGame].CurrentLoadout] = new ObservableCollection<Mod>(temp);
-                Global.UpdateConfig();
+                if (Global.SearchModListFlg == false)
+                {
+                    Global.config.Configs[Global.config.CurrentGame].Loadouts[Global.config.Configs[Global.config.CurrentGame].CurrentLoadout] = new ObservableCollection<Mod>(temp);
+                    Global.UpdateConfig();
+                }
                 await Task.Run(() => ModLoader.Build());
                 App.Current.Dispatcher.Invoke((Action)delegate
                 {
