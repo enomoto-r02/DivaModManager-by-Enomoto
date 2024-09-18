@@ -79,14 +79,14 @@ namespace DivaModManager.UI
                 Width = (double)Global.config.Width;
             if (Global.config.Maximized)
                 WindowState = WindowState.Maximized;
-            if (Global.config.TopGridHeight != null)
-                MainGrid.RowDefinitions[1].Height = new GridLength((double)Global.config.TopGridHeight, GridUnitType.Star);
-            if (Global.config.BottomGridHeight != null)
-                MainGrid.RowDefinitions[3].Height = new GridLength((double)Global.config.BottomGridHeight, GridUnitType.Star);
-            if (Global.config.LeftGridWidth != null)
-                MiddleGrid.ColumnDefinitions[0].Width = new GridLength((double)Global.config.LeftGridWidth, GridUnitType.Star);
-            if (Global.config.RightGridWidth != null)
-                MiddleGrid.ColumnDefinitions[2].Width = new GridLength((double)Global.config.RightGridWidth, GridUnitType.Star);
+            //if (Global.config.TopGridHeight != null)
+            //    MainGrid.RowDefinitions[1].Height = new GridLength((double)Global.config.TopGridHeight, GridUnitType.Star);
+            //if (Global.config.BottomGridHeight != null)
+            //    MainGrid.RowDefinitions[3].Height = new GridLength((double)Global.config.BottomGridHeight, GridUnitType.Star);
+            //if (Global.config.LeftGridWidth != null)
+            //    MiddleGrid.ColumnDefinitions[0].Width = new GridLength((double)Global.config.LeftGridWidth, GridUnitType.Star);
+            //if (Global.config.RightGridWidth != null)
+            //    MiddleGrid.ColumnDefinitions[2].Width = new GridLength((double)Global.config.RightGridWidth, GridUnitType.Star);
 
             Global.games = new List<string>();
             foreach (var item in GameBox.Items)
@@ -815,10 +815,10 @@ namespace DivaModManager.UI
                 Global.config.Width = Width;
                 Global.config.Maximized = false;
             }
-            Global.config.TopGridHeight = MainGrid.RowDefinitions[1].Height.Value;
-            Global.config.BottomGridHeight = MainGrid.RowDefinitions[3].Height.Value;
-            Global.config.LeftGridWidth = MiddleGrid.ColumnDefinitions[0].Width.Value;
-            Global.config.RightGridWidth = MiddleGrid.ColumnDefinitions[2].Width.Value;
+            //Global.config.TopGridHeight = MainGrid.RowDefinitions[1].Height.Value;
+            //Global.config.BottomGridHeight = MainGrid.RowDefinitions[3].Height.Value;
+            //Global.config.LeftGridWidth = MiddleGrid.ColumnDefinitions[0].Width.Value;
+            //Global.config.RightGridWidth = MiddleGrid.ColumnDefinitions[2].Width.Value;
             InitSearchMod();
             Global.UpdateConfig();
             System.Windows.Application.Current.Shutdown();
