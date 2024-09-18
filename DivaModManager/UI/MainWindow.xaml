@@ -439,10 +439,7 @@
 
                         <ComboBox Grid.Column="5" Margin="0,0,10,0" Height="35" FontSize="20" FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" Name="LauncherOptionsBox" SelectionChanged="LauncherOptionsBox_SelectionChanged"/>
                         <ComboBox Grid.Column="1" Margin="10,0,10,0" Height="35" FontSize="20" FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" Name="LoadoutBox" SelectionChanged="LoadoutsBox_SelectionChanged"/>
-
-                        <TextBox Name="SearchModListTextBox" Grid.Row ="1" Grid.ColumnSpan="3" HorizontalAlignment="Left" Margin="10,0,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Center" Width="396" FontSize="20" 
-                                 KeyDown="SearchModListTextBox_KeyDown" MouseDoubleClick="SearchModListTextBox_MouseDoubleClick" HorizontalContentAlignment="Center" ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
-
+                        <TextBox Name="SearchModListTextBox" Grid.Row ="1" Grid.ColumnSpan="3" HorizontalAlignment="Left" Margin="10,0,0,0" TextWrapping="Wrap" VerticalAlignment="Center" Width="396" FontSize="20" KeyDown="SearchModListTextBox_KeyDown"/>
                         <Button Name="SearchModListButton" Margin="0,0,10,0" Height="34" VerticalAlignment="Center" Grid.Column="3" Background="#181818" BorderBrush="#252525" Click="SearchModList_Click" Grid.Row="1">
                             <TextBlock Text="Search" TextTrimming="CharacterEllipsis" Foreground="#f2f2f2" FontFamily="{StaticResource AnekLatin}" FontSize="20" FontWeight="Medium" Grid.Row="1"/>
                         </Button>
