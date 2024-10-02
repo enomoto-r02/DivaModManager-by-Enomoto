@@ -551,7 +551,7 @@
                                     <RowDefinition Height="1*"/>
                                 </Grid.RowDefinitions>
                                 <Image Margin="3,3,10,5" x:Name="Preview" Grid.Row="0" Panel.ZIndex="2"/>
-                                <Image Margin="3,3,10,5" x:Name="PreviewBG" Grid.Row="1" Stretch="UniformToFill" Panel.ZIndex="1">
+                                <Image Margin="3,3,10,5" x:Name="PreviewBG" Grid.Row="0" Stretch="UniformToFill" Panel.ZIndex="1">
                                     <Image.BitmapEffect>
                                         <BlurBitmapEffect Radius="40"/>
                                     </Image.BitmapEffect>
