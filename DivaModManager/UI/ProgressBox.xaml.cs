@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Windows;
 
-namespace DivaModManager.UI
+namespace DivaModManager
 {
     /// <summary>
     /// Interaction logic for ProgressBox.xaml
