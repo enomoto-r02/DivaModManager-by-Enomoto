@@ -21,6 +21,22 @@ namespace DivaModManager
     {
         private static ProgressBox progressBox;
         private static int updateCounter;
+
+        public async static Task CheckForUpdatesInit(MainWindow main)
+        {
+            main.GameBox.IsEnabled = true;
+            main.ModGrid.IsEnabled = true;
+            main.ConfigButton.IsEnabled = true;
+            main.LaunchButton.IsEnabled = true;
+            main.OpenModsButton.IsEnabled = true;
+            main.UpdateButton.IsEnabled = true;
+            main.LauncherOptionsBox.IsEnabled = true;
+            main.LoadoutBox.IsEnabled = true;
+            main.EditLoadoutsButton.IsEnabled = true;
+            main.Activate();
+            return;
+        }
+
         public async static Task CheckForUpdates(string path, MainWindow main)
         {
             updateCounter = 0;
