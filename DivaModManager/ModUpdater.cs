@@ -33,6 +33,8 @@ namespace DivaModManager
             main.LauncherOptionsBox.IsEnabled = true;
             main.LoadoutBox.IsEnabled = true;
             main.EditLoadoutsButton.IsEnabled = true;
+            main.SearchModListTextBox.IsEnabled = true;
+            main.SearchModListButton.IsEnabled = true;
             main.Activate();
             return;
         }
@@ -51,6 +53,8 @@ namespace DivaModManager
                 main.LauncherOptionsBox.IsEnabled = true;
                 main.LoadoutBox.IsEnabled = true;
                 main.EditLoadoutsButton.IsEnabled = true;
+                main.SearchModListTextBox.IsEnabled = true;
+                main.SearchModListButton.IsEnabled = true;
                 main.Activate();
                 return;
             }
