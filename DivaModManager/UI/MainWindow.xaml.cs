@@ -797,12 +797,6 @@ namespace DivaModManager
             {
                 return;
             }
-            if (Global.SearchModListFlg)
-            {
-                MessageBox.Show($"Please do it with the mod search cleared.\nSorry.", "Attention.", MessageBoxButton.OK, MessageBoxImage.Information);
-                e.Handled = true;
-                return;
-            }
 
             if (ModGrid.SelectedItem == null)
                 element.ContextMenu.Visibility = Visibility.Collapsed;
@@ -812,6 +806,13 @@ namespace DivaModManager
 
         private async void DeleteItem_Click(object sender, RoutedEventArgs e)
         {
+            if (Global.SearchModListFlg)
+            {
+                MessageBox.Show($"Please do it with the mod search cleared.\nSorry.", "Attention.", MessageBoxButton.OK, MessageBoxImage.Information);
+                e.Handled = true;
+                return;
+            }
+
             var selectedMods = ModGrid.SelectedItems;
             var temp = new Mod[selectedMods.Count];
             selectedMods.CopyTo(temp, 0);
@@ -883,6 +884,13 @@ namespace DivaModManager
         }
         private async void EditItem_Click(object sender, RoutedEventArgs e)
         {
+            if (Global.SearchModListFlg)
+            {
+                MessageBox.Show($"Please do it with the mod search cleared.\nSorry.", "Attention.", MessageBoxButton.OK, MessageBoxImage.Information);
+                e.Handled = true;
+                return;
+            }
+
             var selectedMods = ModGrid.SelectedItems;
             var temp = new Mod[selectedMods.Count];
             selectedMods.CopyTo(temp, 0);
@@ -903,6 +911,12 @@ namespace DivaModManager
         }
         private void ConfigureModItem_Click(object sender, RoutedEventArgs e)
         {
+            if (Global.SearchModListFlg)
+            {
+                MessageBox.Show($"Please do it with the mod search cleared.\nSorry.", "Attention.", MessageBoxButton.OK, MessageBoxImage.Information);
+                e.Handled = true;
+                return;
+            }
             var selectedMods = ModGrid.SelectedItems;
             var temp = new Mod[selectedMods.Count];
             selectedMods.CopyTo(temp, 0);
@@ -915,6 +929,12 @@ namespace DivaModManager
         }
         private void FetchItem_Click(object sender, RoutedEventArgs e)
         {
+            if (Global.SearchModListFlg)
+            {
+                MessageBox.Show($"Please do it with the mod search cleared.\nSorry.", "Attention.", MessageBoxButton.OK, MessageBoxImage.Information);
+                e.Handled = true;
+                return;
+            }
             var selectedMods = ModGrid.SelectedItems;
             var temp = new Mod[selectedMods.Count];
             selectedMods.CopyTo(temp, 0);
