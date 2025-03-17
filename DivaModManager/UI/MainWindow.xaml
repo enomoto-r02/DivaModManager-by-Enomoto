@@ -678,7 +678,8 @@
                                 dd:DragDrop.IsDropTarget="True"
                                 dd:DragDrop.ShowAlwaysDropTargetAdorner="True"
                                 dd:DragDrop.UseDefaultEffectDataTemplate="True"
-                                dd:DragDrop.UseDefaultDragAdorner="True">
+                                dd:DragDrop.UseDefaultDragAdorner="True"
+                                SelectedCellsChanged="ModGrid_SelectedCellsChanged">
                                 <DataGrid.Resources>
                                     <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="#115F58"/>
                                     <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="#f2f2f2"/>
@@ -714,7 +715,7 @@
                                     </ContextMenu>
                                 </DataGrid.ContextMenu>
                                 <DataGrid.Columns>
-                                    <DataGridCheckBoxColumn Header="Enabled" Binding="{Binding enabled, Mode=TwoWay}" IsReadOnly="False" Width="58">
+                                    <DataGridCheckBoxColumn Header="Enabled" Binding="{Binding enabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="False" Width="58">
                                         <DataGridCheckBoxColumn.CellStyle>
                                             <Style TargetType="{x:Type DataGridCell}">
                                                 <EventSetter Event="ToggleButton.Checked" Handler="OnChecked"/>

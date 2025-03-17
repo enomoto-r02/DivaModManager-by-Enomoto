@@ -11,6 +11,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
+using System.Security.AccessControl;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -381,57 +382,50 @@ namespace DivaModManager
             Global.logger.WriteLine("Refreshed!", LoggerType.Info);
         }
 
+        private void ModGrid_SelectedCellsChanged(object sender, SelectedCellsChangedEventArgs e)
+        {
+            foreach (var add in e.AddedCells)
+            {
+                var mod = add.Item as Mod;
+                if (mod != null)
+                {
+                    mod.selected = true;
+                }
+            }
+            foreach (var add in e.RemovedCells)
+            {
+                var mod = add.Item as Mod;
+                if (mod != null)
+                {
+                    mod.selected = false;
+                }
+            }
+        }
+
         // Events for Enabled checkboxes
         private async void OnChecked(object sender, RoutedEventArgs e)
         {
-            var checkBox = e.OriginalSource as CheckBox;
-
-            Mod mod = checkBox?.DataContext as Mod;
-
-            if (mod != null)
+            foreach (Mod mod in ModGrid.SelectedItems)
             {
-                mod.enabled = true;
-                List<Mod> temp = Global.config.Configs[Global.config.CurrentGame].Loadouts[Global.config.Configs[Global.config.CurrentGame].CurrentLoadout].ToList();
-                foreach (var m in temp)
+                if (mod.selected)
                 {
-                    if (m.name == mod.name)
+                    mod.enabled = true;
+                }
+            }
+
+            ObservableCollection<Mod> mods = ModGrid?.ItemsSource as ObservableCollection<Mod>;
+
+            if (mods != null)
+            {
+                List<Mod> temp = Global.config.Configs[Global.config.CurrentGame].Loadouts[Global.config.Configs[Global.config.CurrentGame].CurrentLoadout].ToList();
+                foreach (Mod mod in mods)
+                {
+                    foreach (var m in temp)
                     {
-                        m.enabled = true;
-                        var configPath = $"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}{mod.name}{Global.s}config.toml";
-                        if (File.Exists(configPath))
+                        //if (mod.selected)
+                        if (mod.selected && m.name == mod.name)
                         {
-                            var configString = File.ReadAllText(configPath);
-                            if (Toml.TryToModel(configString, out TomlTable config, out var diagnostics))
-                            {
-                                if (config.ContainsKey("enabled"))
-                                    config["enabled"] = true;
-                                else
-                                    // Add enabled field to be true if it doesn't exist
-                                    config.Add("enabled", true);
-                                AddInclude(config);
-                                File.WriteAllText(configPath, Toml.FromModel(config));
-                            }
-                            else
-                            {
-                                Global.logger.WriteLine($"{diagnostics[0].Message} for {mod.name}. Rewriting {configPath} with only enabled field", LoggerType.Warning);
-                                // Create config.toml with enabled field to be true if failed to parse
-                                config = new();
-                                config.Add("enabled", true);
-                                AddInclude(config);
-                                File.WriteAllText(configPath, Toml.FromModel(config));
-                            }
-                        }
-                        else
-                        {
-                            // Create config.toml with enabled field to be true and include set, if the user desires
-                            if (!IsWindowOpen<ChoiceWindow>())
-                            {
-                                ConfirmConfigCreation(configPath, m, true);
-                            }
-                            else
-                            {
-                                Global.logger.WriteLine("No config.toml file window triggered but it was already open.", LoggerType.Info);
-                            }
+                            test(m, mod, true);
                         }
                     }
                 }
@@ -455,63 +449,39 @@ namespace DivaModManager
         }
         private async void OnUnchecked(object sender, RoutedEventArgs e)
         {
-            var checkBox = e.OriginalSource as CheckBox;
-
-            Mod mod = checkBox?.DataContext as Mod;
-
-            if (mod != null)
+            foreach (Mod mod in ModGrid.SelectedItems)
             {
-                mod.enabled = false;
-                List<Mod> temp = Global.config.Configs[Global.config.CurrentGame].Loadouts[Global.config.Configs[Global.config.CurrentGame].CurrentLoadout].ToList();
-                foreach (var m in temp)
+                if (mod.selected)
                 {
-                    if (m.name == mod.name)
+                    mod.enabled = false;
+                }
+            }
+
+            ObservableCollection<Mod> mods = ModGrid?.ItemsSource as ObservableCollection<Mod>;
+
+            if (mods != null)
+            {
+                List<Mod> temp = Global.config.Configs[Global.config.CurrentGame].Loadouts[Global.config.Configs[Global.config.CurrentGame].CurrentLoadout].ToList();
+                foreach (Mod mod in mods)
+                {
+                    //var checkBox = e.OriginalSource as CheckBox;
+
+                    foreach (var m in temp)
                     {
-                        m.enabled = false;
-                        var configPath = $"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}{mod.name}{Global.s}config.toml";
-                        if (File.Exists(configPath))
+                        //if (mod.selected)
+                        if (mod.selected && m.name == mod.name)
                         {
-                            var configString = File.ReadAllText(configPath);
-                            if (Toml.TryToModel(configString, out TomlTable config, out var diagnostics))
-                            {
-                                if (config.ContainsKey("enabled"))
-                                    config["enabled"] = false;
-                                else
-                                    // Add enabled field to be true if it doesn't exist
-                                    config.Add("enabled", false);
-                                AddInclude(config);
-                                File.WriteAllText(configPath, Toml.FromModel(config));
-                            }
-                            else
-                            {
-                                Global.logger.WriteLine($"{diagnostics[0].Message} for {mod.name}. Rewriting {configPath} with only enabled field", LoggerType.Warning);
-                                // Create config.toml with enabled field to be true if failed to parse
-                                config = new();
-                                config.Add("enabled", false);
-                                AddInclude(config);
-                                File.WriteAllText(configPath, Toml.FromModel(config));
-                            }
-                        }
-                        else
-                        {
-                            // Create config.toml with enabled field to be true and include set, if the user desires
-                            if (!IsWindowOpen<ChoiceWindow>())
-                            {
-                                ConfirmConfigCreation(configPath, m, false);
-                            }
-                            else
-                            {
-                                Global.logger.WriteLine("No config.toml file window triggered but it was already open.", LoggerType.Info);
-                            }
+                            test(m, mod, false);
                         }
                     }
                 }
+                Global.config.Configs[Global.config.CurrentGame].Loadouts[Global.config.Configs[Global.config.CurrentGame].CurrentLoadout] = new ObservableCollection<Mod>(temp);
                 if (Global.SearchModListFlg == false)
                 {
-                    Global.config.Configs[Global.config.CurrentGame].Loadouts[Global.config.Configs[Global.config.CurrentGame].CurrentLoadout] = new ObservableCollection<Mod>(temp);
                     Global.UpdateConfig();
+                    await Task.Run(() => ModLoader.Build());
                 }
-                await Task.Run(() => ModLoader.Build());
+
                 App.Current.Dispatcher.Invoke((Action)delegate
                 {
                     var stats = $"{Global.ModList.ToList().Where(x => x.enabled).ToList().Count}/{Global.ModList.Count} mods • {Directory.GetFiles(Global.config.Configs[Global.config.CurrentGame].ModsFolder, "*", SearchOption.AllDirectories).Length.ToString("N0")} files • " +
@@ -523,6 +493,47 @@ namespace DivaModManager
                 });
             }
         }
+
+        private void test(Mod m, Mod mod, bool value)
+        {
+            var configPath = $"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}{mod.name}{Global.s}config.toml";
+            if (File.Exists(configPath))
+            {
+                var configString = File.ReadAllText(configPath);
+                if (Toml.TryToModel(configString, out TomlTable config, out var diagnostics))
+                {
+                    if (config.ContainsKey("enabled"))
+                        config["enabled"] = value;
+                    else
+                        // Add enabled field to be true if it doesn't exist
+                        config.Add("enabled", value);
+                    AddInclude(config);
+                    File.WriteAllText(configPath, Toml.FromModel(config));
+                }
+                else
+                {
+                    Global.logger.WriteLine($"{diagnostics[0].Message} for {mod.name}. Rewriting {configPath} with only enabled field", LoggerType.Warning);
+                    // Create config.toml with enabled field to be true if failed to parse
+                    config = new();
+                    config.Add("enabled", value);
+                    AddInclude(config);
+                    File.WriteAllText(configPath, Toml.FromModel(config));
+                }
+            }
+            else
+            {
+                // Create config.toml with enabled field to be true and include set, if the user desires
+                if (!IsWindowOpen<ChoiceWindow>())
+                {
+                    ConfirmConfigCreation(configPath, m, false);
+                }
+                else
+                {
+                    Global.logger.WriteLine("No config.toml file window triggered but it was already open.", LoggerType.Info);
+                }
+            }
+        }
+
         // Triggered when priority is switched on drag and dropped
         private async void ModGrid_LoadingRow(object sender, DataGridRowEventArgs e)
         {

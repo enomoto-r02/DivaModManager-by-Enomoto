@@ -1,14 +1,47 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using DivaModManager.UI;
 
 namespace DivaModManager
 {
-    public class Mod
+    public class Mod : INotifyPropertyChanged
     {
         public string name { get; set; }
-        public bool enabled { get; set; }
+        private bool _enabled;
+        public bool enabled
+        {
+            get
+            {
+                return _enabled;
+            }
+            set
+            {
+                this._enabled = value;
+                OnPropertyChanged("enabled");
+            }
+        }
+        private bool _selected;
+        public bool selected
+        {
+            get
+            {
+                return _selected;
+            }
+            set
+            {
+                this._selected = value;
+                OnPropertyChanged("selected");
+            }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+        private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
     }
     public class Metadata
     {
