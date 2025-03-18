@@ -67,6 +67,7 @@ namespace DivaModManager
         public double? Height { get; set; }
         public double? Width { get; set; }
         public bool Maximized { get; set; }
+        public bool AddModToButtom { get; set; }
     }
     public class GameConfig
     {

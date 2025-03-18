@@ -11,7 +11,6 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
-using System.Security.AccessControl;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -300,7 +299,14 @@ namespace DivaModManager
                     }
                     App.Current.Dispatcher.Invoke((Action)delegate
                     {
-                        Global.ModList.Add(m);
+                        if (Global.config.AddModToButtom)
+                        {
+                            Global.ModList.Add(m);
+                        }
+                        else
+                        {
+                            Global.ModList.Insert(0, m);
+                        }
                     });
                     Global.logger.WriteLine($"Added {Path.GetFileName(mod)}", LoggerType.Info);
                 }
@@ -425,16 +431,18 @@ namespace DivaModManager
                         //if (mod.selected)
                         if (mod.selected && m.name == mod.name)
                         {
-                            test(m, mod, true);
+                            UpdateModConfigToml(m, mod, true);
                         }
                     }
                 }
                 Global.config.Configs[Global.config.CurrentGame].Loadouts[Global.config.Configs[Global.config.CurrentGame].CurrentLoadout] = new ObservableCollection<Mod>(temp);
-                if (Global.SearchModListFlg == false)
-                {
-                    Global.UpdateConfig();
-                    await Task.Run(() => ModLoader.Build());
-                }
+                //if (Global.SearchModListFlg == false)
+                //{
+                //    Global.UpdateConfig();
+                //    await Task.Run(() => ModLoader.Build());
+                //}
+                Global.UpdateConfig();
+                await Task.Run(() => ModLoader.Build());
 
                 App.Current.Dispatcher.Invoke((Action)delegate
                 {
@@ -471,16 +479,13 @@ namespace DivaModManager
                         //if (mod.selected)
                         if (mod.selected && m.name == mod.name)
                         {
-                            test(m, mod, false);
+                            UpdateModConfigToml(m, mod, false);
                         }
                     }
                 }
                 Global.config.Configs[Global.config.CurrentGame].Loadouts[Global.config.Configs[Global.config.CurrentGame].CurrentLoadout] = new ObservableCollection<Mod>(temp);
-                if (Global.SearchModListFlg == false)
-                {
-                    Global.UpdateConfig();
-                    await Task.Run(() => ModLoader.Build());
-                }
+                Global.UpdateConfig();
+                await Task.Run(() => ModLoader.Build());
 
                 App.Current.Dispatcher.Invoke((Action)delegate
                 {
@@ -494,7 +499,7 @@ namespace DivaModManager
             }
         }
 
-        private void test(Mod m, Mod mod, bool value)
+        private void UpdateModConfigToml(Mod m, Mod mod, bool value)
         {
             var configPath = $"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}{mod.name}{Global.s}config.toml";
             if (File.Exists(configPath))
@@ -537,11 +542,8 @@ namespace DivaModManager
         // Triggered when priority is switched on drag and dropped
         private async void ModGrid_LoadingRow(object sender, DataGridRowEventArgs e)
         {
-            if (Global.SearchModListFlg == false)
-            {
-                Global.UpdateConfig();
-                await Task.Run(() => ModLoader.Build());
-            }
+            Global.UpdateConfig();
+            await Task.Run(() => ModLoader.Build());
         }
         private TomlTable AddInclude(TomlTable config)
         {

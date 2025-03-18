@@ -20,7 +20,7 @@ namespace DivaModManager
         public static ObservableCollection<String> LoadoutItems;
         public static void UpdateConfig()
         {
-            config.Configs[config.CurrentGame].Loadouts[config.Configs[config.CurrentGame].CurrentLoadout] = ModList;
+            config.Configs[config.CurrentGame].Loadouts[config.Configs[config.CurrentGame].CurrentLoadout] = ModList_All;
             string configString = JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true });
             var isReady = false;
             while (!isReady)
