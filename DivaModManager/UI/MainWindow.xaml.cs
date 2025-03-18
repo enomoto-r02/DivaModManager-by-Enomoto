@@ -299,13 +299,13 @@ namespace DivaModManager
                     }
                     App.Current.Dispatcher.Invoke((Action)delegate
                     {
-                        if (Global.config.AddModToButtom)
+                        if (Global.config.AddModToTop)
                         {
-                            Global.ModList.Add(m);
+                            Global.ModList.Insert(0, m);
                         }
                         else
                         {
-                            Global.ModList.Insert(0, m);
+                            Global.ModList.Add(m);
                         }
                     });
                     Global.logger.WriteLine($"Added {Path.GetFileName(mod)}", LoggerType.Info);
