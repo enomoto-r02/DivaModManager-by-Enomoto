@@ -1,4 +1,5 @@
 ﻿using DivaModManager.UI;
+using GongSolutions.Wpf.DragDrop.Utilities;
 using SharpCompress.Archives.SevenZip;
 using SharpCompress.Common;
 using SharpCompress.Readers;
@@ -409,7 +410,7 @@ namespace DivaModManager
         }
 
         // Events for Enabled checkboxes
-        private async void OnChecked(object sender, RoutedEventArgs e)
+        private void OnChecked(object sender, RoutedEventArgs e)
         {
             foreach (Mod mod in ModGrid.SelectedItems)
             {
@@ -442,7 +443,8 @@ namespace DivaModManager
                 //    await Task.Run(() => ModLoader.Build());
                 //}
                 Global.UpdateConfig();
-                await Task.Run(() => ModLoader.Build());
+                //await Task.Run(() => ModLoader.Build());
+                ModLoader.Build();
 
                 App.Current.Dispatcher.Invoke((Action)delegate
                 {
@@ -455,7 +457,7 @@ namespace DivaModManager
                 });
             }
         }
-        private async void OnUnchecked(object sender, RoutedEventArgs e)
+        private void OnUnchecked(object sender, RoutedEventArgs e)
         {
             foreach (Mod mod in ModGrid.SelectedItems)
             {
@@ -485,7 +487,8 @@ namespace DivaModManager
                 }
                 Global.config.Configs[Global.config.CurrentGame].Loadouts[Global.config.Configs[Global.config.CurrentGame].CurrentLoadout] = new ObservableCollection<Mod>(temp);
                 Global.UpdateConfig();
-                await Task.Run(() => ModLoader.Build());
+                //await Task.Run(() => ModLoader.Build());
+                ModLoader.Build();
 
                 App.Current.Dispatcher.Invoke((Action)delegate
                 {
@@ -2610,6 +2613,8 @@ namespace DivaModManager
 
         private async void SearchModList(string searchModName)
         {
+            ModGrid.ClearSelectedItems();
+
             if (string.IsNullOrEmpty(searchModName))
             {
                 // Restore all evacuated mods.
@@ -2623,6 +2628,7 @@ namespace DivaModManager
             }
 
             ModGrid.ItemsSource = Global.ModList;
+            Global.UpdateConfig();
         }
 
         private void ModGrid_PreviewMouseMove(object sender, MouseEventArgs e)
@@ -2645,6 +2651,7 @@ namespace DivaModManager
             Global.ModList = Global.ModList_All;
             ModGrid.ItemsSource = Global.ModList;
             SearchModListTextBox.Text = "";
+            ModGrid.ClearSelectedItems();
         }
 
         private void UpdateSearchMod()
@@ -2652,6 +2659,7 @@ namespace DivaModManager
             Global.SearchModListFlg = false;
             Global.ModList_All = Global.ModList;
             SearchModListTextBox.Text = "";
+            ModGrid.ClearSelectedItems();
         }
     }
 }
