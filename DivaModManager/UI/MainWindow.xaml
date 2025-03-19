@@ -659,7 +659,6 @@
                                 HeadersVisibility="Column"
                                 IsTextSearchEnabled="True"
                                 TextSearch.TextPath="name"
-                                SelectionMode="Extended"
                                 RowBackground="#202020"
                                 Foreground="#f2f2f2"
                                 LoadingRow="ModGrid_LoadingRow"
@@ -680,7 +679,8 @@
                                 dd:DragDrop.UseDefaultEffectDataTemplate="True"
                                 dd:DragDrop.UseDefaultDragAdorner="True"
                                 SelectedCellsChanged="ModGrid_SelectedCellsChanged"
-                                EnableRowVirtualization="False">
+                                SelectionMode="Single"
+                                EnableRowVirtualization="True">
                                 <DataGrid.Resources>
                                     <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="#115F58"/>
                                     <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="#f2f2f2"/>

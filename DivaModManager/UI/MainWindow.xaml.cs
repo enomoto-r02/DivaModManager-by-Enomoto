@@ -391,20 +391,24 @@ namespace DivaModManager
 
         private void ModGrid_SelectedCellsChanged(object sender, SelectedCellsChangedEventArgs e)
         {
-            foreach (var add in e.AddedCells)
+            // 仮想化が有効だとスクロールした時に設定した値が戻ってしまうため
+            if (ModGrid.EnableRowVirtualization == false && ModGrid.SelectionMode == DataGridSelectionMode.Extended)
             {
-                var mod = add.Item as Mod;
-                if (mod != null)
+                foreach (var add in e.AddedCells)
                 {
-                    mod.selected = true;
+                    var mod = add.Item as Mod;
+                    if (mod != null)
+                    {
+                        mod.selected = true;
+                    }
                 }
-            }
-            foreach (var add in e.RemovedCells)
-            {
-                var mod = add.Item as Mod;
-                if (mod != null)
+                foreach (var add in e.RemovedCells)
                 {
-                    mod.selected = false;
+                    var mod = add.Item as Mod;
+                    if (mod != null)
+                    {
+                        mod.selected = false;
+                    }
                 }
             }
         }
