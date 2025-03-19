@@ -418,7 +418,7 @@ namespace DivaModManager
         {
             CheckedCommon(sender, e, false);
         }
-        private void CheckedCommon(object sender, RoutedEventArgs e, bool setEnabled)
+        private async void CheckedCommon(object sender, RoutedEventArgs e, bool setEnabled)
         {
             var checkMods = ModGrid.SelectedItems;
             if (checkMods != null)
@@ -440,7 +440,7 @@ namespace DivaModManager
                 }
                 Global.config.Configs[Global.config.CurrentGame].Loadouts[Global.config.Configs[Global.config.CurrentGame].CurrentLoadout] = new ObservableCollection<Mod>(temp);
                 Global.UpdateConfig();
-                ModLoader.Build();
+                await Task.Run(() => ModLoader.Build());
 
                 App.Current.Dispatcher.Invoke((Action)delegate
                 {
