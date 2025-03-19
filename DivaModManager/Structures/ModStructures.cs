@@ -23,19 +23,7 @@ namespace DivaModManager
                 OnPropertyChanged("enabled");
             }
         }
-        private bool _selected;
-        public bool selected
-        {
-            get
-            {
-                return _selected;
-            }
-            set
-            {
-                this._selected = value;
-                OnPropertyChanged("selected");
-            }
-        }
+        public bool selected { get; set; }
 
         public event PropertyChangedEventHandler PropertyChanged;
         private void OnPropertyChanged([CallerMemberName] string? propertyName = null)

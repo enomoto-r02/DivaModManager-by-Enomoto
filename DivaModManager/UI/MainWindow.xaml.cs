@@ -412,82 +412,34 @@ namespace DivaModManager
         // Events for Enabled checkboxes
         private void OnChecked(object sender, RoutedEventArgs e)
         {
-            foreach (Mod mod in ModGrid.SelectedItems)
-            {
-                if (mod.selected)
-                {
-                    mod.enabled = true;
-                }
-            }
-
-            ObservableCollection<Mod> mods = ModGrid?.ItemsSource as ObservableCollection<Mod>;
-
-            if (mods != null)
-            {
-                List<Mod> temp = Global.config.Configs[Global.config.CurrentGame].Loadouts[Global.config.Configs[Global.config.CurrentGame].CurrentLoadout].ToList();
-                foreach (Mod mod in mods)
-                {
-                    foreach (var m in temp)
-                    {
-                        //if (mod.selected)
-                        if (mod.selected && m.name == mod.name)
-                        {
-                            UpdateModConfigToml(m, mod, true);
-                        }
-                    }
-                }
-                Global.config.Configs[Global.config.CurrentGame].Loadouts[Global.config.Configs[Global.config.CurrentGame].CurrentLoadout] = new ObservableCollection<Mod>(temp);
-                //if (Global.SearchModListFlg == false)
-                //{
-                //    Global.UpdateConfig();
-                //    await Task.Run(() => ModLoader.Build());
-                //}
-                Global.UpdateConfig();
-                //await Task.Run(() => ModLoader.Build());
-                ModLoader.Build();
-
-                App.Current.Dispatcher.Invoke((Action)delegate
-                {
-                    var stats = $"{Global.ModList.ToList().Where(x => x.enabled).ToList().Count}/{Global.ModList.Count} mods • {Directory.GetFiles(Global.config.Configs[Global.config.CurrentGame].ModsFolder, "*", SearchOption.AllDirectories).Length.ToString("N0")} files • " +
-                    $"{StringConverters.FormatSize(new DirectoryInfo(Global.config.Configs[Global.config.CurrentGame].ModsFolder).GetDirectorySize())}";
-                    if (!String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].ModLoaderVersion))
-                        stats += $" • DML v{Global.config.Configs[Global.config.CurrentGame].ModLoaderVersion}";
-                    stats += $" • DMM v{version}";
-                    Stats.Text = stats;
-                });
-            }
+            CheckedCommon(sender, e, true);
         }
         private void OnUnchecked(object sender, RoutedEventArgs e)
         {
-            foreach (Mod mod in ModGrid.SelectedItems)
-            {
-                if (mod.selected)
-                {
-                    mod.enabled = false;
-                }
-            }
-
-            ObservableCollection<Mod> mods = ModGrid?.ItemsSource as ObservableCollection<Mod>;
-
-            if (mods != null)
+            CheckedCommon(sender, e, false);
+        }
+        private void CheckedCommon(object sender, RoutedEventArgs e, bool setEnabled)
+        {
+            var checkMods = ModGrid.SelectedItems;
+            if (checkMods != null)
             {
                 List<Mod> temp = Global.config.Configs[Global.config.CurrentGame].Loadouts[Global.config.Configs[Global.config.CurrentGame].CurrentLoadout].ToList();
-                foreach (Mod mod in mods)
+                foreach (var m in temp)
                 {
-                    //var checkBox = e.OriginalSource as CheckBox;
-
-                    foreach (var m in temp)
+                    foreach (Mod checkMod in checkMods)
                     {
-                        //if (mod.selected)
-                        if (mod.selected && m.name == mod.name)
+                        if (m.name == checkMod.name)
                         {
-                            UpdateModConfigToml(m, mod, false);
+                            if (m.selected)
+                            {
+                                m.enabled = setEnabled;
+                                UpdateModConfigToml(checkMod, setEnabled);
+                            }
                         }
                     }
                 }
                 Global.config.Configs[Global.config.CurrentGame].Loadouts[Global.config.Configs[Global.config.CurrentGame].CurrentLoadout] = new ObservableCollection<Mod>(temp);
                 Global.UpdateConfig();
-                //await Task.Run(() => ModLoader.Build());
                 ModLoader.Build();
 
                 App.Current.Dispatcher.Invoke((Action)delegate
@@ -502,9 +454,9 @@ namespace DivaModManager
             }
         }
 
-        private void UpdateModConfigToml(Mod m, Mod mod, bool value)
+        private void UpdateModConfigToml(Mod m, bool value)
         {
-            var configPath = $"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}{mod.name}{Global.s}config.toml";
+            var configPath = $"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}{m.name}{Global.s}config.toml";
             if (File.Exists(configPath))
             {
                 var configString = File.ReadAllText(configPath);
@@ -520,7 +472,7 @@ namespace DivaModManager
                 }
                 else
                 {
-                    Global.logger.WriteLine($"{diagnostics[0].Message} for {mod.name}. Rewriting {configPath} with only enabled field", LoggerType.Warning);
+                    Global.logger.WriteLine($"{diagnostics[0].Message} for {m.name}. Rewriting {configPath} with only enabled field", LoggerType.Warning);
                     // Create config.toml with enabled field to be true if failed to parse
                     config = new();
                     config.Add("enabled", value);
