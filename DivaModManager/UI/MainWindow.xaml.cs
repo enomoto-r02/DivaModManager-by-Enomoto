@@ -391,7 +391,8 @@ namespace DivaModManager
 
         private void ModGrid_SelectedCellsChanged(object sender, SelectedCellsChangedEventArgs e)
         {
-            // 仮想化が有効だとスクロールした時に設定した値が戻ってしまうため
+            // 仮想化が有効だとスクロールした時に設定した値が戻ってしまうため、条件を追加
+            // https://stackoverflow.com/questions/35917095/wpf-checkbox-check-moves-on-scrolling
             if (ModGrid.EnableRowVirtualization == false && ModGrid.SelectionMode == DataGridSelectionMode.Extended)
             {
                 foreach (var add in e.AddedCells)

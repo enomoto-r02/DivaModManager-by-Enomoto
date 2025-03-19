@@ -679,7 +679,7 @@
                                 dd:DragDrop.UseDefaultEffectDataTemplate="True"
                                 dd:DragDrop.UseDefaultDragAdorner="True"
                                 SelectedCellsChanged="ModGrid_SelectedCellsChanged"
-                                SelectionMode="Single"
+                                SelectionMode="Extended"
                                 EnableRowVirtualization="True">
                                 <DataGrid.Resources>
                                     <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="#115F58"/>
