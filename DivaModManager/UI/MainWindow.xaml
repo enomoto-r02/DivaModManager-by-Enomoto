@@ -711,6 +711,8 @@
                                         <MenuItem Header="Open Mod Folder" IsCheckable="False" Click="OpenItem_Click"/>
                                         <MenuItem Header="Fetch Metadata" IsCheckable="False" Click="FetchItem_Click"/>
                                         <MenuItem Header="Delete Mod" IsCheckable="False" Click="DeleteItem_Click"/>
+                                        <MenuItem Header="Move To Top" IsCheckable="False" Click="MoveToTop_Click"/>
+                                        <MenuItem Header="Move To Buttom" IsCheckable="False" Click="MoveToButtom_Click"/>
                                     </ContextMenu>
                                 </DataGrid.ContextMenu>
                                 <DataGrid.Columns>

@@ -824,6 +824,7 @@ namespace DivaModManager
             var temp = new Mod[selectedMods.Count];
             selectedMods.CopyTo(temp, 0);
             foreach (var row in temp)
+            {
                 if (row != null)
                 {
                     var dialogResult = MessageBox.Show($@"Are you sure you want to delete {row.name}?" + Environment.NewLine + "This cannot be undone.", $@"Deleting {row.name}: Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Warning);
@@ -841,6 +842,7 @@ namespace DivaModManager
                         }
                     }
                 }
+            }
         }
 
         private void Window_Closing(object sender, CancelEventArgs e)
@@ -954,6 +956,56 @@ namespace DivaModManager
                         ShowMetadata(row.name);
                 }
         }
+        private async void MoveToTop_Click(object sender, RoutedEventArgs e)
+        {
+            if (Global.SearchModListFlg)
+            {
+                MessageBox.Show($"Please do it with the mod search cleared.\nSorry.", "Attention.", MessageBoxButton.OK, MessageBoxImage.Information);
+                e.Handled = true;
+                return;
+            }
+            var selectedMods = ModGrid.SelectedItems;
+            var allMods = Global.ModList;
+            Global.ModList.Move(ModGrid.SelectedIndex, 0);
+
+            await Task.Run(() =>
+            {
+                App.Current.Dispatcher.Invoke((Action)delegate
+                {
+                    ModGrid.ItemsSource = Global.ModList;
+                });
+            });
+            Global.UpdateConfig();
+            await Task.Run(() => ModLoader.Build());
+
+            e.Handled = true;
+        }
+        private async void MoveToButtom_Click(object sender, RoutedEventArgs e)
+        {
+            if (Global.SearchModListFlg)
+            {
+                MessageBox.Show($"Please do it with the mod search cleared.\nSorry.", "Attention.", MessageBoxButton.OK, MessageBoxImage.Information);
+                e.Handled = true;
+                return;
+            }
+            var selectedMods = ModGrid.SelectedItems;
+            var allMods = Global.ModList;
+            Global.ModList.Move(ModGrid.SelectedIndex, Global.ModList.Count-1);
+
+            await Task.Run(() =>
+            {
+                App.Current.Dispatcher.Invoke((Action)delegate
+                {
+                    ModGrid.ItemsSource = Global.ModList;
+                });
+            });
+            Global.UpdateConfig();
+            await Task.Run(() => ModLoader.Build());
+
+            e.Handled = true;
+        }
+
+
         private void Add_Enter(object sender, DragEventArgs e)
         {
             if (e.Data.GetDataPresent(DataFormats.FileDrop))
