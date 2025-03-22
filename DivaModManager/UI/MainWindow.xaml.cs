@@ -806,20 +806,45 @@ namespace DivaModManager
             }
 
             if (ModGrid.SelectedItem == null)
+            {
                 element.ContextMenu.Visibility = Visibility.Collapsed;
+            }
             else
+            {
                 element.ContextMenu.Visibility = Visibility.Visible;
+                if (Global.SearchModListFlg)
+                {
+                    List<string> list = new List<string>();
+                    list.Add("ConfigureMod");
+                    list.Add("RenameModFolder");
+                    list.Add("FetchMetadata");
+                    list.Add("DeleteMod");
+                    list.Add("MoveToTop");
+                    list.Add("MoveToButtom");
+
+                    for (var i = 0; i < element.ContextMenu.Items.Count; i++)
+                    {
+                        var contextMenu = element.ContextMenu.Items[i] as MenuItem;
+                        if (list.Contains(contextMenu.Name))
+                        {
+                            contextMenu.IsEnabled = false;
+                        }
+
+                    }
+                }
+                else
+                {
+                    for (var i = 0; i < element.ContextMenu.Items.Count; i++)
+                    {
+                        var contextMenu = element.ContextMenu.Items[i] as MenuItem;
+                        contextMenu.IsEnabled = true;
+                    }
+                }
+            }
         }
 
         private async void DeleteItem_Click(object sender, RoutedEventArgs e)
         {
-            if (Global.SearchModListFlg)
-            {
-                MessageBox.Show($"Please do it with the mod search cleared.\nSorry.", "Attention.", MessageBoxButton.OK, MessageBoxImage.Information);
-                e.Handled = true;
-                return;
-            }
-
             var selectedMods = ModGrid.SelectedItems;
             var temp = new Mod[selectedMods.Count];
             selectedMods.CopyTo(temp, 0);
@@ -893,13 +918,6 @@ namespace DivaModManager
         }
         private async void EditItem_Click(object sender, RoutedEventArgs e)
         {
-            if (Global.SearchModListFlg)
-            {
-                MessageBox.Show($"Please do it with the mod search cleared.\nSorry.", "Attention.", MessageBoxButton.OK, MessageBoxImage.Information);
-                e.Handled = true;
-                return;
-            }
-
             var selectedMods = ModGrid.SelectedItems;
             var temp = new Mod[selectedMods.Count];
             selectedMods.CopyTo(temp, 0);
@@ -920,12 +938,6 @@ namespace DivaModManager
         }
         private void ConfigureModItem_Click(object sender, RoutedEventArgs e)
         {
-            if (Global.SearchModListFlg)
-            {
-                MessageBox.Show($"Please do it with the mod search cleared.\nSorry.", "Attention.", MessageBoxButton.OK, MessageBoxImage.Information);
-                e.Handled = true;
-                return;
-            }
             var selectedMods = ModGrid.SelectedItems;
             var temp = new Mod[selectedMods.Count];
             selectedMods.CopyTo(temp, 0);
@@ -938,12 +950,6 @@ namespace DivaModManager
         }
         private void FetchItem_Click(object sender, RoutedEventArgs e)
         {
-            if (Global.SearchModListFlg)
-            {
-                MessageBox.Show($"Please do it with the mod search cleared.\nSorry.", "Attention.", MessageBoxButton.OK, MessageBoxImage.Information);
-                e.Handled = true;
-                return;
-            }
             var selectedMods = ModGrid.SelectedItems;
             var temp = new Mod[selectedMods.Count];
             selectedMods.CopyTo(temp, 0);
@@ -958,12 +964,6 @@ namespace DivaModManager
         }
         private async void MoveToTop_Click(object sender, RoutedEventArgs e)
         {
-            if (Global.SearchModListFlg)
-            {
-                MessageBox.Show($"Please do it with the mod search cleared.\nSorry.", "Attention.", MessageBoxButton.OK, MessageBoxImage.Information);
-                e.Handled = true;
-                return;
-            }
             var selectedMods = ModGrid.SelectedItems;
             var allMods = Global.ModList;
             Global.ModList.Move(ModGrid.SelectedIndex, 0);
@@ -982,12 +982,6 @@ namespace DivaModManager
         }
         private async void MoveToButtom_Click(object sender, RoutedEventArgs e)
         {
-            if (Global.SearchModListFlg)
-            {
-                MessageBox.Show($"Please do it with the mod search cleared.\nSorry.", "Attention.", MessageBoxButton.OK, MessageBoxImage.Information);
-                e.Handled = true;
-                return;
-            }
             var selectedMods = ModGrid.SelectedItems;
             var allMods = Global.ModList;
             Global.ModList.Move(ModGrid.SelectedIndex, Global.ModList.Count-1);
@@ -2654,7 +2648,7 @@ namespace DivaModManager
             }
         }
 
-        private async void SearchModList(string searchModName)
+        private void SearchModList(string searchModName)
         {
             if (string.IsNullOrEmpty(searchModName))
             {
