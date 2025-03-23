@@ -712,7 +712,7 @@
                                         <MenuItem Name="FetchMetadata" Header="Fetch Metadata" IsCheckable="False" Click="FetchItem_Click"/>
                                         <MenuItem Name="DeleteMod" Header="Delete Mod" IsCheckable="False" Click="DeleteItem_Click"/>
                                         <MenuItem Name="MoveToTop" Header="Move To Top" IsCheckable="False" Click="MoveToTop_Click"/>
-                                        <MenuItem Name="MoveToButtom" Header="Move To Buttom" IsCheckable="False" Click="MoveToButtom_Click"/>
+                                        <MenuItem Name="MoveToBottom" Header="Move To Bottom" IsCheckable="False" Click="MoveToBottom_Click"/>
                                     </ContextMenu>
                                 </DataGrid.ContextMenu>
                                 <DataGrid.Columns>

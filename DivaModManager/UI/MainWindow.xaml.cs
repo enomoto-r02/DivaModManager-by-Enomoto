@@ -820,7 +820,7 @@ namespace DivaModManager
                     list.Add("FetchMetadata");
                     list.Add("DeleteMod");
                     list.Add("MoveToTop");
-                    list.Add("MoveToButtom");
+                    list.Add("MoveToBottom");
 
                     for (var i = 0; i < element.ContextMenu.Items.Count; i++)
                     {
@@ -980,7 +980,7 @@ namespace DivaModManager
 
             e.Handled = true;
         }
-        private async void MoveToButtom_Click(object sender, RoutedEventArgs e)
+        private async void MoveToBottom_Click(object sender, RoutedEventArgs e)
         {
             var selectedMods = ModGrid.SelectedItems;
             var allMods = Global.ModList;
