@@ -397,6 +397,7 @@ namespace DivaModManager
                 if (mod != null)
                 {
                     mod.selected = true;
+                    Global.SelectModsCount++;
                 }
             }
             foreach (var add in e.RemovedCells)
@@ -405,6 +406,7 @@ namespace DivaModManager
                 if (mod != null)
                 {
                     mod.selected = false;
+                    Global.SelectModsCount--;
                 }
             }
         }
@@ -779,7 +781,7 @@ namespace DivaModManager
             else
             {
                 element.ContextMenu.Visibility = Visibility.Visible;
-                if (Global.SearchModListFlg)
+                if (Global.SearchModListFlg || Global.SelectModsCount > 1)
                 {
                     List<string> list = new List<string>();
                     list.Add("ConfigureMod");
@@ -2663,6 +2665,7 @@ namespace DivaModManager
             ModGrid.ItemsSource = Global.ModList;
             SearchModListTextBox.Text = "";
             ModGrid.ClearSelectedItems();
+            Global.SelectModsCount = 0;
         }
 
         private void UpdateSearchMod()
@@ -2671,6 +2674,7 @@ namespace DivaModManager
             Global.ModList_All = Global.ModList;
             SearchModListTextBox.Text = "";
             ModGrid.ClearSelectedItems();
+            Global.SelectModsCount = 0;
         }
     }
 }
