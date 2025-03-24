@@ -17,7 +17,6 @@ namespace DivaModManager
         // After applying the filter, for backup purposes
         public static ObservableCollection<Mod> ModList_All;
         public static bool SearchModListFlg;
-        public static int SelectModsCount;
         public static ObservableCollection<String> LoadoutItems;
         public static void UpdateConfig()
         {
