@@ -648,7 +648,6 @@
                                 GridLinesVisibility="None"
                                 VerticalScrollBarVisibility="Auto"
                                 BorderBrush="#424242"
-                                EnableColumnVirtualization="False"
                                 CanUserAddRows="False"
                                 CanUserDeleteRows="False"
                                 CanUserReorderColumns="False"
@@ -659,7 +658,6 @@
                                 HeadersVisibility="Column"
                                 IsTextSearchEnabled="True"
                                 TextSearch.TextPath="name"
-                                SelectionMode="Extended"
                                 RowBackground="#202020"
                                 Foreground="#f2f2f2"
                                 LoadingRow="ModGrid_LoadingRow"
@@ -678,7 +676,12 @@
                                 dd:DragDrop.IsDropTarget="True"
                                 dd:DragDrop.ShowAlwaysDropTargetAdorner="True"
                                 dd:DragDrop.UseDefaultEffectDataTemplate="True"
-                                dd:DragDrop.UseDefaultDragAdorner="True">
+                                dd:DragDrop.UseDefaultDragAdorner="True"
+                                SelectedCellsChanged="ModGrid_SelectedCellsChanged"
+                                SelectionMode="Extended"
+                                VirtualizingStackPanel.IsVirtualizing="True"
+                                VirtualizingPanel.VirtualizationMode="Standard"
+                                >
                                 <DataGrid.Resources>
                                     <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="#115F58"/>
                                     <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="#f2f2f2"/>
@@ -716,7 +719,7 @@
                                     </ContextMenu>
                                 </DataGrid.ContextMenu>
                                 <DataGrid.Columns>
-                                    <DataGridCheckBoxColumn Header="Enabled" Binding="{Binding enabled, Mode=TwoWay}" IsReadOnly="False" Width="58">
+                                    <DataGridCheckBoxColumn Header="Enabled" Binding="{Binding enabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="False" Width="58">
                                         <DataGridCheckBoxColumn.CellStyle>
                                             <Style TargetType="{x:Type DataGridCell}">
                                                 <EventSetter Event="ToggleButton.Checked" Handler="OnChecked"/>
