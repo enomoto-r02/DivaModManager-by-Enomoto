@@ -150,7 +150,7 @@ namespace DivaModManager
             ConfigButton.IsEnabled = false;
             LaunchButton.IsEnabled = false;
             OpenModsButton.IsEnabled = false;
-            UpdateButton.IsEnabled = false;
+            UpdateAllButton.IsEnabled = false;
             LauncherOptionsBox.IsEnabled = false;
             LoadoutBox.IsEnabled = false;
             EditLoadoutsButton.IsEnabled = false;
@@ -1178,7 +1178,7 @@ namespace DivaModManager
             ConfigButton.IsEnabled = false;
             LaunchButton.IsEnabled = false;
             OpenModsButton.IsEnabled = false;
-            UpdateButton.IsEnabled = false;
+            UpdateAllButton.IsEnabled = false;
             LauncherOptionsBox.IsEnabled = false;
             LoadoutBox.IsEnabled = false;
             EditLoadoutsButton.IsEnabled = false;
@@ -2541,7 +2541,7 @@ namespace DivaModManager
                 ConfigButton.IsEnabled = false;
                 LaunchButton.IsEnabled = false;
                 OpenModsButton.IsEnabled = false;
-                UpdateButton.IsEnabled = false;
+                UpdateAllButton.IsEnabled = false;
                 LauncherOptionsBox.IsEnabled = false;
                 LoadoutBox.IsEnabled = false;
                 EditLoadoutsButton.IsEnabled = false;
