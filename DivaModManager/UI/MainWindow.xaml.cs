@@ -214,9 +214,14 @@ namespace DivaModManager
                         var configString = String.Empty;
                         while (String.IsNullOrEmpty(configString))
                         {
+                            configString = File.ReadAllText(configPath);
                             try
                             {
-                                configString = File.ReadAllText(configPath);
+                                if (string.IsNullOrEmpty(configString))
+                                {
+                                    string message = "Config.toml's content is empty! Path : " + configPath;
+                                    throw new Exception(message);
+                                }
                             }
                             catch (Exception e)
                             {
@@ -224,6 +229,13 @@ namespace DivaModManager
                                 if (e.GetType() != typeof(IOException))
                                 {
                                     Global.logger.WriteLine($"Couldn't access {configPath} ({e.Message})", LoggerType.Error);
+                                    MessageBox.Show(e.Message, "Attention.", MessageBoxButton.OK, MessageBoxImage.Error);
+                                    break;
+                                }
+                                else
+                                {
+                                    Global.logger.WriteLine($"Other exception {configPath} ({e.Message})", LoggerType.Error);
+                                    MessageBox.Show(e.Message, "Attention.", MessageBoxButton.OK, MessageBoxImage.Error);
                                     break;
                                 }
                             }
@@ -254,6 +266,12 @@ namespace DivaModManager
                                             Global.logger.WriteLine($"Couldn't access {configPath} ({e.Message})", LoggerType.Error);
                                             break;
                                         }
+                                        else
+                                        {
+                                            Global.logger.WriteLine($"Other exception {configPath} ({e.Message})", LoggerType.Error);
+                                            MessageBox.Show(e.Message, "Attention.", MessageBoxButton.OK, MessageBoxImage.Error);
+                                            break;
+                                        }
                                     }
                                 }
                             }
@@ -280,6 +298,12 @@ namespace DivaModManager
                                     if (e.GetType() != typeof(IOException))
                                     {
                                         Global.logger.WriteLine($"Couldn't access {configPath} ({e.Message})", LoggerType.Error);
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        Global.logger.WriteLine($"Other exception {configPath} ({e.Message})", LoggerType.Error);
+                                        MessageBox.Show(e.Message, "Attention.", MessageBoxButton.OK, MessageBoxImage.Error);
                                         break;
                                     }
                                 }
@@ -517,9 +541,28 @@ namespace DivaModManager
 
         public static bool IsWindowOpen<T>(string name = "") where T : Window
         {
-            return string.IsNullOrEmpty(name)
-               ? Application.Current.Windows.OfType<T>().Any()
-               : Application.Current.Windows.OfType<T>().Any(w => w.Name.Equals(name));
+            bool res = string.IsNullOrEmpty(name);
+
+            try
+            {
+                if (res)
+                {
+                    Application.Current.Windows.OfType<T>().Any();
+                }
+                else
+                {
+                   Application.Current.Windows.OfType<T>().Any(w => w.Name.Equals(name));
+                }
+
+                return res;
+            } 
+            catch(Exception e)
+            {
+                var message = $"Error IsWindowOpen "+e.Message;
+                MessageBox.Show(message, "Attention.", MessageBoxButton.OK, MessageBoxImage.Error);
+                Global.logger.WriteLine(message, LoggerType.Error);
+                return false;
+            }
         }
 
         private void ConfirmConfigCreation(string configPath, Mod m, bool enabled)
@@ -783,18 +826,18 @@ namespace DivaModManager
                 var SelectModsCount = ModGrid.SelectedCells.Count / ModGrid.Columns.Count;
                 if (Global.SearchModListFlg || SelectModsCount > 1)
                 {
-                    List<string> list = new List<string>();
-                    list.Add("ConfigureMod");
-                    list.Add("RenameModFolder");
-                    list.Add("FetchMetadata");
-                    list.Add("DeleteMod");
-                    list.Add("MoveToTop");
-                    list.Add("MoveToBottom");
+                    List<string> inactiveList = new List<string>();
+                    inactiveList.Add("ConfigureMod");
+                    inactiveList.Add("RenameModFolder");
+                    inactiveList.Add("FetchMetadata");
+                    inactiveList.Add("DeleteMod");
+                    inactiveList.Add("MoveToTop");
+                    inactiveList.Add("MoveToBottom");
 
                     for (var i = 0; i < element.ContextMenu.Items.Count; i++)
                     {
                         var contextMenu = element.ContextMenu.Items[i] as MenuItem;
-                        if (list.Contains(contextMenu.Name))
+                        if (contextMenu != null && inactiveList.Contains(contextMenu.Name))
                         {
                             contextMenu.IsEnabled = false;
                         }
@@ -806,7 +849,10 @@ namespace DivaModManager
                     for (var i = 0; i < element.ContextMenu.Items.Count; i++)
                     {
                         var contextMenu = element.ContextMenu.Items[i] as MenuItem;
-                        contextMenu.IsEnabled = true;
+                        if (contextMenu != null)
+                        {
+                            contextMenu.IsEnabled = true;
+                        }
                     }
                 }
             }
@@ -1111,7 +1157,15 @@ namespace DivaModManager
             var cmw = new CreateModWindow();
             cmw.Show();
         }
+        private void UpdateAll_Click(object sender, RoutedEventArgs e)
+        {
+            UpdateCommon(sender, e, false);
+        }
         private void Update_Click(object sender, RoutedEventArgs e)
+        {
+            UpdateCommon(sender, e, true);
+        }
+        private void UpdateCommon(object sender, RoutedEventArgs e, bool isSelectedUpdate)
         {
             if (Global.SearchModListFlg)
             {
@@ -1133,7 +1187,7 @@ namespace DivaModManager
             App.Current.Dispatcher.Invoke(async () =>
             {
                 Global.logger.WriteLine("Checking for mod updates...", LoggerType.Info);
-                await ModUpdater.CheckForUpdates(Global.config.Configs[Global.config.CurrentGame].ModsFolder, this);
+                await ModUpdater.CheckForUpdates(Global.config.Configs[Global.config.CurrentGame].ModsFolder, this, true);
                 Global.logger.WriteLine("Checking for Diva Mod Manager update...", LoggerType.Info);
                 if (await AutoUpdater.CheckForDMMUpdate(new CancellationTokenSource()))
                     Close();
@@ -2496,7 +2550,7 @@ namespace DivaModManager
                 await App.Current.Dispatcher.Invoke(async () =>
                 {
                     Global.logger.WriteLine("Checking for mod updates...", LoggerType.Info);
-                    await ModUpdater.CheckForUpdates(Global.config.Configs[Global.config.CurrentGame].ModsFolder, this);
+                    await ModUpdater.CheckForUpdates(Global.config.Configs[Global.config.CurrentGame].ModsFolder, this, true);
                     Global.logger.WriteLine("Checking for Diva Mod Manager update...", LoggerType.Info);
                     if (await AutoUpdater.CheckForDMMUpdate(new CancellationTokenSource()))
                         Close();
