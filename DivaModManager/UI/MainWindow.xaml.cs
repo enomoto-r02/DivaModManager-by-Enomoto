@@ -1187,7 +1187,7 @@ namespace DivaModManager
             App.Current.Dispatcher.Invoke(async () =>
             {
                 Global.logger.WriteLine("Checking for mod updates...", LoggerType.Info);
-                await ModUpdater.CheckForUpdates(Global.config.Configs[Global.config.CurrentGame].ModsFolder, this, true);
+                await ModUpdater.CheckForUpdates(Global.config.Configs[Global.config.CurrentGame].ModsFolder, this, isSelectedUpdate);
                 Global.logger.WriteLine("Checking for Diva Mod Manager update...", LoggerType.Info);
                 if (await AutoUpdater.CheckForDMMUpdate(new CancellationTokenSource()))
                     Close();
