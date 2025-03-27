@@ -1,5 +1,6 @@
 ﻿using DivaModManager.UI;
 using GongSolutions.Wpf.DragDrop.Utilities;
+using SevenZipExtractor;
 using SharpCompress.Archives.SevenZip;
 using SharpCompress.Common;
 using SharpCompress.Readers;
@@ -335,7 +336,7 @@ namespace DivaModManager
                     });
                     Global.logger.WriteLine($"Added {Path.GetFileName(mod)}", LoggerType.Info);
                 }
-                // Check if enabled field is changed in existing mods (different loadouts)
+                // Check if enabled field is changed in existing mods (different loadouts or copy loadouts)
                 else
                 {
                     var index = Global.ModList.ToList().FindIndex(x => x.name == Path.GetFileName(mod));
@@ -363,6 +364,44 @@ namespace DivaModManager
                         {
                             Global.logger.WriteLine($"{diagnostics[0].Message} for {Global.ModList[index].name}. Rewriting {configPath} with only enabled field", LoggerType.Warning);
                             config = new();
+                        }
+                        else
+                        {
+                            // ここを実装する？enableの値になるようファイルを上書きする
+                            Mod m = new Mod();
+                            m.name = Path.GetFileName(mod);
+                            var mod_list_m = Global.ModList.ToList().Where(x => x.name == m.name);
+                            if (mod_list_m != null && mod_list_m.Count() == 1)
+                            {
+                                m.enabled = mod_list_m.ToList()[0].enabled;
+                                if ((bool)config["enabled"] != m.enabled)
+                                {
+                                    config["enabled"] = m.enabled;
+                                    try
+                                    {
+                                        File.WriteAllText(configPath, Toml.FromModel(config));
+                                    }
+                                    catch (Exception e)
+                                    {
+                                        // Check if the exception is related to an IO error.
+                                        if (e.GetType() != typeof(IOException))
+                                        {
+                                            Global.logger.WriteLine($"Couldn't access {configPath} ({e.Message})", LoggerType.Error);
+                                            break;
+                                        }
+                                        else
+                                        {
+                                            Global.logger.WriteLine($"Other exception {configPath} ({e.Message})", LoggerType.Error);
+                                            MessageBox.Show(e.Message, "Attention.", MessageBoxButton.OK, MessageBoxImage.Error);
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                continue;
+                            }
                         }
                     }
                     else
@@ -1966,66 +2005,76 @@ namespace DivaModManager
             Page.Text = $"Page {page}";
             LoadingBar.Visibility = Visibility.Visible;
             FeedBox.Visibility = Visibility.Collapsed;
-            var search = searched ? SearchBar.Text : null;
-            await FeedGenerator.GetFeed(page, (GameFilter)GameFilterBox.SelectedIndex, (TypeFilter)TypeBox.SelectedIndex, (FeedFilter)FilterBox.SelectedIndex, (GameBananaCategory)CatBox.SelectedItem,
-                (GameBananaCategory)SubCatBox.SelectedItem, (PerPageBox.SelectedIndex + 1) * 10, (bool)NSFWCheckbox.IsChecked, search);
-            FeedBox.ItemsSource = FeedGenerator.CurrentFeed.Records;
-            if (FeedGenerator.error)
+
+            try
             {
-                LoadingBar.Visibility = Visibility.Collapsed;
-                ErrorPanel.Visibility = Visibility.Visible;
-                BrowserRefreshButton.Visibility = Visibility.Visible;
-                if (FeedGenerator.exception.Message.Contains("JSON tokens"))
+                var search = searched ? SearchBar.Text : null;
+                if (!string.IsNullOrEmpty(search) && search.Contains("'"))
                 {
-                    BrowserMessage.Text = "Uh oh! Diva Mod Manager failed to deserialize the GameBanana feed.";
+                    search = search.Replace("'", "\\'");
+                }
+                await FeedGenerator.GetFeed(page, (GameFilter)GameFilterBox.SelectedIndex, (TypeFilter)TypeBox.SelectedIndex, (FeedFilter)FilterBox.SelectedIndex, (GameBananaCategory)CatBox.SelectedItem,
+                    (GameBananaCategory)SubCatBox.SelectedItem, (PerPageBox.SelectedIndex + 1) * 10, (bool)NSFWCheckbox.IsChecked, search);
+                FeedBox.ItemsSource = FeedGenerator.CurrentFeed.Records;
+                if (FeedGenerator.error)
+                {
+                    LoadingBar.Visibility = Visibility.Collapsed;
+                    ErrorPanel.Visibility = Visibility.Visible;
+                    BrowserRefreshButton.Visibility = Visibility.Visible;
+                    if (FeedGenerator.exception.Message.Contains("JSON tokens"))
+                    {
+                        BrowserMessage.Text = "Uh oh! Diva Mod Manager failed to deserialize the GameBanana feed.";
+                        return;
+                    }
+                    switch (Regex.Match(FeedGenerator.exception.Message, @"\d+").Value)
+                    {
+                        case "443":
+                            BrowserMessage.Text = "Your internet connection is down.";
+                            break;
+                        case "500":
+                        case "503":
+                        case "504":
+                            BrowserMessage.Text = "GameBanana's servers are down.";
+                            break;
+                        default:
+                            BrowserMessage.Text = FeedGenerator.exception.Message;
+                            break;
+                    }
                     return;
                 }
-                switch (Regex.Match(FeedGenerator.exception.Message, @"\d+").Value)
+                if (page < FeedGenerator.CurrentFeed.TotalPages)
+                    PageRight.IsEnabled = true;
+                if (page != 1)
+                    PageLeft.IsEnabled = true;
+                if (FeedBox.Items.Count > 0)
                 {
-                    case "443":
-                        BrowserMessage.Text = "Your internet connection is down.";
-                        break;
-                    case "500":
-                    case "503":
-                    case "504":
-                        BrowserMessage.Text = "GameBanana's servers are down.";
-                        break;
-                    default:
-                        BrowserMessage.Text = FeedGenerator.exception.Message;
-                        break;
+                    FeedBox.ScrollIntoView(FeedBox.Items[0]);
+                    FeedBox.Visibility = Visibility.Visible;
                 }
-                return;
+                else
+                {
+                    ErrorPanel.Visibility = Visibility.Visible;
+                    BrowserRefreshButton.Visibility = Visibility.Collapsed;
+                    BrowserMessage.Visibility = Visibility.Visible;
+                    BrowserMessage.Text = "Diva Mod Manager couldn't find any mods.";
+                }
+                PageBox.ItemsSource = Enumerable.Range(1, (int)(FeedGenerator.CurrentFeed.TotalPages));
             }
-            if (page < FeedGenerator.CurrentFeed.TotalPages)
-                PageRight.IsEnabled = true;
-            if (page != 1)
-                PageLeft.IsEnabled = true;
-            if (FeedBox.Items.Count > 0)
+            finally
             {
-                FeedBox.ScrollIntoView(FeedBox.Items[0]);
-                FeedBox.Visibility = Visibility.Visible;
+                LoadingBar.Visibility = Visibility.Collapsed;
+                CatBox.IsEnabled = true;
+                SubCatBox.IsEnabled = true;
+                TypeBox.IsEnabled = true;
+                FilterBox.IsEnabled = true;
+                PageBox.IsEnabled = true;
+                PerPageBox.IsEnabled = true;
+                GameFilterBox.IsEnabled = true;
+                SearchBar.IsEnabled = true;
+                SearchButton.IsEnabled = true;
+                NSFWCheckbox.IsEnabled = true;
+                ClearCacheButton.IsEnabled = true;
             }
-            else
-            {
-                ErrorPanel.Visibility = Visibility.Visible;
-                BrowserRefreshButton.Visibility = Visibility.Collapsed;
-                BrowserMessage.Visibility = Visibility.Visible;
-                BrowserMessage.Text = "Diva Mod Manager couldn't find any mods.";
-            }
-            PageBox.ItemsSource = Enumerable.Range(1, (int)(FeedGenerator.CurrentFeed.TotalPages));
-
-            LoadingBar.Visibility = Visibility.Collapsed;
-            CatBox.IsEnabled = true;
-            SubCatBox.IsEnabled = true;
-            TypeBox.IsEnabled = true;
-            FilterBox.IsEnabled = true;
-            PageBox.IsEnabled = true;
-            PerPageBox.IsEnabled = true;
-            GameFilterBox.IsEnabled = true;
-            SearchBar.IsEnabled = true;
-            SearchButton.IsEnabled = true;
-            NSFWCheckbox.IsEnabled = true;
-            ClearCacheButton.IsEnabled = true;
         }
         private static bool DMAselected = false;
         private async void DMARefreshFilter()
@@ -2046,61 +2095,74 @@ namespace DivaModManager
             DMAErrorPanel.Visibility = Visibility.Collapsed;
             DMALoadingBar.Visibility = Visibility.Visible;
             DMAFeedBox.Visibility = Visibility.Collapsed;
-            await DMAFeedGenerator.GetFeed(DMApage, (DMAFeedSort)DMASortBox.SelectedIndex, (DMAFeedFilter)DMAFilterBox.SelectedIndex, DMASearchBar.Text, (DMAPerPageBox.SelectedIndex + 1) * 10);
-            DMAFeedBox.ItemsSource = DMAFeedGenerator.CurrentFeed.Posts;
-            if (DMAFeedGenerator.error)
+            var search = DMASearchBar.Text;
+            //var search = HttpUtility.UrlEncode(DMASearchBar.Text);
+            /*
+            if (search.Contains("'"))
             {
-                DMALoadingBar.Visibility = Visibility.Collapsed;
-                DMAErrorPanel.Visibility = Visibility.Visible;
-                DMABrowserRefreshButton.Visibility = Visibility.Visible;
-                if (DMAFeedGenerator.exception.Message.Contains("JSON tokens"))
+                search = search.Replace("'", "\'");
+            }
+            */
+            try
+            {
+                await DMAFeedGenerator.GetFeed(DMApage, (DMAFeedSort)DMASortBox.SelectedIndex, (DMAFeedFilter)DMAFilterBox.SelectedIndex, search, (DMAPerPageBox.SelectedIndex + 1) * 10);
+                DMAFeedBox.ItemsSource = DMAFeedGenerator.CurrentFeed.Posts;
+                if (DMAFeedGenerator.error)
                 {
-                    DMABrowserMessage.Text = "Uh oh! Diva Mod Manager failed to deserialize the DivaModArchive feed.";
+                    DMALoadingBar.Visibility = Visibility.Collapsed;
+                    DMAErrorPanel.Visibility = Visibility.Visible;
+                    DMABrowserRefreshButton.Visibility = Visibility.Visible;
+                    if (DMAFeedGenerator.exception.Message.Contains("JSON tokens"))
+                    {
+                        DMABrowserMessage.Text = "Uh oh! Diva Mod Manager failed to deserialize the DivaModArchive feed.";
+                        return;
+                    }
+                    switch (Regex.Match(DMAFeedGenerator.exception.Message, @"\d+").Value)
+                    {
+                        case "443":
+                            DMABrowserMessage.Text = "Your internet connection is down.";
+                            break;
+                        case "500":
+                        case "503":
+                        case "504":
+                            DMABrowserMessage.Text = "DivaModArchive's servers are down.";
+                            break;
+                        default:
+                            DMABrowserMessage.Text = DMAFeedGenerator.exception.Message;
+                            break;
+                    }
                     return;
                 }
-                switch (Regex.Match(DMAFeedGenerator.exception.Message, @"\d+").Value)
+                if (DMApage < DMAFeedGenerator.CurrentFeed.TotalPages)
+                    DMAPageRight.IsEnabled = true;
+                if (DMApage != 1)
+                    DMAPageLeft.IsEnabled = true;
+                if (DMAFeedBox.Items.Count > 0)
                 {
-                    case "443":
-                        DMABrowserMessage.Text = "Your internet connection is down.";
-                        break;
-                    case "500":
-                    case "503":
-                    case "504":
-                        DMABrowserMessage.Text = "DivaModArchive's servers are down.";
-                        break;
-                    default:
-                        DMABrowserMessage.Text = DMAFeedGenerator.exception.Message;
-                        break;
+                    DMAFeedBox.ScrollIntoView(DMAFeedBox.Items[0]);
+                    DMAFeedBox.Visibility = Visibility.Visible;
                 }
-                return;
+                else
+                {
+                    DMAErrorPanel.Visibility = Visibility.Visible;
+                    DMABrowserRefreshButton.Visibility = Visibility.Collapsed;
+                    DMABrowserMessage.Visibility = Visibility.Visible;
+                    DMABrowserMessage.Text = "Diva Mod Manager couldn't find any mods.";
+                }
+                DMAPageBox.ItemsSource = Enumerable.Range(1, (int)(DMAFeedGenerator.CurrentFeed.TotalPages));
             }
-            if (DMApage < DMAFeedGenerator.CurrentFeed.TotalPages)
-                DMAPageRight.IsEnabled = true;
-            if (DMApage != 1)
-                DMAPageLeft.IsEnabled = true;
-            if (DMAFeedBox.Items.Count > 0)
-            {
-                DMAFeedBox.ScrollIntoView(DMAFeedBox.Items[0]);
-                DMAFeedBox.Visibility = Visibility.Visible;
+            finally
+            { 
+                DMALoadingBar.Visibility = Visibility.Collapsed;
+                DMASortBox.IsEnabled = true;
+                DMAFilterBox.IsEnabled = true;
+                DMASearchBar.IsEnabled = true;
+                DMASearchButton.IsEnabled = true;
+                DMAClearCacheButton.IsEnabled = true;
+                DMAPageBox.IsEnabled = true;
+                DMAPerPageBox.IsEnabled = true;
+                DMAselected = true;
             }
-            else
-            {
-                DMAErrorPanel.Visibility = Visibility.Visible;
-                DMABrowserRefreshButton.Visibility = Visibility.Collapsed;
-                DMABrowserMessage.Visibility = Visibility.Visible;
-                DMABrowserMessage.Text = "Diva Mod Manager couldn't find any mods.";
-            }
-            DMAPageBox.ItemsSource = Enumerable.Range(1, (int)(DMAFeedGenerator.CurrentFeed.TotalPages));
-
-            DMALoadingBar.Visibility = Visibility.Collapsed;
-            DMASortBox.IsEnabled = true;
-            DMAFilterBox.IsEnabled = true;
-            DMASearchBar.IsEnabled = true;
-            DMASearchButton.IsEnabled = true;
-            DMAClearCacheButton.IsEnabled = true;
-            DMAPageBox.IsEnabled = true;
-            DMAPerPageBox.IsEnabled = true;
-            DMAselected = true;
         }
         private bool DMAFilterSelect = false;
         private void DMAFilterSelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -2435,6 +2497,12 @@ namespace DivaModManager
                 OptionSubText = $"Deletes current loadout and switches to first available one",
                 Index = 2
             });
+            choices.Add(new Choice()
+            {
+                OptionText = $"Copy Current Loadout",
+                OptionSubText = $"Copy Current loadout",
+                Index = 3
+            });
             Dispatcher.Invoke(() =>
             {
                 var choice = new ChoiceWindow(choices, $"Loadout Options for {Global.config.CurrentGame}");
@@ -2483,6 +2551,23 @@ namespace DivaModManager
                                 Global.config.Configs[Global.config.CurrentGame].Loadouts.Remove(Global.config.Configs[Global.config.CurrentGame].CurrentLoadout);
                                 // Triggers selection changed event
                                 LoadoutBox.SelectedIndex = 0;
+                            }
+                            break;
+                        // Copy current loadout
+                        case 3:
+                            var copyLoadoutWindow = new EditWindow(Global.config.Configs[Global.config.CurrentGame].CurrentLoadout+" Copy", false);
+                            copyLoadoutWindow.ShowDialog();
+                            if (!String.IsNullOrEmpty(copyLoadoutWindow.loadout))
+                            {
+                                // Insert new name at index of original loadout
+                                Global.LoadoutItems.Add(copyLoadoutWindow.loadout);
+                                // Copy over current loadout
+                                ObservableCollection<Mod> ModList_DeepCopy = new ObservableCollection<Mod>(Global.ModList);
+                                Global.config.Configs[Global.config.CurrentGame].Loadouts.Add(copyLoadoutWindow.loadout, ModList_DeepCopy);
+                                // Trigger selection changed event
+                                LoadoutBox.SelectedItem = copyLoadoutWindow.loadout;
+                                MessageBox.Show($"Please restart DivaModManager once to reflect the copy of the loadout.", "Attention.", MessageBoxButton.OK, MessageBoxImage.Information);
+
                             }
                             break;
                     }
