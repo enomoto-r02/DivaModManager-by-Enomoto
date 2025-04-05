@@ -601,28 +601,31 @@ namespace DivaModManager
 
         public static bool IsWindowOpen<T>(string name = "") where T : Window
         {
-            bool res = string.IsNullOrEmpty(name);
+            return string.IsNullOrEmpty(name)
+               ? Application.Current.Windows.OfType<T>().Any()
+               : Application.Current.Windows.OfType<T>().Any(w => w.Name.Equals(name));
 
-            try
-            {
-                if (res)
-                {
-                    Application.Current.Windows.OfType<T>().Any();
-                }
-                else
-                {
-                   Application.Current.Windows.OfType<T>().Any(w => w.Name.Equals(name));
-                }
+            //bool res = string.IsNullOrEmpty(name);
 
-                return res;
-            } 
-            catch(Exception e)
-            {
-                var message = $"Error IsWindowOpen "+e.Message;
-                MessageBox.Show(message, "Attention.", MessageBoxButton.OK, MessageBoxImage.Error);
-                Global.logger.WriteLine(message, LoggerType.Error);
-                return false;
-            }
+            //try
+            //{
+            //    if (res)
+            //    {
+            //        Application.Current.Windows.OfType<T>().Any();
+            //    }
+            //    else
+            //    {
+            //       Application.Current.Windows.OfType<T>().Any(w => w.Name.Equals(name));
+            //    }
+            //    return res;
+            //} 
+            //catch(Exception e)
+            //{
+            //    var message = $"Error IsWindowOpen "+e.Message;
+            //    MessageBox.Show(message, "Attention.", MessageBoxButton.OK, MessageBoxImage.Error);
+            //    Global.logger.WriteLine(message, LoggerType.Error);
+            //    return false;
+            //}
         }
 
         private void ConfirmConfigCreation(string configPath, Mod m, bool enabled)
