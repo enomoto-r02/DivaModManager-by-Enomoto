@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Data.Common;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -205,6 +206,7 @@ namespace DivaModManager
             foreach (var mod in Directory.GetDirectories(currentModDirectory))
             {
                 var configPath = $"{mod}{Global.s}config.toml";
+
                 // Add new folders found in Mods to the ModList
                 if (Global.ModList.ToList().Where(x => x.name == Path.GetFileName(mod)).Count() == 0)
                 {
@@ -220,7 +222,7 @@ namespace DivaModManager
                             {
                                 if (string.IsNullOrEmpty(configString))
                                 {
-                                    string message = "Config.toml's content is empty! Path : " + configPath;
+                                    string message = $"Config.toml's content is empty! Path : {configPath}";
                                     throw new Exception(message);
                                 }
                             }
@@ -344,20 +346,28 @@ namespace DivaModManager
                     if (File.Exists(configPath))
                     {
                         var configString = String.Empty;
-                        while (String.IsNullOrEmpty(configString))
+                        try
                         {
-                            try
+                            configString = File.ReadAllText(configPath);
+                            if (String.IsNullOrEmpty(configString))
                             {
-                                configString = File.ReadAllText(configPath);
+                                throw new Exception($"config.toml is Empty!\nPath : {configPath}");
                             }
-                            catch (Exception e)
+                        }
+                        catch (Exception e)
+                        {
+                            // Check if the exception is related to an IO error.
+                            if (e.GetType() != typeof(IOException))
                             {
-                                // Check if the exception is related to an IO error.
-                                if (e.GetType() != typeof(IOException))
-                                {
-                                    Global.logger.WriteLine($"Couldn't access {configPath} ({e.Message})", LoggerType.Error);
-                                    break;
-                                }
+                                Global.logger.WriteLine($"Couldn't access {configPath} ({e.Message})", LoggerType.Error);
+                                //break;
+                                continue;
+                            }
+                            else
+                            {
+                                Global.logger.WriteLine($"Couldn't access {configPath} ({e.Message})", LoggerType.Error);
+                                //break;
+                                continue;
                             }
                         }
                         if (!Toml.TryToModel(configString, out config, out var diagnostics))
@@ -374,28 +384,39 @@ namespace DivaModManager
                             if (mod_list_m != null && mod_list_m.Count() == 1)
                             {
                                 m.enabled = mod_list_m.ToList()[0].enabled;
-                                if ((bool)config["enabled"] != m.enabled)
+                                try
                                 {
-                                    config["enabled"] = m.enabled;
-                                    try
+                                    if ((bool)config["enabled"] != m.enabled)
                                     {
-                                        File.WriteAllText(configPath, Toml.FromModel(config));
-                                    }
-                                    catch (Exception e)
-                                    {
-                                        // Check if the exception is related to an IO error.
-                                        if (e.GetType() != typeof(IOException))
+                                        config["enabled"] = m.enabled;
+                                        try
                                         {
-                                            Global.logger.WriteLine($"Couldn't access {configPath} ({e.Message})", LoggerType.Error);
-                                            break;
+                                            File.WriteAllText(configPath, Toml.FromModel(config));
                                         }
-                                        else
+                                        catch (Exception e)
                                         {
-                                            Global.logger.WriteLine($"Other exception {configPath} ({e.Message})", LoggerType.Error);
-                                            MessageBox.Show(e.Message, "Attention.", MessageBoxButton.OK, MessageBoxImage.Error);
-                                            break;
+                                            // Check if the exception is related to an IO error.
+                                            if (e.GetType() != typeof(IOException))
+                                            {
+                                                Global.logger.WriteLine($"Couldn't access {configPath} ({e.Message})", LoggerType.Error);
+                                                //break;
+                                                continue;
+                                            }
+                                            else
+                                            {
+                                                Global.logger.WriteLine($"Other exception {configPath} ({e.Message})", LoggerType.Error);
+                                                MessageBox.Show(e.Message, "Attention.", MessageBoxButton.OK, MessageBoxImage.Error);
+                                                //break;
+                                                continue;
+                                            }
                                         }
                                     }
+                                } 
+                                catch(Exception e)
+                                {
+                                    Global.logger.WriteLine($"Other exception { m.name }\"\nThe value of config[enable] could not be read.", LoggerType.Error);
+                                    MessageBox.Show(e.Message, "Attention.", MessageBoxButton.OK, MessageBoxImage.Error);
+                                    continue;
                                 }
                             }
                             else
@@ -2742,12 +2763,16 @@ namespace DivaModManager
         private void ModGrid_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Space && ModGrid.CurrentColumn.Header.ToString() != "Enabled")
+            {
                 foreach (var item in ModGrid.SelectedItems)
                 {
                     var checkbox = ModGrid.Columns[0].GetCellContent(item) as CheckBox;
                     if (checkbox != null)
+                    {
                         checkbox.IsChecked = !checkbox.IsChecked;
+                    }
                 }
+            }
         }
 
         private async void SearchModList_Click(object sender, RoutedEventArgs e)
