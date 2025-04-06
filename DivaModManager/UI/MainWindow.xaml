@@ -768,6 +768,17 @@
                             </RichTextBox.Resources>
                         </RichTextBox>
                         <Image Name="Github" Source="../Assets/github-mark-white.png" Grid.Column="7" HorizontalAlignment="Right" Height="30" Margin="0,8,10,0" Grid.Row="1" VerticalAlignment="Top" Width="30" Stretch="Uniform" MouseLeftButtonDown="Github_Click"/>
+                        <Popup PlacementTarget="{Binding ElementName=Github}" IsOpen="{Binding IsMouseDirectlyOver, ElementName=Github, Mode=OneWay}" AllowsTransparency="True">
+                            <Border CornerRadius="5" Panel.ZIndex="0" Margin="10">
+                                <Border.BorderBrush>
+                                    <SolidColorBrush Color="#101010" Opacity="0.9"/>
+                                </Border.BorderBrush>
+                                <Border.Background>
+                                    <SolidColorBrush Color="#101010" Opacity="0.9"/>
+                                </Border.Background>
+                                <TextBlock Margin="10" FontFamily="{StaticResource AnekLatin}" Text="Go to Github" Foreground="#f2f2f2" FontWeight="Medium" FontSize="20" VerticalAlignment="Center" />
+                            </Border>
+                        </Popup>
                     </Grid>
                 </TabItem.Content>
             </TabItem>
