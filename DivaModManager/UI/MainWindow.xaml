@@ -9,7 +9,7 @@
         Background="#131313"
         Title="Diva Mod Manager by Enomoto" SizeChanged="OnResize"
         mc:Ignorable="d" Closing="Window_Closing" WindowStartupLocation="CenterScreen"
-        Height="750" Width="1280" MinHeight="750" MinWidth="1050" Loaded="WindowLoaded">
+        Height="750" Width="1280" MinHeight="750" MinWidth="1160" Loaded="WindowLoaded">
     <Window.Resources>
         <DataTemplate x:Key="GBModTemplate">
             <Border CornerRadius="5" Margin="5">
@@ -767,6 +767,7 @@
                                 </Style>
                             </RichTextBox.Resources>
                         </RichTextBox>
+                        <Image Name="Github" Source="../Assets/github-mark-white.png" Grid.Column="7" HorizontalAlignment="Right" Height="30" Margin="0,8,10,0" Grid.Row="1" VerticalAlignment="Top" Width="30" Stretch="Uniform" MouseLeftButtonDown="Github_Click"/>
                     </Grid>
                 </TabItem.Content>
             </TabItem>

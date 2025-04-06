@@ -82,14 +82,14 @@ namespace DivaModManager
                 Width = (double)Global.config.Width;
             if (Global.config.Maximized)
                 WindowState = WindowState.Maximized;
-            //if (Global.config.TopGridHeight != null)
-            //    MainGrid.RowDefinitions[1].Height = new GridLength((double)Global.config.TopGridHeight, GridUnitType.Star);
-            //if (Global.config.BottomGridHeight != null)
-            //    MainGrid.RowDefinitions[3].Height = new GridLength((double)Global.config.BottomGridHeight, GridUnitType.Star);
-            //if (Global.config.LeftGridWidth != null)
-            //    MiddleGrid.ColumnDefinitions[0].Width = new GridLength((double)Global.config.LeftGridWidth, GridUnitType.Star);
-            //if (Global.config.RightGridWidth != null)
-            //    MiddleGrid.ColumnDefinitions[2].Width = new GridLength((double)Global.config.RightGridWidth, GridUnitType.Star);
+            if (Global.config.TopGridHeight != null)
+                MainGrid.RowDefinitions[1].Height = new GridLength((double)Global.config.TopGridHeight, GridUnitType.Star);
+            if (Global.config.BottomGridHeight != null)
+                MainGrid.RowDefinitions[3].Height = new GridLength((double)Global.config.BottomGridHeight, GridUnitType.Star);
+            if (Global.config.LeftGridWidth != null)
+                MiddleGrid.ColumnDefinitions[0].Width = new GridLength((double)Global.config.LeftGridWidth, GridUnitType.Star);
+            if (Global.config.RightGridWidth != null)
+                MiddleGrid.ColumnDefinitions[2].Width = new GridLength((double)Global.config.RightGridWidth, GridUnitType.Star);
 
             Global.games = new List<string>();
             foreach (var item in GameBox.Items)
@@ -792,6 +792,22 @@ namespace DivaModManager
             }
             else
                 Global.logger.WriteLine($"Please click Setup before launching!", LoggerType.Warning);
+        }
+        private void Github_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var ps = new ProcessStartInfo($"https://github.com/enomoto-r02/DivaModManager-by-Enomoto")
+                {
+                    UseShellExecute = true,
+                    Verb = "open"
+                };
+                Process.Start(ps);
+            }
+            catch (Exception ex)
+            {
+                Global.logger.WriteLine($"Couldn't open up Github ({ex.Message})", LoggerType.Error);
+            }
         }
         private void GameBanana_Click(object sender, RoutedEventArgs e)
         {

@@ -1,13 +1,11 @@
 ﻿using Microsoft.Win32;
+using Octokit;
 using System;
-using System.IO;
 using System.Media;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
-using Octokit;
-using System.Reflection;
 
 namespace DivaModManager.UI
 {
