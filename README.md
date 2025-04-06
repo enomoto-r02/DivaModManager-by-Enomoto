@@ -6,7 +6,7 @@ Depending on future updates to the original DMM, compatibility may be lost.
 
 For an overview and basic operation, please refer to the [original Diva Mod Manager page](https://github.com/TekkaGB/DivaModManager).
 
-### Changes in Version 1.3.1.9 (from the Original v1.3.1)  
+### Changes in Version from the Original v1.3.1
 - Added support for checking multiple mods
 - Added support for dragging and moving multiple mods
 - Added a filter function by mod name
@@ -16,11 +16,12 @@ For an overview and basic operation, please refer to the [original Diva Mod Mana
 - Disabled update checks on startup to speed up the launch process (press the "Update" button manually if you wish to update)
 - Fixed an issue that corrupted the include line in config.toml
 - Added a confirmation popup when sorting
-- Removed the window size retention feature (due to implementation difficulties)
 - Added a feature to update mods individually (now possible via right-click)
 - Fixed an issue where checked states were not correctly reflected in each mod's config.toml when changing loadouts
 - Added a loadout copy feature (DMM must be restarted after copying)
-- Fixed an issue where searching with a single quotation mark (') in the GAMEBANANA tab caused an error  
+- Fixed an issue where searching with a single quotation mark (') in the GAMEBANANA tab caused an error
+- Added a link to the GitHub page  
+
 ### Notes  
 - Before use, please back up the original files (exe and Config.json) so that you can revert to the previous version if needed.
 - The current version is compatible with the original v1.3.1, but future updates may break compatibility.
