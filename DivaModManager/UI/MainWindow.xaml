@@ -9,7 +9,7 @@
         Background="#131313"
         Title="Diva Mod Manager by Enomoto" SizeChanged="OnResize"
         mc:Ignorable="d" Closing="Window_Closing" WindowStartupLocation="CenterScreen"
-        Height="750" Width="1280" MinHeight="750" MinWidth="1160" Loaded="WindowLoaded">
+        Height="720" Width="1280" MinHeight="720" MinWidth="1280" Loaded="WindowLoaded">
     <Window.Resources>
         <DataTemplate x:Key="GBModTemplate">
             <Border CornerRadius="5" Margin="5">
@@ -1212,7 +1212,7 @@
                         <ComboBoxItem>Plugin</ComboBoxItem>
                         <ComboBoxItem>Other</ComboBoxItem>
                     </ComboBox>
-                    <TextBox Margin="245,8,50,8" Padding="4,0,0,0" Grid.Column="1" FontFamily="{StaticResource AnekLatin}" IsEnabled="False" KeyDown="DMASearchBar_KeyDown" Name="DMASearchBar" Height="35" MinWidth="200" VerticalContentAlignment="Center" Grid.ColumnSpan="2"/>
+                    <TextBox Margin="245,8,60,8" Padding="4,0,0,0" Grid.Column="1" FontFamily="{StaticResource AnekLatin}" IsEnabled="False" KeyDown="DMASearchBar_KeyDown" Name="DMASearchBar" Height="35" MinWidth="200" VerticalContentAlignment="Center" Grid.ColumnSpan="2"/>
                     <TextBlock Margin="257,0,0,0" Padding="7,8,3,3" Grid.Column="1" FontFamily="{StaticResource AnekLatin}" IsHitTestVisible="False" Height="35" MinWidth="200" HorizontalAlignment="Left" Text="Search..." VerticalAlignment="Center" Foreground="#303030">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
@@ -1224,10 +1224,10 @@
                             </Style>
                         </TextBlock.Style>
                     </TextBlock>
-                    <Button Grid.Column="2" IsEnabled="False" HorizontalAlignment="Left" Click="DMASearchButton_Click" Name="DMASearchButton" Height="35" Width="35" Margin="170,8,0,7">
+                    <Button Grid.Column="2" IsEnabled="False" HorizontalAlignment="Right" Click="DMASearchButton_Click" Name="DMASearchButton" Height="35" Width="35" Margin="170,8,35,7">
                         <fa5:ImageAwesome Icon="Solid_Search" Foreground="#f2f2f2" Margin="3"/>
                     </Button>
-                    <Image Grid.Column="2" Margin="210,0,0,0" Name="DMA" VerticalAlignment="Center" HorizontalAlignment="Left" Height="34" Source="../Assets/DMA_BLACK.png" Cursor="Hand" MouseLeftButtonDown="DMA_Click"/>
+                    <Image Grid.Column="2" Margin="210,0,0,0" Name="DMA" VerticalAlignment="Center" HorizontalAlignment="Right" Height="34" Source="../Assets/DMA_BLACK.png" Cursor="Hand" MouseLeftButtonDown="DMA_Click"/>
                     <Popup PlacementTarget="{Binding ElementName=DMA}" IsOpen="{Binding IsMouseDirectlyOver, ElementName=DMA, Mode=OneWay}" AllowsTransparency="True">
                         <Border CornerRadius="5" Panel.ZIndex="0" Margin="10">
                             <Border.BorderBrush>
