@@ -33,7 +33,7 @@ namespace DivaModManager.UI
             }
             else
             {
-                var bitmap = new BitmapImage(new Uri("pack://application:,,,/DivaModManager;component/Assets/preview.png"));
+                var bitmap = new BitmapImage(new Uri("pack://application:,,,/DivaModManager;component/Assets/preview_enomoto.png"));
                 PreviewImage.Source = bitmap;
                 PreviewImage.Visibility = Visibility.Visible;
             }
@@ -75,7 +75,7 @@ namespace DivaModManager.UI
             }
             else
             {
-                var bitmap = new BitmapImage(new Uri("pack://application:,,,/DivaModManager;component/Assets/preview.png"));
+                var bitmap = new BitmapImage(new Uri("pack://application:,,,/DivaModManager;component/Assets/preview_enomoto.png"));
                 PreviewImage.Source = bitmap;
                 PreviewImage.Visibility = Visibility.Visible;
             }
@@ -115,7 +115,7 @@ namespace DivaModManager.UI
             }
             else
             {
-                var bitmap = new BitmapImage(new Uri("pack://application:,,,/DivaModManager;component/Assets/preview.png"));
+                var bitmap = new BitmapImage(new Uri("pack://application:,,,/DivaModManager;component/Assets/preview_enomoto.png"));
                 PreviewImage.Source = bitmap;
                 PreviewImage.Visibility = Visibility.Visible;
             }

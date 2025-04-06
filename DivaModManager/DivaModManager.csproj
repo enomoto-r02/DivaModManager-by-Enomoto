@@ -52,6 +52,7 @@
     <Resource Include="Assets\KoFi.png" />
     <Resource Include="Assets\load.gif" />
     <Resource Include="Assets\preview.png" />
+    <Resource Include="Assets\preview_enomoto.png" />
     <Resource Include="Assets\RobotoMono-Regular.ttf" />
   </ItemGroup>
 

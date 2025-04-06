@@ -1,6 +1,5 @@
 ﻿using DivaModManager.UI;
 using GongSolutions.Wpf.DragDrop.Utilities;
-using SevenZipExtractor;
 using SharpCompress.Archives.SevenZip;
 using SharpCompress.Common;
 using SharpCompress.Readers;
@@ -8,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Data.Common;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -50,7 +48,8 @@ namespace DivaModManager
 
             // Get Version Number
             var DMMVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
-            version = DMMVersion.Substring(0, DMMVersion.LastIndexOf('.'));
+            version = DMMVersion;
+            //version = DMMVersion.Substring(0, DMMVersion.LastIndexOf('.'));
 
             Global.logger.WriteLine($"Launched Diva Mod Manager v{version}!", LoggerType.Info);
             // Get Global.config if it exists
@@ -143,7 +142,7 @@ namespace DivaModManager
 
             defaultFlow.Blocks.Add(ConvertToFlowParagraph(defaultText));
             DescriptionWindow.Document = defaultFlow;
-            var bitmap = new BitmapImage(new Uri("pack://application:,,,/DivaModManager;component/Assets/preview.png"));
+            var bitmap = new BitmapImage(new Uri("pack://application:,,,/DivaModManager;component/Assets/preview_enomoto.png"));
             ImageBehavior.SetAnimatedSource(Preview, bitmap);
             ImageBehavior.SetAnimatedSource(PreviewBG, null);
 
@@ -378,7 +377,7 @@ namespace DivaModManager
                         }
                         else
                         {
-                            // enableの値になるようファイルを上書きする
+                            // Overwrite the file to have the value of enable.
                             Mod m = new Mod();
                             m.name = Path.GetFileName(mod);
                             var mod_list_m = Global.ModList.ToList().Where(x => x.name == m.name);
@@ -1438,7 +1437,7 @@ namespace DivaModManager
                 }
                 else
                 {
-                    var bitmap = new BitmapImage(new Uri("pack://application:,,,/DivaModManager;component/Assets/preview.png"));
+                    var bitmap = new BitmapImage(new Uri("pack://application:,,,/DivaModManager;component/Assets/preview_enomoto.png"));
                     ImageBehavior.SetAnimatedSource(Preview, bitmap);
                     ImageBehavior.SetAnimatedSource(PreviewBG, null);
                 }
@@ -1466,7 +1465,7 @@ namespace DivaModManager
             // Set preview if no mod.json or preview exists
             else
             {
-                var bitmap = new BitmapImage(new Uri("pack://application:,,,/DivaModManager;component/Assets/preview.png"));
+                var bitmap = new BitmapImage(new Uri("pack://application:,,,/DivaModManager;component/Assets/preview_enomoto.png"));
                 ImageBehavior.SetAnimatedSource(Preview, bitmap);
                 ImageBehavior.SetAnimatedSource(PreviewBG, null);
             }
@@ -2642,7 +2641,7 @@ namespace DivaModManager
                 LauncherOptionsBox.SelectedIndex = Global.config.Configs[Global.config.CurrentGame].LauncherOptionIndex;
 
                 DescriptionWindow.Document = defaultFlow;
-                var bitmap = new BitmapImage(new Uri("pack://application:,,,/DivaModManager;component/Assets/preview.png"));
+                var bitmap = new BitmapImage(new Uri("pack://application:,,,/DivaModManager;component/Assets/preview_enomoto.png"));
                 ImageBehavior.SetAnimatedSource(Preview, bitmap);
                 ImageBehavior.SetAnimatedSource(PreviewBG, null);
 
