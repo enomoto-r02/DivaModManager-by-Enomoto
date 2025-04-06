@@ -648,7 +648,6 @@
                                 GridLinesVisibility="None"
                                 VerticalScrollBarVisibility="Auto"
                                 BorderBrush="#424242"
-                                EnableColumnVirtualization="False"
                                 CanUserAddRows="False"
                                 CanUserDeleteRows="False"
                                 CanUserReorderColumns="False"
@@ -680,7 +679,9 @@
                                 dd:DragDrop.UseDefaultDragAdorner="True"
                                 SelectedCellsChanged="ModGrid_SelectedCellsChanged"
                                 SelectionMode="Extended"
-                                EnableRowVirtualization="True">
+                                VirtualizingStackPanel.IsVirtualizing="True"
+                                VirtualizingPanel.VirtualizationMode="Standard"
+                                >
                                 <DataGrid.Resources>
                                     <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="#115F58"/>
                                     <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="#f2f2f2"/>
@@ -708,11 +709,16 @@
                                 </DataGrid.ColumnHeaderStyle>
                                 <DataGrid.ContextMenu>
                                     <ContextMenu>
-                                        <MenuItem Header="Configure Mod" IsCheckable="False" Click="ConfigureModItem_Click"/>
-                                        <MenuItem Header="Rename Mod Folder" IsCheckable="False" Click="EditItem_Click"/>
-                                        <MenuItem Header="Open Mod Folder" IsCheckable="False" Click="OpenItem_Click"/>
-                                        <MenuItem Header="Fetch Metadata" IsCheckable="False" Click="FetchItem_Click"/>
-                                        <MenuItem Header="Delete Mod" IsCheckable="False" Click="DeleteItem_Click"/>
+                                        <MenuItem Name="ConfigureMod" Header="Configure Mod" IsCheckable="False" Click="ConfigureModItem_Click"/>
+                                        <MenuItem Name="RenameModFolder" Header="Rename Mod Folder" IsCheckable="False" Click="EditItem_Click"/>
+                                        <MenuItem Name="OpenModFolder" Header="Open Mod Folder" IsCheckable="False" Click="OpenItem_Click"/>
+                                        <MenuItem Name="FetchMetadata" Header="Fetch Metadata" IsCheckable="False" Click="FetchItem_Click"/>
+                                        <MenuItem Name="UpdateMod" Header="Update Mod" IsCheckable="False" Click="Update_Click"/>
+                                        <Separator />
+                                        <MenuItem Name="DeleteMod" Header="Delete Mod" IsCheckable="False" Click="DeleteItem_Click"/>
+                                        <Separator />
+                                        <MenuItem Name="MoveToTop" Header="Move To Top" IsCheckable="False" Click="MoveToTop_Click"/>
+                                        <MenuItem Name="MoveToBottom" Header="Move To Bottom" IsCheckable="False" Click="MoveToBottom_Click"/>
                                     </ContextMenu>
                                 </DataGrid.ContextMenu>
                                 <DataGrid.Columns>

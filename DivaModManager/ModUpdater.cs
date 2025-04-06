@@ -29,7 +29,7 @@ namespace DivaModManager
             main.ConfigButton.IsEnabled = true;
             main.LaunchButton.IsEnabled = true;
             main.OpenModsButton.IsEnabled = true;
-            main.UpdateButton.IsEnabled = true;
+            main.UpdateAllButton.IsEnabled = true;
             main.LauncherOptionsBox.IsEnabled = true;
             main.LoadoutBox.IsEnabled = true;
             main.EditLoadoutsButton.IsEnabled = true;
@@ -39,17 +39,17 @@ namespace DivaModManager
             return;
         }
 
-        public async static Task CheckForUpdates(string path, MainWindow main)
+        public async static Task CheckForUpdates(string path, MainWindow main, bool isSelectedUpdate)
         {
             updateCounter = 0;
-            if (!Directory.Exists(path))
+            if (!Directory.Exists(path) || (isSelectedUpdate && main.ModGrid.SelectedItems.Count == 0))
             {
                 main.GameBox.IsEnabled = true;
                 main.ModGrid.IsEnabled = true;
                 main.ConfigButton.IsEnabled = true;
                 main.LaunchButton.IsEnabled = true;
                 main.OpenModsButton.IsEnabled = true;
-                main.UpdateButton.IsEnabled = true;
+                main.UpdateAllButton.IsEnabled = true;
                 main.LauncherOptionsBox.IsEnabled = true;
                 main.LoadoutBox.IsEnabled = true;
                 main.EditLoadoutsButton.IsEnabled = true;
@@ -61,7 +61,19 @@ namespace DivaModManager
             var cancellationToken = new CancellationTokenSource();
             var requestUrls = new Dictionary<string, List<string>>();
             var DMArequestUrl = "https://divamodarchive.com/api/v1/posts/posts?";
-            var mods = Directory.GetDirectories(path).Where(x => File.Exists($"{x}{Global.s}mod.json")).ToList();
+            var mods = new List<string>();
+            if (isSelectedUpdate)
+            {
+                foreach (var mod in main.ModGrid.SelectedItems)
+                {
+                    var m = (Mod)mod;
+                    mods.Add(path + Global.s.ToString() + m.name);
+                }
+            }
+            else
+            {
+                mods = Directory.GetDirectories(path).Where(x => File.Exists($"{x}{Global.s}mod.json")).ToList();
+            }
             var modList = new Dictionary<string, List<string>>();
             var DMAmodList = new List<string>();
             var urlCounts = new Dictionary<string, int>();
@@ -129,7 +141,7 @@ namespace DivaModManager
                 main.ConfigButton.IsEnabled = true;
                 main.LaunchButton.IsEnabled = true;
                 main.OpenModsButton.IsEnabled = true;
-                main.UpdateButton.IsEnabled = true;
+                main.UpdateAllButton.IsEnabled = true;
                 main.LauncherOptionsBox.IsEnabled = true;
                 main.LoadoutBox.IsEnabled = true;
                 main.EditLoadoutsButton.IsEnabled = true;
@@ -159,7 +171,7 @@ namespace DivaModManager
                             main.ConfigButton.IsEnabled = true;
                             main.LaunchButton.IsEnabled = true;
                             main.OpenModsButton.IsEnabled = true;
-                            main.UpdateButton.IsEnabled = true;
+                            main.UpdateAllButton.IsEnabled = true;
                             main.LauncherOptionsBox.IsEnabled = true;
                             main.LoadoutBox.IsEnabled = true;
                             main.EditLoadoutsButton.IsEnabled = true;
@@ -228,7 +240,7 @@ namespace DivaModManager
             main.ConfigButton.IsEnabled = true;
             main.LaunchButton.IsEnabled = true;
             main.OpenModsButton.IsEnabled = true;
-            main.UpdateButton.IsEnabled = true;
+            main.UpdateAllButton.IsEnabled = true;
             main.LauncherOptionsBox.IsEnabled = true;
             main.LoadoutBox.IsEnabled = true;
             main.EditLoadoutsButton.IsEnabled = true;
