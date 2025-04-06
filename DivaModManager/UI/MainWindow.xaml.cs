@@ -1960,12 +1960,6 @@ namespace DivaModManager
         }
         private void OnBrowserTabSelected(object sender, RoutedEventArgs e)
         {
-            if (Global.SearchModListFlg)
-            {
-                MessageBox.Show($"Please do it with the mod search cleared.\nSorry.", "Attention.", MessageBoxButton.OK, MessageBoxImage.Information);
-                e.Handled = true;
-                return;
-            }
             if (!selected)
                 InitializeBrowser();
         }
