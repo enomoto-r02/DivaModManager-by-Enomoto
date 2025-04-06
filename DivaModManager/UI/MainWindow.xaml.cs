@@ -208,7 +208,8 @@ namespace DivaModManager
                 var configPath = $"{mod}{Global.s}config.toml";
 
                 // Add new folders found in Mods to the ModList
-                if (Global.ModList.ToList().Where(x => x.name == Path.GetFileName(mod)).Count() == 0)
+                //if (Global.ModList.ToList().Where(x => x.name == Path.GetFileName(mod)).Count() == 0)
+                if (!Global.ModList.ToList().Where(x => x.name == Path.GetFileName(mod)).Any())
                 {
                     Mod m = new Mod();
                     m.name = Path.GetFileName(mod);
@@ -377,7 +378,7 @@ namespace DivaModManager
                         }
                         else
                         {
-                            // ここを実装する？enableの値になるようファイルを上書きする
+                            // enableの値になるようファイルを上書きする
                             Mod m = new Mod();
                             m.name = Path.GetFileName(mod);
                             var mod_list_m = Global.ModList.ToList().Where(x => x.name == m.name);
@@ -2778,7 +2779,7 @@ namespace DivaModManager
             }
         }
 
-        private async void SearchModList_Click(object sender, RoutedEventArgs e)
+        private void SearchModList_Click(object sender, RoutedEventArgs e)
         {
             SearchModList(SearchModListTextBox.Text);
         }
