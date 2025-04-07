@@ -661,7 +661,7 @@
                             <DataGrid
                                 DragEnter="Add_Enter"
                                 Margin="0,0,0,3"
-                                x:Name="ModGrid"
+                                Name="ModGrid"
                                 AutoGenerateColumns="False"
                                 GridLinesVisibility="None"
                                 VerticalScrollBarVisibility="Auto"
@@ -688,7 +688,7 @@
                                 ContextMenuOpening="ModGrid_ContextMenuOpening"
                                 SelectionChanged="ModGrid_SelectionChanged"
                                 PreviewMouseMove="ModGrid_PreviewMouseMove"
-                                Grid.ColumnSpan="2"
+                                Grid.ColumnSpan="1"
                                 dd:DragDrop.DropScrollingMode="VerticalOnly"
                                 dd:DragDrop.IsDragSource="True"
                                 dd:DragDrop.IsDropTarget="True"
@@ -742,7 +742,7 @@
                                 <DataGrid.Columns>
                                     <DataGridCheckBoxColumn Header="Enabled" Binding="{Binding enabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="False" Width="58">
                                         <DataGridCheckBoxColumn.CellStyle>
-                                            <Style TargetType="{x:Type DataGridCell}">
+                                            <Style TargetType="DataGridCell">
                                                 <EventSetter Event="ToggleButton.Checked" Handler="OnChecked"/>
                                                 <EventSetter Event="ToggleButton.Unchecked" Handler="OnUnchecked"/>
                                                 <Style.Triggers>
@@ -763,8 +763,8 @@
                                     <RowDefinition Height="1.5*"/>
                                     <RowDefinition Height="1*"/>
                                 </Grid.RowDefinitions>
-                                <Image Margin="3,3,10,5" x:Name="Preview" Grid.Row="0" Panel.ZIndex="2"/>
-                                <Image Margin="3,3,10,5" x:Name="PreviewBG" Grid.Row="0" Stretch="UniformToFill" Panel.ZIndex="1">
+                                <Image Margin="3,3,10,5" Name="Preview" Grid.Row="0" Panel.ZIndex="2"/>
+                                <Image Margin="3,3,10,5" Name="PreviewBG" Grid.Row="0" Stretch="UniformToFill" Panel.ZIndex="1">
                                     <Image.BitmapEffect>
                                         <BlurBitmapEffect Radius="40"/>
                                     </Image.BitmapEffect>
@@ -772,11 +772,12 @@
 
                                 <Image Grid.Row="2" gif:ImageBehavior.AnimatedSource="../Assets/load.gif" Panel.ZIndex="-1" VerticalAlignment="Center" HorizontalAlignment="Center" Height="90"/>
                                 <RichTextBox 
-                                    FontSize="15" FontFamily="{StaticResource AnekLatin}" Padding="10" Grid.Row="1" Margin="3,5,10,3" x:Name="DescriptionWindow" Foreground="#F2F2F2" Background="#202020" BorderBrush="#424242" ClipToBounds="False"
+                                    FontSize="15" FontFamily="{StaticResource AnekLatin}" Padding="10" Grid.Row="1" Margin="3,5,10,3" Name="DescriptionWindow" Foreground="#F2F2F2" Background="#202020" BorderBrush="#424242" ClipToBounds="False"
                                     VerticalContentAlignment="Center" VerticalAlignment="Stretch" VerticalScrollBarVisibility="Auto" IsReadOnly="True" Grid.ColumnSpan="5" IsDocumentEnabled="True" FontWeight="Medium"/>
                             </Grid>
                         </Grid>
 
+                        <GridSplitter Grid.Row="3" Grid.ColumnSpan="9" HorizontalAlignment="Stretch" Height="10" Background="Transparent" />
                         <RichTextBox FontFamily="{StaticResource Monospace}" FontSize="12" Margin="0,3,10,10" Name="ConsoleWindow" Background="#202020" BorderBrush="#424242" ClipToBounds="False" Grid.Row="3" Grid.Column="0" 
                                      VerticalScrollBarVisibility="Auto" IsReadOnly="True" Grid.ColumnSpan="8" TextChanged="ScrollToBottom" Grid.RowSpan="2">
                             <RichTextBox.Resources>

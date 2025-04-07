@@ -207,7 +207,6 @@ namespace DivaModManager
                 var configPath = $"{mod}{Global.s}config.toml";
 
                 // Add new folders found in Mods to the ModList
-                //if (Global.ModList.ToList().Where(x => x.name == Path.GetFileName(mod)).Count() == 0)
                 if (!Global.ModList.ToList().Where(x => x.name == Path.GetFileName(mod)).Any())
                 {
                     Mod m = new Mod();
@@ -604,28 +603,6 @@ namespace DivaModManager
             return string.IsNullOrEmpty(name)
                ? Application.Current.Windows.OfType<T>().Any()
                : Application.Current.Windows.OfType<T>().Any(w => w.Name.Equals(name));
-
-            //bool res = string.IsNullOrEmpty(name);
-
-            //try
-            //{
-            //    if (res)
-            //    {
-            //        Application.Current.Windows.OfType<T>().Any();
-            //    }
-            //    else
-            //    {
-            //       Application.Current.Windows.OfType<T>().Any(w => w.Name.Equals(name));
-            //    }
-            //    return res;
-            //} 
-            //catch(Exception e)
-            //{
-            //    var message = $"Error IsWindowOpen "+e.Message;
-            //    MessageBox.Show(message, "Attention.", MessageBoxButton.OK, MessageBoxImage.Error);
-            //    Global.logger.WriteLine(message, LoggerType.Error);
-            //    return false;
-            //}
         }
 
         private void ConfirmConfigCreation(string configPath, Mod m, bool enabled)
