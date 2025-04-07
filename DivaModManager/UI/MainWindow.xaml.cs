@@ -2455,6 +2455,7 @@ namespace DivaModManager
 
             ComboBox c = (ComboBox)sender;
             GameBox_BeforeSelectedIndex = c.SelectedIndex;
+            Global.selected_game = c.Text;
             handle = true;
 
         }

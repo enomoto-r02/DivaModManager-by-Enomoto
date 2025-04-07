@@ -91,6 +91,8 @@ namespace DivaModManager
                     UpdateFileBoxDMA fileBox = new UpdateFileBoxDMA(post);
                     fileBox.Activate();
                     fileBox.ShowDialog();
+                    if (fileBox.chosenFileUrl == null)
+                        return;
                     downloadUrl = fileBox.chosenFileUrl.ToString();
                     fileName = fileBox.chosenFileName;
                 }
@@ -118,7 +120,7 @@ namespace DivaModManager
                 {
                     if (URL.Contains("gamebanana", StringComparison.CurrentCultureIgnoreCase))
                     {
-                        DownloadWindow downloadWindow = new DownloadWindow(response);
+                        DownloadWindow downloadWindow = new(response);
                         downloadWindow.ShowDialog();
                         if (downloadWindow.YesNo)
                         {
@@ -130,14 +132,32 @@ namespace DivaModManager
                     }
                     else if (URL.Contains("divamodarchive", StringComparison.CurrentCultureIgnoreCase))
                     {
-                        DownloadWindow downloadWindow = new DownloadWindow(DMAresponse);
+                        DownloadWindow downloadWindow = new(DMAresponse);
                         downloadWindow.ShowDialog();
                         if (downloadWindow.YesNo)
                         {
-                            await DownloadFile(DMAresponse.Files[0].ToString(), fileName, new Progress<DownloadProgress>(ReportUpdateProgress),
-                                CancellationTokenSource.CreateLinkedTokenSource(cancellationToken.Token));
-                            if (!cancelled)
-                                await Task.Run(() => ExtractFile(fileName, "Project DIVA Mega Mix+", DMAresponse));
+                            string downloadUrl = null;
+                            string fileName = null;
+                            if (DMAresponse.Files.Count == 1)
+                            {
+                                downloadUrl = DMAresponse.Files[0].ToString();
+                                fileName = DMAresponse.FileNames[0];
+                            }
+                            else if (DMAresponse.Files.Count > 1)
+                            {
+                                UpdateFileBoxDMA fileBox = new UpdateFileBoxDMA(DMAresponse);
+                                fileBox.Activate();
+                                fileBox.ShowDialog();
+                                downloadUrl = fileBox.chosenFileUrl.ToString();
+                                fileName = fileBox.chosenFileName;
+                            }
+                            if (downloadUrl != null && fileName != null)
+                            {
+                                await DownloadFile(downloadUrl, fileName, new Progress<DownloadProgress>(ReportUpdateProgress),
+                                            CancellationTokenSource.CreateLinkedTokenSource(cancellationToken.Token));
+                                if (!cancelled)
+                                    await Task.Run(() => ExtractFile(fileName, Global.selected_game, DMAresponse));
+                            }
                         }
                     }
                 }

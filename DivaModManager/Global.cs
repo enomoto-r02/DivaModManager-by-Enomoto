@@ -13,6 +13,7 @@ namespace DivaModManager
         public static char s = Path.DirectorySeparatorChar;
         public static string assemblyLocation = AppDomain.CurrentDomain.BaseDirectory;
         public static List<string> games;
+        public static string selected_game;
         public static ObservableCollection<Mod> ModList;
         // After applying the filter, for backup purposes
         public static ObservableCollection<Mod> ModList_All;
