@@ -29,5 +29,6 @@ For an overview and basic operation, please refer to the [original Diva Mod Mana
 ### Notes  
 - Before use, please back up the original files (exe and Config.json) so that you can revert to the previous version if needed.
 - The current version is compatible with the original v1.3.1, but future updates may break compatibility.
+- Please refer to Github for the detailed changes in each version.
 
- Please keep this in mind. If you encounter any issues, please let me know.
+Please keep this in mind. If you encounter any issues, please let me know.
