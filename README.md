@@ -20,7 +20,11 @@ For an overview and basic operation, please refer to the [original Diva Mod Mana
 - Fixed an issue where checked states were not correctly reflected in each mod's config.toml when changing loadouts
 - Added a loadout copy feature (DMM must be restarted after copying)
 - Fixed an issue where searching with a single quotation mark (') in the GAMEBANANA tab caused an error
-- Added a link to the GitHub page  
+- Fix for the issue where the tool does not start when the contents of config.toml in the MOD folder are blank.
+- Fixed an issue where only the first MOD would be selected when multiple versions were available during DMA's one-click installation.
+- Changed the minimum window size to 1280x720 (as the layout breaks at 1160x750).
+  If you experience any issues related to resolution, please let us know.
+- Added a link to the GitHub page.
 
 ### Notes  
 - Before use, please back up the original files (exe and Config.json) so that you can revert to the previous version if needed.
