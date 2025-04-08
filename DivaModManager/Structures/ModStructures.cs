@@ -9,7 +9,6 @@ namespace DivaModManager
 {
     public class Mod : INotifyPropertyChanged
     {
-        public string name { get; set; }
         private bool _enabled;
         public bool enabled
         {
@@ -23,7 +22,41 @@ namespace DivaModManager
                 OnPropertyChanged("enabled");
             }
         }
+        private string? _priority;
+        public string? priority
+        {
+            get
+            {
+                return _priority;
+            }
+            set
+            {
+                this._priority = value;
+                OnPropertyChanged("priority");
+            }
+        }
+        public string name { get; set; }
         public bool selected { get; set; }
+        private string _memo;
+        public string memo
+        {
+            get
+            {
+                return _memo;
+            }
+            set
+            {
+                if (value == null)
+                {
+                    this._memo = "";
+                }
+                else
+                {
+                    this._memo = value;
+                }
+                OnPropertyChanged("memo");
+            }
+        }
 
         public event PropertyChangedEventHandler PropertyChanged;
         private void OnPropertyChanged([CallerMemberName] string? propertyName = null)

@@ -40,6 +40,8 @@ namespace DivaModManager
             "To show metadata here:\nRight Click Row > Configure Mod and add author, version, and/or date fields" +
             "\nand/or Right Click Row > Fetch Metadata and confirm the GameBanana URL of the mod";
         private ObservableCollection<String> LauncherOptions = new ObservableCollection<String>(new string[] { "Executable", "Steam" });
+        ListSortDirection direction = ListSortDirection.Ascending;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -2675,17 +2677,47 @@ namespace DivaModManager
 
                 if (colHeader != null)
                 {
-                    if (colHeader.Column.Header.Equals("Name"))
+                    if (colHeader.Column.Header.Equals("Enabled"))
+                    {
+                        // Move all enabled mods to top
+                        Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().OrderByDescending(x => x.enabled).ToList());
+                        Global.logger.WriteLine("Moved all enabled mods to the top!", LoggerType.Info);
+                    }
+                    else if (colHeader.Column.Header.Equals("Priority"))
+                    {
+                        Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().OrderByDescending(x => x.priority).ToList());
+                        Global.logger.WriteLine("Sorted by Priority column!", LoggerType.Info);
+                    }
+                    else if (colHeader.Column.Header.Equals("Name"))
                     {
                         // Sort alphabetically
                         Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().OrderBy(x => x.name, new NaturalSort()).ToList());
                         Global.logger.WriteLine("Sorted alphanumerically!", LoggerType.Info);
                     }
-                    else if (colHeader.Column.Header.Equals("Enabled"))
+                    else if (colHeader.Column.Header.Equals("Memo"))
                     {
-                        // Move all enabled mods to top
-                        Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().OrderByDescending(x => x.enabled).ToList());
-                        Global.logger.WriteLine("Moved all enabled mods to the top!", LoggerType.Info);
+                        ObservableCollection<Mod> ModList_no_memo;
+                        if (direction == ListSortDirection.Descending)
+                        {
+                            ModList_no_memo = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.memo == "").ToList());
+                            Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.memo != "").OrderBy(x => x.memo, new NaturalSort()).ToList());
+                            foreach (Mod m in ModList_no_memo)
+                            {
+                                Global.ModList.Add(m);
+                            }
+                            direction = ListSortDirection.Ascending;
+                        }
+                        else
+                        {
+                            ModList_no_memo = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.memo == "").ToList());
+                            Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.memo != "").OrderByDescending(x => x.memo, new NaturalSort()).ToList());
+                            foreach (Mod m in ModList_no_memo)
+                            {
+                                Global.ModList.Add(m);
+                            }
+                            direction = ListSortDirection.Descending;
+                        }
+                        Global.logger.WriteLine("Sorted by Memo column!", LoggerType.Info);
                     }
                     await Task.Run(() =>
                     {
@@ -2753,7 +2785,7 @@ namespace DivaModManager
 
         private void ModGrid_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.Space && ModGrid.CurrentColumn.Header.ToString() != "Enabled")
+            if (e.Key == Key.Space && ModGrid.CurrentColumn.Header.ToString() == "Name")
             {
                 foreach (var item in ModGrid.SelectedItems)
                 {
@@ -2762,6 +2794,17 @@ namespace DivaModManager
                     {
                         checkbox.IsChecked = !checkbox.IsChecked;
                     }
+                }
+            }
+            else if (ModGrid.CurrentColumn.Header.ToString() == "Priority")
+            {
+                e.Handled = true;
+                if ((e.Key >= Key.D0 && e.Key <= Key.D9) || (e.Key >= Key.NumPad0 && e.Key <= Key.NumPad9)
+                    || (e.Key == Key.Enter || e.Key == Key.Back || e.Key == Key.Delete)
+                    || (e.Key == Key.Up || e.Key == Key.Down || e.Key == Key.Left || e.Key == Key.Right)
+                    || (e.Key == Key.Tab || e.Key == Key.F2 || e.Key == Key.Escape))
+                {
+                    e.Handled = false;
                 }
             }
         }
