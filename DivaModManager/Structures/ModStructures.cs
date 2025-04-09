@@ -37,24 +37,24 @@ namespace DivaModManager
         }
         public string name { get; set; }
         public bool selected { get; set; }
-        private string _memo;
-        public string memo
+        private string _note;
+        public string note
         {
             get
             {
-                return _memo;
+                return _note;
             }
             set
             {
                 if (value == null)
                 {
-                    this._memo = "";
+                    this._note = "";
                 }
                 else
                 {
-                    this._memo = value;
+                    this._note = value;
                 }
-                OnPropertyChanged("memo");
+                OnPropertyChanged("note");
             }
         }
 

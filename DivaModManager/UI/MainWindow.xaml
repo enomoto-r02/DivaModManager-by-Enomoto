@@ -760,8 +760,8 @@
                                             </Style>
                                         </DataGridTextColumn.ElementStyle>
                                     </DataGridTextColumn>
-                                    <DataGridTextColumn Header="Name" Binding="{Binding name, Mode=TwoWay}" IsReadOnly="True" Width="1.5*" CanUserResize="True"/>
-                                    <DataGridTextColumn Header="Memo" Binding="{Binding memo, Mode=TwoWay}" Width="1.5*" CanUserResize="True"/>
+                                    <DataGridTextColumn Header="Name" Binding="{Binding name, Mode=TwoWay}" IsReadOnly="True" Width="1.5*" CanUserResize="True" />
+                                    <DataGridTextColumn Header="Note" Binding="{Binding note, Mode=TwoWay}" Width="1.5*" CanUserResize="True"/>
                                 </DataGrid.Columns>
                             </DataGrid>
 

@@ -2694,14 +2694,13 @@ namespace DivaModManager
                         Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().OrderBy(x => x.name, new NaturalSort()).ToList());
                         Global.logger.WriteLine("Sorted alphanumerically!", LoggerType.Info);
                     }
-                    else if (colHeader.Column.Header.Equals("Memo"))
+                    else if (colHeader.Column.Header.Equals("Note"))
                     {
-                        ObservableCollection<Mod> ModList_no_memo;
                         if (direction == ListSortDirection.Descending)
                         {
-                            ModList_no_memo = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.memo == "").ToList());
-                            Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.memo != "").OrderBy(x => x.memo, new NaturalSort()).ToList());
-                            foreach (Mod m in ModList_no_memo)
+                            ModList_no_note = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.note == "").ToList());
+                            Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.note != "").OrderBy(x => x.note, new NaturalSort()).ToList());
+                            foreach (Mod m in ModList_no_note)
                             {
                                 Global.ModList.Add(m);
                             }
@@ -2709,15 +2708,15 @@ namespace DivaModManager
                         }
                         else
                         {
-                            ModList_no_memo = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.memo == "").ToList());
-                            Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.memo != "").OrderByDescending(x => x.memo, new NaturalSort()).ToList());
-                            foreach (Mod m in ModList_no_memo)
+                            ModList_no_note = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.note == "").ToList());
+                            Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.note != "").OrderByDescending(x => x.note, new NaturalSort()).ToList());
+                            foreach (Mod m in ModList_no_note)
                             {
                                 Global.ModList.Add(m);
                             }
                             direction = ListSortDirection.Descending;
                         }
-                        Global.logger.WriteLine("Sorted by Memo column!", LoggerType.Info);
+                        Global.logger.WriteLine("Sorted by Note column!", LoggerType.Info);
                     }
                     await Task.Run(() =>
                     {
