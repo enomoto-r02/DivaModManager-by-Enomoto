@@ -2698,7 +2698,7 @@ namespace DivaModManager
                     {
                         if (direction == ListSortDirection.Descending)
                         {
-                            ModList_no_note = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.note == "").ToList());
+                            ObservableCollection<Mod> ModList_no_note = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.note == "").ToList());
                             Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.note != "").OrderBy(x => x.note, new NaturalSort()).ToList());
                             foreach (Mod m in ModList_no_note)
                             {
@@ -2708,7 +2708,7 @@ namespace DivaModManager
                         }
                         else
                         {
-                            ModList_no_note = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.note == "").ToList());
+                            ObservableCollection<Mod> ModList_no_note = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.note == "").ToList());
                             Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.note != "").OrderByDescending(x => x.note, new NaturalSort()).ToList());
                             foreach (Mod m in ModList_no_note)
                             {
@@ -2832,9 +2832,30 @@ namespace DivaModManager
             }
             else
             {
+                if (((bool)NameRadio.IsChecked && (bool)NoteRadio.IsChecked)
+                    || ((bool)NameRadio.IsChecked == false && (bool)NoteRadio.IsChecked == false))
+                {
+                    ObservableCollection<Mod> modList_name = new ObservableCollection<Mod>(Global.ModList_All.ToList()
+                        .Where(x => x.name.ToLower().Contains(searchModName.ToLower())).ToList());
+                    ObservableCollection<Mod> modList_note = new ObservableCollection<Mod>(Global.ModList_All.ToList()
+                        .Where(x => x.note.ToLower().Contains(searchModName.ToLower())).ToList());
+                    Global.ModList = modList_name;
+                    foreach (Mod m in modList_note)
+                    {
+                        Global.ModList.Add(m);
+                    }
+                }
+                else if ((bool)NameRadio.IsChecked)
+                {
+                    Global.ModList = new ObservableCollection<Mod>(Global.ModList_All.ToList()
+                        .Where(x => x.name.ToLower().Contains(searchModName.ToLower())).ToList());
+                }
+                else if ((bool)NoteRadio.IsChecked)
+                {
+                    Global.ModList = new ObservableCollection<Mod>(Global.ModList_All.ToList()
+                        .Where(x => x.note.ToLower().Contains(searchModName.ToLower())).ToList());
+                }
                 Global.SearchModListFlg = true;
-                Global.ModList = new ObservableCollection<Mod>(Global.ModList_All.ToList()
-                    .Where(x => x.name.ToLower().Contains(searchModName.ToLower())).ToList());
             }
 
             ModGrid.ItemsSource = Global.ModList;
