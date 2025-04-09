@@ -21,6 +21,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Documents;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Tomlyn;
 using Tomlyn.Model;
@@ -412,10 +413,10 @@ namespace DivaModManager
                                             }
                                         }
                                     }
-                                } 
-                                catch(Exception e)
+                                }
+                                catch (Exception e)
                                 {
-                                    Global.logger.WriteLine($"Other exception { m.name }\"\nThe value of config[enable] could not be read.", LoggerType.Error);
+                                    Global.logger.WriteLine($"Other exception {m.name}\"\nThe value of config[enable] could not be read.", LoggerType.Error);
                                     MessageBox.Show(e.Message, "Attention.", MessageBoxButton.OK, MessageBoxImage.Error);
                                     continue;
                                 }
@@ -872,7 +873,6 @@ namespace DivaModManager
             {
                 return;
             }
-
             if (ModGrid.SelectedItem == null)
             {
                 element.ContextMenu.Visibility = Visibility.Collapsed;
@@ -1064,7 +1064,7 @@ namespace DivaModManager
         {
             var selectedMods = ModGrid.SelectedItems;
             var allMods = Global.ModList;
-            Global.ModList.Move(ModGrid.SelectedIndex, Global.ModList.Count-1);
+            Global.ModList.Move(ModGrid.SelectedIndex, Global.ModList.Count - 1);
 
             await Task.Run(() =>
             {
@@ -2165,7 +2165,7 @@ namespace DivaModManager
                 DMAPageBox.ItemsSource = Enumerable.Range(1, (int)(DMAFeedGenerator.CurrentFeed.TotalPages));
             }
             finally
-            { 
+            {
                 DMALoadingBar.Visibility = Visibility.Collapsed;
                 DMASortBox.IsEnabled = true;
                 DMAFilterBox.IsEnabled = true;
@@ -2569,7 +2569,7 @@ namespace DivaModManager
                             break;
                         // Copy current loadout
                         case 3:
-                            var copyLoadoutWindow = new EditWindow(Global.config.Configs[Global.config.CurrentGame].CurrentLoadout+" Copy", false);
+                            var copyLoadoutWindow = new EditWindow(Global.config.Configs[Global.config.CurrentGame].CurrentLoadout + " Copy", false);
                             copyLoadoutWindow.ShowDialog();
                             if (!String.IsNullOrEmpty(copyLoadoutWindow.loadout))
                             {
@@ -2890,6 +2890,20 @@ namespace DivaModManager
             Global.ModList_All = Global.ModList;
             SearchModListTextBox.Text = "";
             ModGrid.ClearSelectedItems();
+        }
+
+        private void ModGrid_PreparingCellForEdit(object sender, DataGridPreparingCellForEditEventArgs e)
+        {
+            if (e.EditingElement is TextBox tb)
+            {
+                DataGridCell cell = (DataGridCell)tb.Parent;
+                DataGridColumn column = cell.Column;
+                if (column.Header.ToString() == "Priority")
+                {
+                    // Priorityの編集時にコンテキストメニューを表示しない
+                    tb.ContextMenu = null;
+                }
+            }
         }
     }
 }

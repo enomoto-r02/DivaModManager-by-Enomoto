@@ -684,7 +684,6 @@
                                 Grid.Column="0"
                                 FontSize="15"
                                 PreviewKeyDown="ModGrid_PreviewKeyDown"
-                                ContextMenuOpening="ModGrid_ContextMenuOpening"
                                 SelectionChanged="ModGrid_SelectionChanged"
                                 PreviewMouseMove="ModGrid_PreviewMouseMove"
                                 Grid.ColumnSpan="1"
@@ -698,6 +697,8 @@
                                 SelectionMode="Extended"
                                 VirtualizingStackPanel.IsVirtualizing="True"
                                 VirtualizingPanel.VirtualizationMode="Standard"
+                                ContextMenuOpening="ModGrid_ContextMenuOpening"
+                                PreparingCellForEdit="ModGrid_PreparingCellForEdit"
                                 >
                                 <DataGrid.Resources>
                                     <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="#115F58"/>
@@ -753,14 +754,13 @@
                                         </DataGridCheckBoxColumn.CellStyle>
                                     </DataGridCheckBoxColumn>
                                     <DataGridTextColumn Header="Priority" Binding="{Binding priority, Mode=TwoWay}" Width="58" CanUserResize="True">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="VerticalAlignment" Value="Center"/>
-                                                <Setter Property="HorizontalAlignment" Value="Center"/>
+                                        <DataGridTextColumn.EditingElementStyle>
+                                            <Style TargetType="TextBox">
+                                                <Setter Property="MaxLength" Value="8"/>
                                             </Style>
-                                        </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn.EditingElementStyle>
                                     </DataGridTextColumn>
-                                    <DataGridTextColumn Header="Name" Binding="{Binding name, Mode=TwoWay}" IsReadOnly="True" Width="1.5*" CanUserResize="True" />
+                                    <DataGridTextColumn Header="Name" Binding="{Binding name, Mode=TwoWay}" IsReadOnly="True" Width="1.5*" CanUserResize="True"/>
                                     <DataGridTextColumn Header="Note" Binding="{Binding note, Mode=TwoWay}" Width="1.5*" CanUserResize="True"/>
                                 </DataGrid.Columns>
                             </DataGrid>
@@ -806,7 +806,7 @@
                                 <TextBlock Margin="10" FontFamily="{StaticResource AnekLatin}" Text="Go to Github" Foreground="#f2f2f2" FontWeight="Medium" FontSize="20" VerticalAlignment="Center" />
                             </Border>
                         </Popup>
-                        <ComboBox Name="SearchTargetComboBox" Grid.Column="4" HorizontalAlignment="Center" Height="30" Grid.Row="1" VerticalAlignment="Center" Width="151" Text="Search" IsEditable="False">
+                        <ComboBox Name="SearchTargetComboBox" Grid.Column="4" HorizontalAlignment="Left" Height="30" Grid.Row="1" VerticalAlignment="Center" Width="161" Text="Search" IsEditable="False">
                             <ComboBoxItem Content="ALL" IsSelected="True"/>
                             <ComboBoxItem Content="Name"/>
                             <ComboBoxItem Content="Note"/>
