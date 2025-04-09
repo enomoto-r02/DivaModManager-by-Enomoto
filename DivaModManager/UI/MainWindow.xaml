@@ -684,6 +684,7 @@
                                 Grid.Column="0"
                                 FontSize="15"
                                 PreviewKeyDown="ModGrid_PreviewKeyDown"
+                                ContextMenuOpening="ModGrid_ContextMenuOpening"
                                 SelectionChanged="ModGrid_SelectionChanged"
                                 PreviewMouseMove="ModGrid_PreviewMouseMove"
                                 Grid.ColumnSpan="1"
@@ -697,7 +698,6 @@
                                 SelectionMode="Extended"
                                 VirtualizingStackPanel.IsVirtualizing="True"
                                 VirtualizingPanel.VirtualizationMode="Standard"
-                                ContextMenuOpening="ModGrid_ContextMenuOpening"
                                 PreparingCellForEdit="ModGrid_PreparingCellForEdit"
                                 >
                                 <DataGrid.Resources>
