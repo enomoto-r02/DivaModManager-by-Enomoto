@@ -806,18 +806,11 @@
                                 <TextBlock Margin="10" FontFamily="{StaticResource AnekLatin}" Text="Go to Github" Foreground="#f2f2f2" FontWeight="Medium" FontSize="20" VerticalAlignment="Center" />
                             </Border>
                         </Popup>
-                        <CheckBox Name="NameRadio" Grid.Column="4" HorizontalAlignment="Left" 
-                                    Height="30" Grid.Row="1" VerticalAlignment="Center" Width="80" Margin="5,0,0,0" IsChecked="True">
-                            <CheckBox.Foreground>
-                                <SolidColorBrush Color="#f2f2f2" />
-                            </CheckBox.Foreground> Name
-                        </CheckBox>
-                        <CheckBox Name="NoteRadio" Grid.Column="4" HorizontalAlignment="Left" 
-                            Height="30" Grid.Row="1" VerticalAlignment="Center" Width="80" Margin="91,0,0,0" IsChecked="False">
-                            <CheckBox.Foreground>
-                                <SolidColorBrush Color="#f2f2f2" />
-                            </CheckBox.Foreground> Note
-                        </CheckBox>
+                        <ComboBox Name="SearchTargetComboBox" Grid.Column="4" HorizontalAlignment="Center" Height="30" Grid.Row="1" VerticalAlignment="Center" Width="151" Text="Search" IsEditable="False">
+                            <ComboBoxItem Content="ALL" IsSelected="True"/>
+                            <ComboBoxItem Content="Name"/>
+                            <ComboBoxItem Content="Note"/>
+                        </ComboBox>
                     </Grid>
                 </TabItem.Content>
             </TabItem>

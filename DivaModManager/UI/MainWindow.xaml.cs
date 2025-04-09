@@ -2832,8 +2832,7 @@ namespace DivaModManager
             }
             else
             {
-                if (((bool)NameRadio.IsChecked && (bool)NoteRadio.IsChecked)
-                    || ((bool)NameRadio.IsChecked == false && (bool)NoteRadio.IsChecked == false))
+                if (SearchTargetComboBox.Text == "ALL")
                 {
                     ObservableCollection<Mod> modList_name = new ObservableCollection<Mod>(Global.ModList_All.ToList()
                         .Where(x => x.name.ToLower().Contains(searchModName.ToLower())).ToList());
@@ -2845,12 +2844,12 @@ namespace DivaModManager
                         Global.ModList.Add(m);
                     }
                 }
-                else if ((bool)NameRadio.IsChecked)
+                else if (SearchTargetComboBox.Text == "Name")
                 {
                     Global.ModList = new ObservableCollection<Mod>(Global.ModList_All.ToList()
                         .Where(x => x.name.ToLower().Contains(searchModName.ToLower())).ToList());
                 }
-                else if ((bool)NoteRadio.IsChecked)
+                else if (SearchTargetComboBox.Text == "Note")
                 {
                     Global.ModList = new ObservableCollection<Mod>(Global.ModList_All.ToList()
                         .Where(x => x.note.ToLower().Contains(searchModName.ToLower())).ToList());
