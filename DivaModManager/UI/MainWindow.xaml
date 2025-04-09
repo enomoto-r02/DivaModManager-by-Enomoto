@@ -678,7 +678,7 @@
                                 RowBackground="#202020"
                                 Foreground="#f2f2f2"
                                 LoadingRow="ModGrid_LoadingRow"
-                                HorizontalScrollBarVisibility="Hidden"
+                                HorizontalScrollBarVisibility="Auto"
                                 HorizontalAlignment="Center"
                                 Background="#202020"
                                 Grid.Column="0"
@@ -699,6 +699,7 @@
                                 VirtualizingStackPanel.IsVirtualizing="True"
                                 VirtualizingPanel.VirtualizationMode="Standard"
                                 PreparingCellForEdit="ModGrid_PreparingCellForEdit"
+                                Loaded="ModGrid_Loaded"
                                 >
                                 <DataGrid.Resources>
                                     <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="#115F58"/>
@@ -754,6 +755,12 @@
                                         </DataGridCheckBoxColumn.CellStyle>
                                     </DataGridCheckBoxColumn>
                                     <DataGridTextColumn Header="Priority" Binding="{Binding priority, Mode=TwoWay}" Width="58" CanUserResize="True">
+                                        <DataGridTextColumn.ElementStyle>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="HorizontalAlignment" Value="Center" />
+                                                <Setter Property="TextAlignment" Value="Center" />
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
                                         <DataGridTextColumn.EditingElementStyle>
                                             <Style TargetType="TextBox">
                                                 <Setter Property="MaxLength" Value="8"/>

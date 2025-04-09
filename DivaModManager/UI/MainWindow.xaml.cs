@@ -93,6 +93,13 @@ namespace DivaModManager
             if (Global.config.RightGridWidth != null)
                 MiddleGrid.ColumnDefinitions[2].Width = new GridLength((double)Global.config.RightGridWidth, GridUnitType.Star);
 
+            if (Global.config.PriorityColumnWidth != null)
+                ModGrid.Columns[1].Width = (double)Global.config.PriorityColumnWidth;
+            if (Global.config.NameColumnWidth != null)
+                ModGrid.Columns[2].Width = (double)Global.config.NameColumnWidth;
+            if (Global.config.PriorityColumnWidth != null)
+                ModGrid.Columns[3].Width = (double)Global.config.NoteColumnWidth;
+
             Global.games = new List<string>();
             foreach (var item in GameBox.Items)
             {
@@ -2902,6 +2909,34 @@ namespace DivaModManager
                     // Priorityの編集時にコンテキストメニューを表示しない
                     tb.ContextMenu = null;
                 }
+            }
+        }
+
+        private void ModGrid_Loaded(object sender, RoutedEventArgs e)
+        {
+            DataGrid modGrid = (DataGrid)sender;
+            foreach (var column in modGrid.Columns)
+            {
+                var descriptor = DependencyPropertyDescriptor.FromProperty(DataGridColumn.WidthProperty, typeof(DataGridColumn));
+                descriptor.AddValueChanged(column, ColumnWidthChanged);
+            }
+        }
+
+        private void ColumnWidthChanged(object sender, EventArgs e)
+        {
+            DataGridColumn column = (DataGridColumn)sender;
+
+            if (column.Header.ToString() == "Priority")
+            {
+                Global.config.PriorityColumnWidth = column.Width.DisplayValue;
+            }
+            else if (column.Header.ToString() == "Name")
+            {
+                Global.config.NameColumnWidth = column.Width.DisplayValue;
+            }
+            else if (column.Header.ToString() == "Note")
+            {
+                Global.config.NoteColumnWidth = column.Width.DisplayValue;
             }
         }
     }

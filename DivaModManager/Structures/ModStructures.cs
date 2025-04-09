@@ -89,6 +89,9 @@ namespace DivaModManager
         public double? Width { get; set; }
         public bool Maximized { get; set; }
         public bool AddModToTop { get; set; }
+        public double? PriorityColumnWidth { get; set; }
+        public double? NameColumnWidth { get; set; }
+        public double? NoteColumnWidth { get; set; }
     }
     public class GameConfig
     {
