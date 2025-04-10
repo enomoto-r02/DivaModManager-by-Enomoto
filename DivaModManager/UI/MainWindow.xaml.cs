@@ -783,7 +783,7 @@ namespace DivaModManager
         {
             try
             {
-                var ps = new ProcessStartInfo($"https://github.com/enomoto-r02/DivaModManager-by-Enomoto")
+                var ps = new ProcessStartInfo($"https://github.com/enomoto-r02/DivaModManager-by-Enomoto/releases")
                 {
                     UseShellExecute = true,
                     Verb = "open"

@@ -813,7 +813,8 @@
                                 <TextBlock Margin="10" FontFamily="{StaticResource AnekLatin}" Text="Go to Github" Foreground="#f2f2f2" FontWeight="Medium" FontSize="20" VerticalAlignment="Center" />
                             </Border>
                         </Popup>
-                        <ComboBox Name="SearchTargetComboBox" Grid.Column="4" HorizontalAlignment="Left" Height="30" Grid.Row="1" VerticalAlignment="Center" Width="161" Text="Search" IsEditable="False">
+                        <ComboBox Name="SearchTargetComboBox" Grid.Column="4" HorizontalAlignment="Left" Height="30" Grid.Row="1" VerticalAlignment="Center" Width="161" Text="Search" 
+                                   FontSize="20" FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" IsEditable="False">
                             <ComboBoxItem Content="ALL" IsSelected="True"/>
                             <ComboBoxItem Content="Name"/>
                             <ComboBoxItem Content="Note"/>
