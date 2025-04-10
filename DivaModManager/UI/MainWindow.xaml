@@ -686,7 +686,7 @@
                                 PreviewKeyDown="ModGrid_PreviewKeyDown"
                                 ContextMenuOpening="ModGrid_ContextMenuOpening"
                                 SelectionChanged="ModGrid_SelectionChanged"
-                                PreviewMouseMove="ModGrid_PreviewMouseMove"
+                                PreviewDrop="ModGrid_PreviewDrop"
                                 Grid.ColumnSpan="1"
                                 dd:DragDrop.DropScrollingMode="VerticalOnly"
                                 dd:DragDrop.IsDragSource="True"

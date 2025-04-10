@@ -2840,15 +2840,8 @@ namespace DivaModManager
             {
                 if (SearchTargetComboBox.Text == "ALL")
                 {
-                    ObservableCollection<Mod> modList_name = new ObservableCollection<Mod>(Global.ModList_All.ToList()
-                        .Where(x => x.name.ToLower().Contains(searchModName.ToLower())).ToList());
-                    ObservableCollection<Mod> modList_note = new ObservableCollection<Mod>(Global.ModList_All.ToList()
-                        .Where(x => x.note.ToLower().Contains(searchModName.ToLower())).ToList());
-                    Global.ModList = modList_name;
-                    foreach (Mod m in modList_note)
-                    {
-                        Global.ModList.Add(m);
-                    }
+                    Global.ModList = new ObservableCollection<Mod>(Global.ModList_All.ToList()
+                        .Where(x => x.name.ToLower().Contains(searchModName.ToLower()) || x.note.ToLower().Contains(searchModName.ToLower())).ToList());
                 }
                 else if (SearchTargetComboBox.Text == "Name")
                 {
@@ -2867,11 +2860,12 @@ namespace DivaModManager
             Global.UpdateConfig();
         }
 
-        private void ModGrid_PreviewMouseMove(object sender, MouseEventArgs e)
+        private void ModGrid_PreviewDrop(object sender, DragEventArgs e)
         {
             if (!string.IsNullOrEmpty(SearchModListTextBox.Text))
             {
                 // Prohibit mod movement by dragging when mod search is enabled.
+                MessageBox.Show("You cannot change the priority of the MOD while searching. Sorry.", "Attention.", MessageBoxButton.OK, MessageBoxImage.Information);
                 e.Handled = true;
             }
         }
