@@ -666,10 +666,15 @@
                                 </Style>
                             </TextBlock.Style>
                         </TextBlock>
-
-                        <Button Name="SearchModListButton" Margin="0,0,10,0" Height="34" VerticalAlignment="Center" Grid.Column="3" Background="#181818" BorderBrush="#252525" Click="SearchModList_Click" Grid.Row="1">
-                            <TextBlock Text="Search" TextTrimming="CharacterEllipsis" Foreground="#f2f2f2" FontFamily="{StaticResource AnekLatin}" FontSize="20" FontWeight="Medium" Grid.Row="1"/>
+                        <Button Grid.Column="3" IsEnabled="False" HorizontalAlignment="Left" Click="SearchModList_Click" Name="SearchModListButton" Height="35" Width="35" Grid.Row="1">
+                            <fa5:ImageAwesome Icon="Solid_Search" Foreground="#f2f2f2" Margin="3"/>
                         </Button>
+                        <ComboBox Name="SearchTargetComboBox" Grid.Column="3" HorizontalAlignment="Left" Height="30" Grid.Row="1" VerticalAlignment="Center" Width="121" Text="Search" 
+                                   FontSize="20" FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" IsEditable="False" Margin="40,0,0,0">
+                            <ComboBoxItem Content="ALL" IsSelected="True"/>
+                            <ComboBoxItem Content="Name"/>
+                            <ComboBoxItem Content="Note"/>
+                        </ComboBox>
                         <Grid x:Name="MiddleGrid" Grid.Row="2" Grid.ColumnSpan="8">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="1.8*"/>
@@ -824,12 +829,6 @@
                                 </Style>
                             </RichTextBox.Resources>
                         </RichTextBox>
-                        <ComboBox Name="SearchTargetComboBox" Grid.Column="4" HorizontalAlignment="Left" Height="30" Grid.Row="1" VerticalAlignment="Center" Width="161" Text="Search" 
-                                   FontSize="20" FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" IsEditable="False">
-                            <ComboBoxItem Content="ALL" IsSelected="True"/>
-                            <ComboBoxItem Content="Name"/>
-                            <ComboBoxItem Content="Note"/>
-                        </ComboBox>
                     </Grid>
                 </TabItem.Content>
             </TabItem>
