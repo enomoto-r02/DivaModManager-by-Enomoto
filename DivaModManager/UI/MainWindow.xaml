@@ -653,9 +653,9 @@
                                  VerticalAlignment="Center" Width="2000" FontSize="20" KeyDown="SearchModListTextBox_KeyDown" HorizontalAlignment="Left"
                                  Foreground="#303030" Padding="4,0,0,0" FontFamily="{StaticResource AnekLatin}" IsEnabled="False" 
                                  VerticalContentAlignment="Center" Height="35"/>
-                        <TextBlock Margin="13,15,0,0" Padding="5,5,3,3" Grid.Column ="0" Grid.Row ="1" FontFamily="{StaticResource AnekLatin}" 
+                        <TextBlock Margin="13,0,0,0" Padding="5,5,3,3" Grid.Column ="0" Grid.Row ="1" FontFamily="{StaticResource AnekLatin}" 
                                    IsHitTestVisible="False" Height="30" MinWidth="200" HorizontalAlignment="Left" Text="Search..." 
-                                   VerticalAlignment="Top" Foreground="#303030" Grid.ColumnSpan="2" FontSize="16">
+                                   VerticalAlignment="Center" Foreground="#303030" Grid.ColumnSpan="2" FontSize="20">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
                                     <Style.Triggers>

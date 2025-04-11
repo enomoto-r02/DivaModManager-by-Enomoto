@@ -2790,15 +2790,23 @@ namespace DivaModManager
 
         private void ModGrid_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.Space && ModGrid.CurrentColumn.Header.ToString() == "Name")
+            if (ModGrid.CurrentColumn.Header.ToString() == "Name")
             {
-                foreach (var item in ModGrid.SelectedItems)
+                if (e.Key == Key.Space)
                 {
-                    var checkbox = ModGrid.Columns[0].GetCellContent(item) as CheckBox;
-                    if (checkbox != null)
+                    foreach (var item in ModGrid.SelectedItems)
                     {
-                        checkbox.IsChecked = !checkbox.IsChecked;
+                        var checkbox = ModGrid.Columns[0].GetCellContent(item) as CheckBox;
+                        if (checkbox != null)
+                        {
+                            checkbox.IsChecked = !checkbox.IsChecked;
+                        }
                     }
+                } 
+                else if (e.Key == Key.Enter)
+                {
+                    OpenItem_Click(sender, e);
+                    e.Handled = true;
                 }
             }
             else if (ModGrid.CurrentColumn.Header.ToString() == "Priority")
