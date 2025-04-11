@@ -12,65 +12,57 @@ namespace DivaModManager
         private bool _enabled;
         public bool enabled
         {
-            get
-            {
-                return _enabled;
-            }
+            get => _enabled;
             set
             {
-                this._enabled = value;
-                OnPropertyChanged("enabled");
+                if (_enabled != value)
+                {
+                    _enabled = value;
+                    OnPropertyChanged();
+                }
             }
         }
+
         private string? _priority;
         public string? priority
         {
-            get
-            {
-                return _priority;
-            }
+            get => _priority;
             set
             {
-                this._priority = value;
-                OnPropertyChanged("priority");
+                if (_priority != value)
+                {
+                    _priority = value;
+                    OnPropertyChanged();
+                }
             }
         }
-        public string name { get; set; }
+
+        public string name { get; set; } = string.Empty;
         public bool selected { get; set; }
-        private string _note;
+
+        private string _note = string.Empty;
         public string note
         {
-            get
-            {
-                return _note;
-            }
+            get => _note;
             set
             {
-                if (value == null)
+                string newValue = value ?? string.Empty;
+                if (_note != newValue)
                 {
-                    this._note = "";
+                    _note = newValue;
+                    OnPropertyChanged();
                 }
-                else
-                {
-                    this._note = value;
-                }
-                OnPropertyChanged("note");
             }
         }
 
-        public event PropertyChangedEventHandler PropertyChanged;
-        private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
+        public event PropertyChangedEventHandler? PropertyChanged;
 
-        // MemberwiseCloneメソッドを使用
-        public Mod Clone()
-        {
-            // Object型で返ってくるのでキャストが必要
-            return (Mod)MemberwiseClone();
-        }
+        private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+
+        public Mod Clone() => (Mod)MemberwiseClone();
     }
+
     public class Metadata
     {
         public int? id { get; set; }
