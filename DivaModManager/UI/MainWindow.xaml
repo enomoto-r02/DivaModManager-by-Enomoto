@@ -722,6 +722,7 @@
                                 VirtualizingPanel.VirtualizationMode="Standard"
                                 PreparingCellForEdit="ModGrid_PreparingCellForEdit"
                                 Loaded="ModGrid_Loaded"
+                                MouseDoubleClick="ModGrid_MouseDoubleClick"
                                 >
                                 <DataGrid.Resources>
                                     <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="#115F58"/>
