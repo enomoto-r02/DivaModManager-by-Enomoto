@@ -2604,25 +2604,15 @@ namespace DivaModManager
                             {
                                 // Insert new name at index of original loadout
                                 Global.LoadoutItems.Add(copyLoadoutWindow.loadout);
-                                // Copy over current loadout
-                                ObservableCollection<Mod> ModList_DeepCopy = new ObservableCollection<Mod>();
+                                // Deep Copy over current loadout
+                                ObservableCollection<Mod> ModList_Copy = new ObservableCollection<Mod>();
                                 foreach(Mod m in Global.ModList)
                                 {
-                                    ModList_DeepCopy.Add(m);
+                                    ModList_Copy.Add(m.Clone());
                                 }
-                                Global.config.Configs[Global.config.CurrentGame].Loadouts.Add(copyLoadoutWindow.loadout, ModList_DeepCopy);
+                                Global.config.Configs[Global.config.CurrentGame].Loadouts.Add(copyLoadoutWindow.loadout, ModList_Copy);
                                 // Trigger selection changed event
                                 LoadoutBox.SelectedItem = copyLoadoutWindow.loadout;
-                                MessageBox.Show($"Please restart DivaModManager once to reflect the copy of the loadout.", "Attention.", MessageBoxButton.OK, MessageBoxImage.Information);
-
-                                //Process proc;
-                                //Process proc2;
-                                //do
-                                //{
-                                //    proc = Process.GetCurrentProcess();
-                                //    proc.WaitForExit(10000);
-                                //    proc2 = Process.Start(@"DivaModManager.exe");
-                                //} while (proc.ExitCode > 0);
                             }
                             break;
                     }

@@ -63,6 +63,13 @@ namespace DivaModManager
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
+
+        // MemberwiseCloneメソッドを使用
+        public Mod Clone()
+        {
+            // Object型で返ってくるのでキャストが必要
+            return (Mod)MemberwiseClone();
+        }
     }
     public class Metadata
     {
