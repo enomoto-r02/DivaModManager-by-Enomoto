@@ -2716,8 +2716,26 @@ namespace DivaModManager
                     }
                     else if (colHeader.Column.Header.Equals("Priority"))
                     {
-                        Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().OrderByDescending(x => x.priority).ToList());
-                        Global.logger.WriteLine("Sorted by Priority column!", LoggerType.Info);
+                        if (direction == ListSortDirection.Descending)
+                        {
+                            ObservableCollection<Mod> ModList_no_priority = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => string.IsNullOrEmpty(x.priority)).ToList());
+                            Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => !string.IsNullOrEmpty(x.priority)).OrderBy(x => x.priority, new NaturalSort()).ToList());
+                            foreach (Mod m in ModList_no_priority)
+                            {
+                                Global.ModList.Add(m);
+                            }
+                            direction = ListSortDirection.Ascending;
+                        }
+                        else
+                        {
+                            ObservableCollection<Mod> ModList_no_priority = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => string.IsNullOrEmpty(x.priority)).ToList());
+                            Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => !string.IsNullOrEmpty(x.priority)).OrderByDescending(x => x.priority, new NaturalSort()).ToList());
+                            foreach (Mod m in ModList_no_priority)
+                            {
+                                Global.ModList.Add(m);
+                            }
+                            direction = ListSortDirection.Descending;
+                        }
                     }
                     else if (colHeader.Column.Header.Equals("Name"))
                     {
