@@ -1002,7 +1002,7 @@ namespace DivaModManager
                     }
                 }
         }
-        private async void EditItem_Click(object sender, RoutedEventArgs e)
+        private async void RenameMod_Click(object sender, RoutedEventArgs e)
         {
             var selectedMods = ModGrid.SelectedItems;
             var temp = new Mod[selectedMods.Count];
@@ -1011,17 +1011,20 @@ namespace DivaModManager
             // Stop refreshing while renaming folders
             ModsWatcher.EnableRaisingEvents = false;
             foreach (var row in temp)
+            {
                 if (row != null)
                 {
                     EditWindow ew = new EditWindow(row.name, true);
                     ew.ShowDialog();
                 }
+            }
             ModsWatcher.EnableRaisingEvents = true;
             Global.UpdateConfig();
             ModGrid.Items.Refresh();
 
             await Task.Run(() => ModLoader.Build());
         }
+
         private void ConfigureModItem_Click(object sender, RoutedEventArgs e)
         {
             var selectedMods = ModGrid.SelectedItems;
