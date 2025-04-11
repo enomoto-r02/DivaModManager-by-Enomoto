@@ -2871,20 +2871,20 @@ namespace DivaModManager
             }
             else
             {
-                if (SearchTargetComboBox.Text == "ALL")
+                switch (SearchTargetComboBox.Text)
                 {
-                    Global.ModList = new ObservableCollection<Mod>(Global.ModList_All.ToList()
-                        .Where(x => x.name.ToLower().Contains(searchModName.ToLower()) || x.note.ToLower().Contains(searchModName.ToLower())).ToList());
-                }
-                else if (SearchTargetComboBox.Text == "Name")
-                {
-                    Global.ModList = new ObservableCollection<Mod>(Global.ModList_All.ToList()
-                        .Where(x => x.name.ToLower().Contains(searchModName.ToLower())).ToList());
-                }
-                else if (SearchTargetComboBox.Text == "Note")
-                {
-                    Global.ModList = new ObservableCollection<Mod>(Global.ModList_All.ToList()
-                        .Where(x => x.note.ToLower().Contains(searchModName.ToLower())).ToList());
+                    case "ALL":
+                        Global.ModList = new ObservableCollection<Mod>(Global.ModList_All.ToList()
+                            .Where(x => x.name.ToLower().Contains(searchModName.ToLower()) || x.note.ToLower().Contains(searchModName.ToLower())).ToList());
+                        break;
+                    case "Name":
+                        Global.ModList = new ObservableCollection<Mod>(Global.ModList_All.ToList()
+                            .Where(x => x.name.ToLower().Contains(searchModName.ToLower())).ToList());
+                        break;
+                    case "Note":
+                        Global.ModList = new ObservableCollection<Mod>(Global.ModList_All.ToList()
+                            .Where(x => x.note.ToLower().Contains(searchModName.ToLower())).ToList());
+                        break;
                 }
                 Global.SearchModListFlg = true;
             }
@@ -2952,48 +2952,55 @@ namespace DivaModManager
         private void ColumnWidthChanged(object sender, EventArgs e)
         {
             DataGridColumn column = (DataGridColumn)sender;
+            string header = column.Header?.ToString();
 
-            if (column.Header.ToString() == "Priority")
+            switch (header)
             {
-                Global.config.PriorityColumnWidth = column.Width.DisplayValue;
-            }
-            else if (column.Header.ToString() == "Name")
-            {
-                Global.config.NameColumnWidth = column.Width.DisplayValue;
-            }
-            else if (column.Header.ToString() == "Note")
-            {
-                Global.config.NoteColumnWidth = column.Width.DisplayValue;
+                case "Priority":
+                    Global.config.PriorityColumnWidth = column.Width.DisplayValue;
+                    break;
+                case "Name":
+                    Global.config.NameColumnWidth = column.Width.DisplayValue;
+                    break;
+                case "Note":
+                    Global.config.NoteColumnWidth = column.Width.DisplayValue;
+                    break;
+
             }
         }
 
         private void ModGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            var elem = e.MouseDevice.DirectlyOver as FrameworkElement;
-            if (elem != null)
+            if (e.MouseDevice.DirectlyOver is not FrameworkElement elem) return;
+            if (elem.Parent is not DataGridCell cell) return;
+            if (cell.Column.Header?.ToString() != "Name") return;
+
+            string action = Global.config.DoubleClickEvent?.ToLower() ?? "open";
+
+            switch (action)
             {
-                DataGridCell cell = elem.Parent as DataGridCell;
-                if (cell != null)
-                {
-                    if (cell.Column.Header.ToString() == "Name")
-                    {
-                        if (Global.config.DoubleClickEvent == null || Global.config.DoubleClickEvent.ToLower() == "open")
-                            OpenItem_Click(sender, e);
-                        else if (Global.config.DoubleClickEvent.ToLower() == "rename")
-                            RenameMod_Click(sender, e);
-                        else if (Global.config.DoubleClickEvent.ToLower() == "configure")
-                            ConfigureModItem_Click(sender, e);
-                        else if (Global.config.DoubleClickEvent.ToLower() == "fetch")
-                            FetchItem_Click(sender, e);
-                        else if (Global.config.DoubleClickEvent.ToLower() == "update")
-                            Update_Click(sender, e);
-                        else if (Global.config.DoubleClickEvent.ToLower() == "delete")
-                            DeleteItem_Click(sender, e);
-                        else
-                            // 不明な文字列等は全てOpenとして扱う
-                            OpenItem_Click(sender, e);
-                    }
-                }
+                case "open":
+                    OpenItem_Click(sender, e);
+                    break;
+                case "rename":
+                    RenameMod_Click(sender, e);
+                    break;
+                case "configure":
+                    ConfigureModItem_Click(sender, e);
+                    break;
+                case "fetch":
+                    FetchItem_Click(sender, e);
+                    break;
+                case "update":
+                    Update_Click(sender, e);
+                    break;
+                case "delete":
+                    DeleteItem_Click(sender, e);
+                    break;
+                default:
+                    // 不明な文字列等は全てOpenとして扱う
+                    OpenItem_Click(sender, e);
+                    break;
             }
         }
     }
