@@ -2927,16 +2927,12 @@ namespace DivaModManager
 
         private void ModGrid_PreparingCellForEdit(object sender, DataGridPreparingCellForEditEventArgs e)
         {
-            if (e.EditingElement is TextBox tb)
-            {
-                DataGridCell cell = (DataGridCell)tb.Parent;
-                DataGridColumn column = cell.Column;
-                if (column.Header.ToString() == "Priority")
-                {
-                    // Priorityの編集時にコンテキストメニューを表示しない
-                    tb.ContextMenu = null;
-                }
-            }
+            if (e.EditingElement is not TextBox tb) return;
+            if (tb.Parent is not DataGridCell cell) return;
+            if (cell.Column.Header?.ToString() != "Priority") return;
+
+            // Priorityの編集時にコンテキストメニューを表示しない
+            tb.ContextMenu = null;
         }
 
         private void ModGrid_Loaded(object sender, RoutedEventArgs e)
