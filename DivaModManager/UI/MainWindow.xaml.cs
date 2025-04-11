@@ -2563,17 +2563,37 @@ namespace DivaModManager
                             break;
                         // Delete current loadout
                         case 2:
-                            if (Global.config.Configs[Global.config.CurrentGame].Loadouts.Count == 1)
+                            var yesno_choice = new List<Choice>();
+                            yesno_choice.Add(new Choice()
                             {
-                                Global.logger.WriteLine("Unable to delete current loadout since there is only one", LoggerType.Error);
-                                return;
-                            }
-                            else
+                                OptionText = "Yes",
+                                OptionSubText = $"This action cannot be undone.",
+                                Index = 0
+                            });
+                            var yesno = new ChoiceWindow(yesno_choice, $"Delete Current Loadout");
+                            yesno.ShowDialog();
+
+                            if (yesno.choice != null)
                             {
-                                Global.LoadoutItems.Remove(Global.config.Configs[Global.config.CurrentGame].CurrentLoadout);
-                                Global.config.Configs[Global.config.CurrentGame].Loadouts.Remove(Global.config.Configs[Global.config.CurrentGame].CurrentLoadout);
-                                // Triggers selection changed event
-                                LoadoutBox.SelectedIndex = 0;
+                                switch ((int)yesno.choice)
+                                {
+                                    case 0:
+                                        if (Global.config.Configs[Global.config.CurrentGame].Loadouts.Count == 1)
+                                        {
+                                            Global.logger.WriteLine("Unable to delete current loadout since there is only one", LoggerType.Error);
+                                            return;
+                                        }
+                                        else
+                                        {
+                                            Global.LoadoutItems.Remove(Global.config.Configs[Global.config.CurrentGame].CurrentLoadout);
+                                            Global.config.Configs[Global.config.CurrentGame].Loadouts.Remove(Global.config.Configs[Global.config.CurrentGame].CurrentLoadout);
+                                            // Triggers selection changed event
+                                            LoadoutBox.SelectedIndex = 0;
+                                        }
+                                        break;
+                                    case 1:
+                                        break;
+                                }
                             }
                             break;
                         // Copy current loadout
@@ -2585,12 +2605,24 @@ namespace DivaModManager
                                 // Insert new name at index of original loadout
                                 Global.LoadoutItems.Add(copyLoadoutWindow.loadout);
                                 // Copy over current loadout
-                                ObservableCollection<Mod> ModList_DeepCopy = new ObservableCollection<Mod>(Global.ModList);
+                                ObservableCollection<Mod> ModList_DeepCopy = new ObservableCollection<Mod>();
+                                foreach(Mod m in Global.ModList)
+                                {
+                                    ModList_DeepCopy.Add(m);
+                                }
                                 Global.config.Configs[Global.config.CurrentGame].Loadouts.Add(copyLoadoutWindow.loadout, ModList_DeepCopy);
                                 // Trigger selection changed event
                                 LoadoutBox.SelectedItem = copyLoadoutWindow.loadout;
                                 MessageBox.Show($"Please restart DivaModManager once to reflect the copy of the loadout.", "Attention.", MessageBoxButton.OK, MessageBoxImage.Information);
 
+                                //Process proc;
+                                //Process proc2;
+                                //do
+                                //{
+                                //    proc = Process.GetCurrentProcess();
+                                //    proc.WaitForExit(10000);
+                                //    proc2 = Process.Start(@"DivaModManager.exe");
+                                //} while (proc.ExitCode > 0);
                             }
                             break;
                     }
@@ -2947,7 +2979,18 @@ namespace DivaModManager
 
         private void ModGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            OpenItem_Click(sender, e);
+            var elem = e.MouseDevice.DirectlyOver as FrameworkElement;
+            if (elem != null)
+            {
+                DataGridCell cell = elem.Parent as DataGridCell;
+                if (cell != null)
+                {
+                    if (cell.Column.Header.ToString() == "Name")
+                    {
+                        OpenItem_Click(sender, e);
+                    }
+                }
+            }
         }
     }
 }
