@@ -472,7 +472,7 @@ namespace DivaModManager
                     $"{StringConverters.FormatSize(new DirectoryInfo(currentModDirectory).GetDirectorySize())}";
                     if (!String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].ModLoaderVersion))
                         stats += $" • DML v{Global.config.Configs[Global.config.CurrentGame].ModLoaderVersion}";
-                    stats += $" • DMM v{version} alpha 2";
+                    stats += $" • DMM v{version} alpha 3";
                     Stats.Text = stats;
                 });
             });
@@ -546,7 +546,7 @@ namespace DivaModManager
                     $"{StringConverters.FormatSize(new DirectoryInfo(Global.config.Configs[Global.config.CurrentGame].ModsFolder).GetDirectorySize())}";
                     if (!String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].ModLoaderVersion))
                         stats += $" • DML v{Global.config.Configs[Global.config.CurrentGame].ModLoaderVersion}";
-                    stats += $" • DMM v{version} alpha 2";
+                    stats += $" • DMM v{version} alpha 3";
                     Stats.Text = stats;
                 });
             }
