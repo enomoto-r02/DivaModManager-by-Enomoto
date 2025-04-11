@@ -99,6 +99,7 @@ namespace DivaModManager
         public double? PriorityColumnWidth { get; set; }
         public double? NameColumnWidth { get; set; }
         public double? NoteColumnWidth { get; set; }
+        public string? DoubleClickEvent { get; set; }
     }
     public class GameConfig
     {

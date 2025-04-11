@@ -2977,7 +2977,21 @@ namespace DivaModManager
                 {
                     if (cell.Column.Header.ToString() == "Name")
                     {
-                        OpenItem_Click(sender, e);
+                        if (Global.config.DoubleClickEvent == null || Global.config.DoubleClickEvent.ToLower() == "open")
+                            OpenItem_Click(sender, e);
+                        else if (Global.config.DoubleClickEvent.ToLower() == "rename")
+                            RenameMod_Click(sender, e);
+                        else if (Global.config.DoubleClickEvent.ToLower() == "configure")
+                            ConfigureModItem_Click(sender, e);
+                        else if (Global.config.DoubleClickEvent.ToLower() == "fetch")
+                            FetchItem_Click(sender, e);
+                        else if (Global.config.DoubleClickEvent.ToLower() == "update")
+                            Update_Click(sender, e);
+                        else if (Global.config.DoubleClickEvent.ToLower() == "delete")
+                            DeleteItem_Click(sender, e);
+                        else
+                            // 不明な文字列等は全てOpenとして扱う
+                            OpenItem_Click(sender, e);
                     }
                 }
             }
