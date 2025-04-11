@@ -2931,7 +2931,7 @@ namespace DivaModManager
             if (tb.Parent is not DataGridCell cell) return;
             if (cell.Column.Header?.ToString() != "Priority") return;
 
-            // Priorityの編集時にコンテキストメニューを表示しない
+            // Do not show the context menu when editing Priority.
             tb.ContextMenu = null;
         }
 
@@ -2994,7 +2994,7 @@ namespace DivaModManager
                     DeleteItem_Click(sender, e);
                     break;
                 default:
-                    // 不明な文字列等は全てOpenとして扱う
+                    // All unknown characters are treated as Open.
                     OpenItem_Click(sender, e);
                     break;
             }
