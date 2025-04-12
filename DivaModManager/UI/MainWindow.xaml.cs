@@ -451,31 +451,7 @@ namespace DivaModManager
                     var mod_g_list = Global.ModList.ToList().Where(x => x.name == Path.GetFileName(mod));
                     foreach (var mod_g in mod_g_list)
                     {
-                        if (!File.Exists(configPath_e))
-                        {
-                            TomlTable config_dmme = new();
-                            config_dmme.Add("priority", "");
-                            config_dmme.Add("note", "");
-                            var isReady = false;
-                            while (!isReady)
-                            {
-                                try
-                                {
-                                    File.WriteAllText(configPath_e, Toml.FromModel(config_dmme));
-                                    isReady = true;
-                                }
-                                catch (Exception e)
-                                {
-                                    // Check if the exception is related to an IO error.
-                                    if (e.GetType() != typeof(IOException))
-                                    {
-                                        Global.logger.WriteLine($"Couldn't access {configPath_e} ({e.Message})", LoggerType.Error);
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                        else
+                        if (File.Exists(configPath_e))
                         {
                             var configString_e = String.Empty;
                             while (String.IsNullOrEmpty(configString_e))
@@ -701,6 +677,31 @@ namespace DivaModManager
         private void UpdateModConfigToml_E(Mod m, string column, object value)
         {
             var configPath_e = $"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}{m.name}{Global.s}config_e.toml";
+
+            if (!File.Exists(configPath_e))
+            {
+                TomlTable config_dmme = new();
+                config_dmme.Add("priority", "");
+                config_dmme.Add("note", "");
+                var isReady = false;
+                while (!isReady)
+                {
+                    try
+                    {
+                        File.WriteAllText(configPath_e, Toml.FromModel(config_dmme));
+                        isReady = true;
+                    }
+                    catch (Exception e)
+                    {
+                        // Check if the exception is related to an IO error.
+                        if (e.GetType() != typeof(IOException))
+                        {
+                            Global.logger.WriteLine($"Couldn't access {configPath_e} ({e.Message})", LoggerType.Error);
+                            break;
+                        }
+                    }
+                }
+            }
             if (File.Exists(configPath_e))
             {
                 var configString_e = File.ReadAllText(configPath_e);
