@@ -535,11 +535,33 @@
     </Window.Resources>
     <Grid>
         <StackPanel Panel.ZIndex="3" Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Right" Grid.ColumnSpan="5">
-            <StackPanel Background="Transparent" Margin="0,0,5,0" Orientation="Horizontal" Name="DiscordButton" PreviewMouseLeftButtonDown="Discord_Click" Cursor="Hand">
-                <fa5:ImageAwesome Icon="Brands_Discord" Height="25" Foreground="#f2f2f2"/>
-                <TextBlock Text="Join the Discord!" FontSize="20" FontFamily="{StaticResource AnekLatin}" Margin="5" Background="Transparent" Foreground="#f2f2f2" FontWeight="Medium"/>
+            <Image x:Name="Github" Source="../Assets/github-mark-white.png" Height="30" Width="30" Stretch="Uniform" MouseLeftButtonDown="Github_Click" Margin="10,0,10,0" Cursor="Hand"/>
+            <Popup PlacementTarget="{Binding ElementName=Github}" IsOpen="{Binding IsMouseDirectlyOver, ElementName=Github, Mode=OneWay}" AllowsTransparency="True" Cursor="">
+                <Border CornerRadius="5" Panel.ZIndex="0" Margin="10">
+                    <Border.BorderBrush>
+                        <SolidColorBrush Color="#101010" Opacity="0.9"/>
+                    </Border.BorderBrush>
+                    <Border.Background>
+                        <SolidColorBrush Color="#101010" Opacity="0.9"/>
+                    </Border.Background>
+                    <TextBlock Margin="10" FontFamily="{StaticResource AnekLatin}" Text="Go to GitHub" Foreground="#f2f2f2" FontWeight="Medium" FontSize="20" VerticalAlignment="Center" />
+                </Border>
+            </Popup>
+            <StackPanel Background="Transparent" Margin="0,0,5,0" Orientation="Horizontal" x:Name="DiscordButton" PreviewMouseLeftButtonDown="Discord_Click" Cursor="Hand">
+                <fa5:ImageAwesome x:Name="Discord" Icon="Brands_Discord" Height="25" Foreground="#f2f2f2"/>
+                <Popup PlacementTarget="{Binding ElementName=Discord}" IsOpen="{Binding IsMouseDirectlyOver, ElementName=Discord, Mode=OneWay}" AllowsTransparency="True" Cursor="">
+                    <Border CornerRadius="5" Panel.ZIndex="0" Margin="10">
+                        <Border.BorderBrush>
+                            <SolidColorBrush Color="#101010" Opacity="0.9"/>
+                        </Border.BorderBrush>
+                        <Border.Background>
+                            <SolidColorBrush Color="#101010" Opacity="0.9"/>
+                        </Border.Background>
+                        <TextBlock Margin="10" FontFamily="{StaticResource AnekLatin}" Text="Join the Discord!" Foreground="#f2f2f2" FontWeight="Medium" FontSize="20" VerticalAlignment="Center" />
+                    </Border>
+                </Popup>
             </StackPanel>
-            <TextBox BorderThickness="0" FontSize="20" FontFamily="{StaticResource AnekLatin}" Margin="5" Background="Transparent" BorderBrush="Transparent" IsReadOnly="True" Foreground="#f2f2f2" FontWeight="Medium" Name="Stats" />
+            <TextBox BorderThickness="0" FontSize="20" FontFamily="{StaticResource AnekLatin}" Margin="5" Background="Transparent" BorderBrush="Transparent" IsReadOnly="True" Foreground="#f2f2f2" FontWeight="Medium" x:Name="Stats" />
         </StackPanel>
         <TabControl Grid.ColumnSpan="5" Background="#202020" BorderBrush="#353535">
             <TabControl.Resources>
@@ -620,20 +642,20 @@
                         <Button Name="OpenModsButton" Margin="0,0,10,0" Height="35" VerticalAlignment="Center" HorizontalAlignment="Stretch" Grid.Column="6" Background="#181818" BorderBrush="#252525" Click="CreateMod_Click">
                             <TextBlock Text="Create Mod" TextTrimming="CharacterEllipsis" Foreground="#f2f2f2" FontFamily="{StaticResource AnekLatin}" FontSize="20" FontWeight="Medium"/>
                         </Button>
-                        <Button FontWeight="Medium" Name="UpdateAllButton" Margin="0,0,10,0"  Height="34" VerticalAlignment="Center" Grid.Column="7" Background="#181818" BorderBrush="#252525"  Click="UpdateAll_Click">
-                            <TextBlock Text="UpdateAll" TextTrimming="CharacterEllipsis" Foreground="#f2f2f2" FontFamily="{StaticResource AnekLatin}" FontSize="20" FontWeight="Medium"/>
+                        <Button FontWeight="Medium" Name="UpdateCheckAllButton" Margin="0,0,10,0"  Height="34" VerticalAlignment="Center" Grid.Column="7" Background="#181818" BorderBrush="#252525"  Click="UpdateAll_Click">
+                            <TextBlock Text="Update Check All" TextTrimming="CharacterEllipsis" Foreground="#f2f2f2" FontFamily="{StaticResource AnekLatin}" FontSize="20" FontWeight="Medium"/>
                         </Button>
 
                         <ComboBox Grid.Column="5" Margin="0,0,10,0" Height="35" FontSize="20" FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" Name="LauncherOptionsBox" SelectionChanged="LauncherOptionsBox_SelectionChanged"/>
                         <ComboBox Grid.Column="1" Margin="10,0,10,0" Height="35" FontSize="20" FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" Name="LoadoutBox" SelectionChanged="LoadoutsBox_SelectionChanged"/>
 
-                        <TextBox Name="SearchModListTextBox" Grid.Row ="1" Grid.ColumnSpan="3" Margin="10,0,10,0" TextWrapping="Wrap" 
-                                 VerticalAlignment="Center" Width="2000" FontSize="20" KeyDown="SearchModListTextBox_KeyDown" HorizontalAlignment="Left" 
+                        <TextBox Name="SearchModListTextBox" Grid.Column ="0" Grid.Row ="1" Grid.ColumnSpan="3" Margin="10,0,10,0" TextWrapping="Wrap" 
+                                 VerticalAlignment="Center" Width="2000" FontSize="20" KeyDown="SearchModListTextBox_KeyDown" HorizontalAlignment="Left"
                                  Foreground="#303030" Padding="4,0,0,0" FontFamily="{StaticResource AnekLatin}" IsEnabled="False" 
-                                 VerticalContentAlignment="Center"/>
-                        <TextBlock Margin="12,4,0,0" Padding="5,5,3,3" Grid.Row ="1" FontFamily="{StaticResource AnekLatin}" 
+                                 VerticalContentAlignment="Center" Height="35"/>
+                        <TextBlock Margin="13,0,0,0" Padding="5,5,3,3" Grid.Column ="0" Grid.Row ="1" FontFamily="{StaticResource AnekLatin}" 
                                    IsHitTestVisible="False" Height="30" MinWidth="200" HorizontalAlignment="Left" Text="Search..." 
-                                   VerticalAlignment="Center" Foreground="#303030" Grid.ColumnSpan="2" FontSize="16">
+                                   VerticalAlignment="Center" Foreground="#303030" Grid.ColumnSpan="2" FontSize="20">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
                                     <Style.Triggers>
@@ -644,10 +666,15 @@
                                 </Style>
                             </TextBlock.Style>
                         </TextBlock>
-
-                        <Button Name="SearchModListButton" Margin="0,0,10,0" Height="34" VerticalAlignment="Center" Grid.Column="3" Background="#181818" BorderBrush="#252525" Click="SearchModList_Click" Grid.Row="1">
-                            <TextBlock Text="Search" TextTrimming="CharacterEllipsis" Foreground="#f2f2f2" FontFamily="{StaticResource AnekLatin}" FontSize="20" FontWeight="Medium" Grid.Row="1"/>
+                        <Button Grid.Column="3" IsEnabled="False" HorizontalAlignment="Left" Click="SearchModList_Click" Name="SearchModListButton" Height="35" Width="35" Grid.Row="1">
+                            <fa5:ImageAwesome Icon="Solid_Search" Foreground="#f2f2f2" Margin="3"/>
                         </Button>
+                        <ComboBox Name="SearchTargetComboBox" Grid.Column="3" Grid.Row="1" Text="Search" 
+                                   FontSize="20" FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" IsEditable="False" Margin="40,10,10,10">
+                            <ComboBoxItem Content="ALL" IsSelected="True"/>
+                            <ComboBoxItem Content="Name"/>
+                            <ComboBoxItem Content="Note"/>
+                        </ComboBox>
                         <Grid x:Name="MiddleGrid" Grid.Row="2" Grid.ColumnSpan="8">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="1.8*"/>
@@ -659,9 +686,9 @@
                                 <TextBlock Foreground="#f2f2f2" FontSize="40" Panel.ZIndex="3" VerticalAlignment="Center" HorizontalAlignment="Center"><Run Text="Drop files to install mod"/></TextBlock>
                             </Grid>
                             <DataGrid
+                                Name="ModGrid"
                                 DragEnter="Add_Enter"
                                 Margin="0,0,0,3"
-                                Name="ModGrid"
                                 AutoGenerateColumns="False"
                                 GridLinesVisibility="None"
                                 VerticalScrollBarVisibility="Auto"
@@ -669,7 +696,6 @@
                                 CanUserAddRows="False"
                                 CanUserDeleteRows="False"
                                 CanUserReorderColumns="False"
-                                CanUserResizeColumns="False"
                                 CanUserResizeRows="False"
                                 CanUserSortColumns="False"
                                 AlternatingRowBackground="#2A2A2A"
@@ -680,14 +706,14 @@
                                 Foreground="#f2f2f2"
                                 LoadingRow="ModGrid_LoadingRow"
                                 HorizontalScrollBarVisibility="Hidden"
-                                HorizontalAlignment="Center"
+                                HorizontalAlignment="Stretch"
                                 Background="#202020"
                                 Grid.Column="0"
                                 FontSize="15"
                                 PreviewKeyDown="ModGrid_PreviewKeyDown"
                                 ContextMenuOpening="ModGrid_ContextMenuOpening"
                                 SelectionChanged="ModGrid_SelectionChanged"
-                                PreviewMouseMove="ModGrid_PreviewMouseMove"
+                                PreviewDrop="ModGrid_PreviewDrop"
                                 Grid.ColumnSpan="1"
                                 dd:DragDrop.DropScrollingMode="VerticalOnly"
                                 dd:DragDrop.IsDragSource="True"
@@ -699,6 +725,10 @@
                                 SelectionMode="Extended"
                                 VirtualizingStackPanel.IsVirtualizing="True"
                                 VirtualizingPanel.VirtualizationMode="Standard"
+                                PreparingCellForEdit="ModGrid_PreparingCellForEdit"
+                                Loaded="ModGrid_Loaded"
+                                MouseDoubleClick="ModGrid_MouseDoubleClick"
+                                CellEditEnding="ModGrid_CellEditEnding"
                                 >
                                 <DataGrid.Resources>
                                     <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="#115F58"/>
@@ -728,7 +758,7 @@
                                 <DataGrid.ContextMenu>
                                     <ContextMenu>
                                         <MenuItem Name="ConfigureMod" Header="Configure Mod" IsCheckable="False" Click="ConfigureModItem_Click"/>
-                                        <MenuItem Name="RenameModFolder" Header="Rename Mod Folder" IsCheckable="False" Click="EditItem_Click"/>
+                                        <MenuItem Name="RenameModFolder" Header="Rename Mod Folder" IsCheckable="False" Click="RenameMod_Click"/>
                                         <MenuItem Name="OpenModFolder" Header="Open Mod Folder" IsCheckable="False" Click="OpenItem_Click"/>
                                         <MenuItem Name="FetchMetadata" Header="Fetch Metadata" IsCheckable="False" Click="FetchItem_Click"/>
                                         <MenuItem Name="UpdateMod" Header="Update Mod" IsCheckable="False" Click="Update_Click"/>
@@ -740,7 +770,7 @@
                                     </ContextMenu>
                                 </DataGrid.ContextMenu>
                                 <DataGrid.Columns>
-                                    <DataGridCheckBoxColumn Header="Enabled" Binding="{Binding enabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="False" Width="58">
+                                    <DataGridCheckBoxColumn Header="Enabled" Binding="{Binding enabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="False" Width="58" CanUserResize="False">
                                         <DataGridCheckBoxColumn.CellStyle>
                                             <Style TargetType="DataGridCell">
                                                 <EventSetter Event="ToggleButton.Checked" Handler="OnChecked"/>
@@ -753,7 +783,27 @@
                                             </Style>
                                         </DataGridCheckBoxColumn.CellStyle>
                                     </DataGridCheckBoxColumn>
-                                    <DataGridTextColumn Header="Name" Binding="{Binding name, Mode=TwoWay}" IsReadOnly="True" Width="1.5*"/>
+                                    <DataGridTextColumn Header="Priority" Binding="{Binding priority, Mode=TwoWay}" Width="58" CanUserResize="True">
+                                        <DataGridTextColumn.ElementStyle>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="HorizontalAlignment" Value="Center" />
+                                                <Setter Property="TextAlignment" Value="Center" />
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                        <DataGridTextColumn.EditingElementStyle>
+                                            <Style TargetType="TextBox">
+                                                <Setter Property="MaxLength" Value="8"/>
+                                            </Style>
+                                        </DataGridTextColumn.EditingElementStyle>
+                                    </DataGridTextColumn>
+                                    <DataGridTextColumn Header="Name" Binding="{Binding name, Mode=TwoWay}" IsReadOnly="True" Width="1.5*" CanUserResize="True"/>
+                                    <DataGridTextColumn Header="Note" Binding="{Binding note, Mode=TwoWay}" Width="1.5*" CanUserResize="True">
+                                        <DataGridTextColumn.EditingElementStyle>
+                                            <Style TargetType="TextBox">
+                                                <Setter Property="MaxLength" Value="1000"/>
+                                            </Style>
+                                        </DataGridTextColumn.EditingElementStyle>
+                                    </DataGridTextColumn>
                                 </DataGrid.Columns>
                             </DataGrid>
 
@@ -786,18 +836,6 @@
                                 </Style>
                             </RichTextBox.Resources>
                         </RichTextBox>
-                        <Image Name="Github" Source="../Assets/github-mark-white.png" Grid.Column="7" HorizontalAlignment="Right" Height="30" Margin="0,8,10,0" Grid.Row="1" VerticalAlignment="Top" Width="30" Stretch="Uniform" MouseLeftButtonDown="Github_Click"/>
-                        <Popup PlacementTarget="{Binding ElementName=Github}" IsOpen="{Binding IsMouseDirectlyOver, ElementName=Github, Mode=OneWay}" AllowsTransparency="True">
-                            <Border CornerRadius="5" Panel.ZIndex="0" Margin="10">
-                                <Border.BorderBrush>
-                                    <SolidColorBrush Color="#101010" Opacity="0.9"/>
-                                </Border.BorderBrush>
-                                <Border.Background>
-                                    <SolidColorBrush Color="#101010" Opacity="0.9"/>
-                                </Border.Background>
-                                <TextBlock Margin="10" FontFamily="{StaticResource AnekLatin}" Text="Go to Github" Foreground="#f2f2f2" FontWeight="Medium" FontSize="20" VerticalAlignment="Center" />
-                            </Border>
-                        </Popup>
                     </Grid>
                 </TabItem.Content>
             </TabItem>

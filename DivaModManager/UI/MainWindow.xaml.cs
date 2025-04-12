@@ -40,6 +40,8 @@ namespace DivaModManager
             "To show metadata here:\nRight Click Row > Configure Mod and add author, version, and/or date fields" +
             "\nand/or Right Click Row > Fetch Metadata and confirm the GameBanana URL of the mod";
         private ObservableCollection<String> LauncherOptions = new ObservableCollection<String>(new string[] { "Executable", "Steam" });
+        ListSortDirection direction = ListSortDirection.Ascending;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -90,6 +92,13 @@ namespace DivaModManager
                 MiddleGrid.ColumnDefinitions[0].Width = new GridLength((double)Global.config.LeftGridWidth, GridUnitType.Star);
             if (Global.config.RightGridWidth != null)
                 MiddleGrid.ColumnDefinitions[2].Width = new GridLength((double)Global.config.RightGridWidth, GridUnitType.Star);
+
+            if (Global.config.PriorityColumnWidth != null)
+                ModGrid.Columns[1].Width = (double)Global.config.PriorityColumnWidth;
+            if (Global.config.NameColumnWidth != null)
+                ModGrid.Columns[2].Width = (double)Global.config.NameColumnWidth;
+            if (Global.config.PriorityColumnWidth != null)
+                ModGrid.Columns[3].Width = (double)Global.config.NoteColumnWidth;
 
             Global.games = new List<string>();
             foreach (var item in GameBox.Items)
@@ -151,7 +160,7 @@ namespace DivaModManager
             ConfigButton.IsEnabled = false;
             LaunchButton.IsEnabled = false;
             OpenModsButton.IsEnabled = false;
-            UpdateAllButton.IsEnabled = false;
+            UpdateCheckAllButton.IsEnabled = false;
             LauncherOptionsBox.IsEnabled = false;
             LoadoutBox.IsEnabled = false;
             EditLoadoutsButton.IsEnabled = false;
@@ -410,10 +419,10 @@ namespace DivaModManager
                                             }
                                         }
                                     }
-                                } 
-                                catch(Exception e)
+                                }
+                                catch (Exception e)
                                 {
-                                    Global.logger.WriteLine($"Other exception { m.name }\"\nThe value of config[enable] could not be read.", LoggerType.Error);
+                                    Global.logger.WriteLine($"Other exception {m.name}\"\nThe value of config[enable] could not be read.", LoggerType.Error);
                                     MessageBox.Show(e.Message, "Attention.", MessageBoxButton.OK, MessageBoxImage.Error);
                                     continue;
                                 }
@@ -437,6 +446,88 @@ namespace DivaModManager
                             Global.logger.WriteLine("No config.toml file window triggered but it was already open.", LoggerType.Info);
                         }
                     }
+
+                    var configPath_e = $"{mod}{Global.s}config_e.toml";
+                    var mod_g_list = Global.ModList.ToList().Where(x => x.name == Path.GetFileName(mod));
+                    foreach (var mod_g in mod_g_list)
+                    {
+                        if (File.Exists(configPath_e))
+                        {
+                            var configString_e = String.Empty;
+                            while (String.IsNullOrEmpty(configString_e))
+                            {
+                                configString_e = File.ReadAllText(configPath_e);
+                                try
+                                {
+                                    if (string.IsNullOrEmpty(configPath_e))
+                                    {
+                                        string message = $"Config_e.toml's content is empty! Path : {configPath_e}";
+                                        throw new Exception(message);
+                                    }
+                                }
+                                catch (Exception e)
+                                {
+                                    // Check if the exception is related to an IO error.
+                                    if (e.GetType() != typeof(IOException))
+                                    {
+                                        Global.logger.WriteLine($"Couldn't access {configPath_e} ({e.Message})", LoggerType.Error);
+                                        MessageBox.Show(e.Message, "Attention.", MessageBoxButton.OK, MessageBoxImage.Error);
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        Global.logger.WriteLine($"Other exception {configPath_e} ({e.Message})", LoggerType.Error);
+                                        MessageBox.Show(e.Message, "Attention.", MessageBoxButton.OK, MessageBoxImage.Error);
+                                        break;
+                                    }
+                                }
+                            }
+                            if (Toml.TryToModel(configString_e, out TomlTable config_e, out var diagnostics))
+                            {
+                                if (config_e.ContainsKey("priority"))
+                                {
+                                    mod_g.priority = config_e["priority"].ToString();
+                                }
+                                if (config_e.ContainsKey("note"))
+                                {
+                                    mod_g.note = config_e["note"].ToString();
+                                }
+                            }
+                            else
+                            {
+                                // Add enabled field to be true if it doesn't exist
+                                mod_g.priority = "";
+                                mod_g.note = "";
+                                config_e.Add("priority", true);
+                                config_e.Add("note", true);
+                                var isReady = false;
+                                while (!isReady)
+                                {
+                                    try
+                                    {
+                                        File.WriteAllText(configPath_e, Toml.FromModel(config_e));
+                                        isReady = true;
+                                    }
+                                    catch (Exception e)
+                                    {
+                                        // Check if the exception is related to an IO error.
+                                        if (e.GetType() != typeof(IOException))
+                                        {
+                                            Global.logger.WriteLine($"Couldn't access {configPath_e} ({e.Message})", LoggerType.Error);
+                                            break;
+                                        }
+                                        else
+                                        {
+                                            Global.logger.WriteLine($"Other exception {configPath_e} ({e.Message})", LoggerType.Error);
+                                            MessageBox.Show(e.Message, "Attention.", MessageBoxButton.OK, MessageBoxImage.Error);
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
                 }
             }
             // Remove deleted folders that are still in the ModList
@@ -580,6 +671,66 @@ namespace DivaModManager
                 {
                     Global.logger.WriteLine("No config.toml file window triggered but it was already open.", LoggerType.Info);
                 }
+            }
+        }
+
+        private void UpdateModConfigToml_E(Mod m, string column, object value)
+        {
+            var configPath_e = $"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}{m.name}{Global.s}config_e.toml";
+
+            if (!File.Exists(configPath_e))
+            {
+                TomlTable config_dmme = new();
+                config_dmme.Add("priority", "");
+                config_dmme.Add("note", "");
+                var isReady = false;
+                while (!isReady)
+                {
+                    try
+                    {
+                        File.WriteAllText(configPath_e, Toml.FromModel(config_dmme));
+                        isReady = true;
+                    }
+                    catch (Exception e)
+                    {
+                        // Check if the exception is related to an IO error.
+                        if (e.GetType() != typeof(IOException))
+                        {
+                            Global.logger.WriteLine($"Couldn't access {configPath_e} ({e.Message})", LoggerType.Error);
+                            break;
+                        }
+                    }
+                }
+            }
+            if (File.Exists(configPath_e))
+            {
+                var configString_e = File.ReadAllText(configPath_e);
+                if (Toml.TryToModel(configString_e, out TomlTable config_e, out var diagnostics))
+                {
+                    switch (column)
+                    {
+                        case "Priority":
+                            config_e["priority"] = value;
+                            break;
+                        case "Note":
+                            config_e["note"] = value;
+                            break;
+                    }
+                    File.WriteAllText(configPath_e, Toml.FromModel(config_e));
+                }
+                else
+                {
+                    Global.logger.WriteLine($"{diagnostics[0].Message} for {m.name}. Rewriting {configPath_e} with only enabled field", LoggerType.Warning);
+                    // Create config.toml with enabled field to be true if failed to parse
+                    config_e = new();
+                    config_e.Add("priority", "");
+                    config_e.Add("note", "");
+                    File.WriteAllText(configPath_e, Toml.FromModel(config_e));
+                }
+            }
+            else
+            {
+                Global.logger.WriteLine("No config_e.toml file window triggered but it was already open.", LoggerType.Info);
             }
         }
 
@@ -774,7 +925,7 @@ namespace DivaModManager
         {
             try
             {
-                var ps = new ProcessStartInfo($"https://github.com/enomoto-r02/DivaModManager-by-Enomoto")
+                var ps = new ProcessStartInfo($"https://github.com/enomoto-r02/DivaModManager-by-Enomoto/releases")
                 {
                     UseShellExecute = true,
                     Verb = "open"
@@ -870,7 +1021,6 @@ namespace DivaModManager
             {
                 return;
             }
-
             if (ModGrid.SelectedItem == null)
             {
                 element.ContextMenu.Visibility = Visibility.Collapsed;
@@ -882,11 +1032,8 @@ namespace DivaModManager
                 var SelectModsCount = ModGrid.SelectedCells.Count / ModGrid.Columns.Count;
                 if (Global.SearchModListFlg || SelectModsCount > 1)
                 {
+                    // Restrict the context menu being searched.
                     List<string> inactiveList = new List<string>();
-                    inactiveList.Add("ConfigureMod");
-                    inactiveList.Add("RenameModFolder");
-                    inactiveList.Add("FetchMetadata");
-                    inactiveList.Add("DeleteMod");
                     inactiveList.Add("MoveToTop");
                     inactiveList.Add("MoveToBottom");
 
@@ -916,13 +1063,6 @@ namespace DivaModManager
 
         private async void DeleteItem_Click(object sender, RoutedEventArgs e)
         {
-            if (Global.SearchModListFlg)
-            {
-                MessageBox.Show($"Please do it with the mod search cleared.\nSorry.", "Attention.", MessageBoxButton.OK, MessageBoxImage.Information);
-                e.Handled = true;
-                return;
-            }
-
             var selectedMods = ModGrid.SelectedItems;
             var temp = new Mod[selectedMods.Count];
             selectedMods.CopyTo(temp, 0);
@@ -977,6 +1117,7 @@ namespace DivaModManager
             var temp = new Mod[selectedMods.Count];
             selectedMods.CopyTo(temp, 0);
             foreach (var row in temp)
+            {
                 if (row != null)
                 {
                     var folderName = $@"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}{row.name}";
@@ -993,8 +1134,9 @@ namespace DivaModManager
                         }
                     }
                 }
+            }
         }
-        private async void EditItem_Click(object sender, RoutedEventArgs e)
+        private async void RenameMod_Click(object sender, RoutedEventArgs e)
         {
             var selectedMods = ModGrid.SelectedItems;
             var temp = new Mod[selectedMods.Count];
@@ -1003,17 +1145,20 @@ namespace DivaModManager
             // Stop refreshing while renaming folders
             ModsWatcher.EnableRaisingEvents = false;
             foreach (var row in temp)
+            {
                 if (row != null)
                 {
                     EditWindow ew = new EditWindow(row.name, true);
                     ew.ShowDialog();
                 }
+            }
             ModsWatcher.EnableRaisingEvents = true;
             Global.UpdateConfig();
             ModGrid.Items.Refresh();
 
             await Task.Run(() => ModLoader.Build());
         }
+
         private void ConfigureModItem_Click(object sender, RoutedEventArgs e)
         {
             var selectedMods = ModGrid.SelectedItems;
@@ -1062,7 +1207,7 @@ namespace DivaModManager
         {
             var selectedMods = ModGrid.SelectedItems;
             var allMods = Global.ModList;
-            Global.ModList.Move(ModGrid.SelectedIndex, Global.ModList.Count-1);
+            Global.ModList.Move(ModGrid.SelectedIndex, Global.ModList.Count - 1);
 
             await Task.Run(() =>
             {
@@ -1223,18 +1368,12 @@ namespace DivaModManager
         }
         private void UpdateCommon(object sender, RoutedEventArgs e, bool isSelectedUpdate)
         {
-            if (Global.SearchModListFlg)
-            {
-                MessageBox.Show($"Please do it with the mod search cleared.\nSorry.", "Attention.", MessageBoxButton.OK, MessageBoxImage.Information);
-                e.Handled = true;
-                return;
-            }
             GameBox.IsEnabled = false;
             ModGrid.IsEnabled = false;
             ConfigButton.IsEnabled = false;
             LaunchButton.IsEnabled = false;
             OpenModsButton.IsEnabled = false;
-            UpdateAllButton.IsEnabled = false;
+            UpdateCheckAllButton.IsEnabled = false;
             LauncherOptionsBox.IsEnabled = false;
             LoadoutBox.IsEnabled = false;
             EditLoadoutsButton.IsEnabled = false;
@@ -2107,13 +2246,6 @@ namespace DivaModManager
             DMALoadingBar.Visibility = Visibility.Visible;
             DMAFeedBox.Visibility = Visibility.Collapsed;
             var search = DMASearchBar.Text;
-            //var search = HttpUtility.UrlEncode(DMASearchBar.Text);
-            /*
-            if (search.Contains("'"))
-            {
-                search = search.Replace("'", "\'");
-            }
-            */
             try
             {
                 await DMAFeedGenerator.GetFeed(DMApage, (DMAFeedSort)DMASortBox.SelectedIndex, (DMAFeedFilter)DMAFilterBox.SelectedIndex, search, (DMAPerPageBox.SelectedIndex + 1) * 10);
@@ -2163,7 +2295,7 @@ namespace DivaModManager
                 DMAPageBox.ItemsSource = Enumerable.Range(1, (int)(DMAFeedGenerator.CurrentFeed.TotalPages));
             }
             finally
-            { 
+            {
                 DMALoadingBar.Visibility = Visibility.Collapsed;
                 DMASortBox.IsEnabled = true;
                 DMAFilterBox.IsEnabled = true;
@@ -2552,37 +2684,60 @@ namespace DivaModManager
                             break;
                         // Delete current loadout
                         case 2:
-                            if (Global.config.Configs[Global.config.CurrentGame].Loadouts.Count == 1)
+                            var yesno_choice = new List<Choice>();
+                            yesno_choice.Add(new Choice()
                             {
-                                Global.logger.WriteLine("Unable to delete current loadout since there is only one", LoggerType.Error);
-                                return;
-                            }
-                            else
+                                OptionText = "Yes",
+                                OptionSubText = $"This action cannot be undone.",
+                                Index = 0
+                            });
+                            var yesno = new ChoiceWindow(yesno_choice, $"Delete Current Loadout");
+                            yesno.ShowDialog();
+
+                            if (yesno.choice != null)
                             {
-                                Global.LoadoutItems.Remove(Global.config.Configs[Global.config.CurrentGame].CurrentLoadout);
-                                Global.config.Configs[Global.config.CurrentGame].Loadouts.Remove(Global.config.Configs[Global.config.CurrentGame].CurrentLoadout);
-                                // Triggers selection changed event
-                                LoadoutBox.SelectedIndex = 0;
+                                switch ((int)yesno.choice)
+                                {
+                                    case 0:
+                                        if (Global.config.Configs[Global.config.CurrentGame].Loadouts.Count == 1)
+                                        {
+                                            Global.logger.WriteLine("Unable to delete current loadout since there is only one", LoggerType.Error);
+                                            return;
+                                        }
+                                        else
+                                        {
+                                            Global.LoadoutItems.Remove(Global.config.Configs[Global.config.CurrentGame].CurrentLoadout);
+                                            Global.config.Configs[Global.config.CurrentGame].Loadouts.Remove(Global.config.Configs[Global.config.CurrentGame].CurrentLoadout);
+                                            // Triggers selection changed event
+                                            LoadoutBox.SelectedIndex = 0;
+                                        }
+                                        break;
+                                    case 1:
+                                        break;
+                                }
                             }
                             break;
                         // Copy current loadout
                         case 3:
-                            var copyLoadoutWindow = new EditWindow(Global.config.Configs[Global.config.CurrentGame].CurrentLoadout+" Copy", false);
+                            var copyLoadoutWindow = new EditWindow(Global.config.Configs[Global.config.CurrentGame].CurrentLoadout + " Copy", false);
                             copyLoadoutWindow.ShowDialog();
                             if (!String.IsNullOrEmpty(copyLoadoutWindow.loadout))
                             {
                                 // Insert new name at index of original loadout
                                 Global.LoadoutItems.Add(copyLoadoutWindow.loadout);
-                                // Copy over current loadout
-                                ObservableCollection<Mod> ModList_DeepCopy = new ObservableCollection<Mod>(Global.ModList);
-                                Global.config.Configs[Global.config.CurrentGame].Loadouts.Add(copyLoadoutWindow.loadout, ModList_DeepCopy);
+                                // Deep Copy over current loadout
+                                ObservableCollection<Mod> ModList_Copy = new ObservableCollection<Mod>();
+                                foreach(Mod m in Global.ModList)
+                                {
+                                    ModList_Copy.Add(m.Clone());
+                                }
+                                Global.config.Configs[Global.config.CurrentGame].Loadouts.Add(copyLoadoutWindow.loadout, ModList_Copy);
                                 // Trigger selection changed event
                                 LoadoutBox.SelectedItem = copyLoadoutWindow.loadout;
-                                MessageBox.Show($"Please restart DivaModManager once to reflect the copy of the loadout.", "Attention.", MessageBoxButton.OK, MessageBoxImage.Information);
-
                             }
                             break;
                     }
+                    Refresh();
                 }
             });
         }
@@ -2638,7 +2793,7 @@ namespace DivaModManager
                 ConfigButton.IsEnabled = false;
                 LaunchButton.IsEnabled = false;
                 OpenModsButton.IsEnabled = false;
-                UpdateAllButton.IsEnabled = false;
+                UpdateCheckAllButton.IsEnabled = false;
                 LauncherOptionsBox.IsEnabled = false;
                 LoadoutBox.IsEnabled = false;
                 EditLoadoutsButton.IsEnabled = false;
@@ -2675,17 +2830,64 @@ namespace DivaModManager
 
                 if (colHeader != null)
                 {
-                    if (colHeader.Column.Header.Equals("Name"))
+                    if (colHeader.Column.Header.Equals("Enabled"))
+                    {
+                        // Move all enabled mods to top
+                        Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().OrderByDescending(x => x.enabled).ToList());
+                        Global.logger.WriteLine("Moved all enabled mods to the top!", LoggerType.Info);
+                    }
+                    else if (colHeader.Column.Header.Equals("Priority"))
+                    {
+                        if (direction == ListSortDirection.Descending)
+                        {
+                            ObservableCollection<Mod> ModList_no_priority = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => string.IsNullOrEmpty(x.priority)).ToList());
+                            Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => !string.IsNullOrEmpty(x.priority)).OrderBy(x => x.priority, new NaturalSort()).ToList());
+                            foreach (Mod m in ModList_no_priority)
+                            {
+                                Global.ModList.Add(m);
+                            }
+                            direction = ListSortDirection.Ascending;
+                        }
+                        else
+                        {
+                            ObservableCollection<Mod> ModList_no_priority = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => string.IsNullOrEmpty(x.priority)).ToList());
+                            Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => !string.IsNullOrEmpty(x.priority)).OrderByDescending(x => x.priority, new NaturalSort()).ToList());
+                            foreach (Mod m in ModList_no_priority)
+                            {
+                                Global.ModList.Add(m);
+                            }
+                            direction = ListSortDirection.Descending;
+                        }
+                    }
+                    else if (colHeader.Column.Header.Equals("Name"))
                     {
                         // Sort alphabetically
                         Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().OrderBy(x => x.name, new NaturalSort()).ToList());
                         Global.logger.WriteLine("Sorted alphanumerically!", LoggerType.Info);
                     }
-                    else if (colHeader.Column.Header.Equals("Enabled"))
+                    else if (colHeader.Column.Header.Equals("Note"))
                     {
-                        // Move all enabled mods to top
-                        Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().OrderByDescending(x => x.enabled).ToList());
-                        Global.logger.WriteLine("Moved all enabled mods to the top!", LoggerType.Info);
+                        if (direction == ListSortDirection.Descending)
+                        {
+                            ObservableCollection<Mod> ModList_no_note = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.note == "").ToList());
+                            Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.note != "").OrderBy(x => x.note, new NaturalSort()).ToList());
+                            foreach (Mod m in ModList_no_note)
+                            {
+                                Global.ModList.Add(m);
+                            }
+                            direction = ListSortDirection.Ascending;
+                        }
+                        else
+                        {
+                            ObservableCollection<Mod> ModList_no_note = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.note == "").ToList());
+                            Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.note != "").OrderByDescending(x => x.note, new NaturalSort()).ToList());
+                            foreach (Mod m in ModList_no_note)
+                            {
+                                Global.ModList.Add(m);
+                            }
+                            direction = ListSortDirection.Descending;
+                        }
+                        Global.logger.WriteLine("Sorted by Note column!", LoggerType.Info);
                     }
                     await Task.Run(() =>
                     {
@@ -2753,15 +2955,34 @@ namespace DivaModManager
 
         private void ModGrid_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.Space && ModGrid.CurrentColumn.Header.ToString() != "Enabled")
+            if (ModGrid.CurrentColumn.Header.ToString() == "Name")
             {
-                foreach (var item in ModGrid.SelectedItems)
+                if (e.Key == Key.Space)
                 {
-                    var checkbox = ModGrid.Columns[0].GetCellContent(item) as CheckBox;
-                    if (checkbox != null)
+                    foreach (var item in ModGrid.SelectedItems)
                     {
-                        checkbox.IsChecked = !checkbox.IsChecked;
+                        var checkbox = ModGrid.Columns[0].GetCellContent(item) as CheckBox;
+                        if (checkbox != null)
+                        {
+                            checkbox.IsChecked = !checkbox.IsChecked;
+                        }
                     }
+                } 
+                else if (e.Key == Key.Enter)
+                {
+                    OpenItem_Click(sender, e);
+                    e.Handled = true;
+                }
+            }
+            else if (ModGrid.CurrentColumn.Header.ToString() == "Priority")
+            {
+                e.Handled = true;
+                if ((e.Key >= Key.D0 && e.Key <= Key.D9) || (e.Key >= Key.NumPad0 && e.Key <= Key.NumPad9)
+                    || (e.Key == Key.Enter || e.Key == Key.Back || e.Key == Key.Delete)
+                    || (e.Key == Key.Up || e.Key == Key.Down || e.Key == Key.Left || e.Key == Key.Right)
+                    || (e.Key == Key.Tab || e.Key == Key.F2 || e.Key == Key.Escape))
+                {
+                    e.Handled = false;
                 }
             }
         }
@@ -2790,20 +3011,34 @@ namespace DivaModManager
             }
             else
             {
+                switch (SearchTargetComboBox.Text)
+                {
+                    case "ALL":
+                        Global.ModList = new ObservableCollection<Mod>(Global.ModList_All.ToList()
+                            .Where(x => x.name.ToLower().Contains(searchModName.ToLower()) || x.note.ToLower().Contains(searchModName.ToLower())).ToList());
+                        break;
+                    case "Name":
+                        Global.ModList = new ObservableCollection<Mod>(Global.ModList_All.ToList()
+                            .Where(x => x.name.ToLower().Contains(searchModName.ToLower())).ToList());
+                        break;
+                    case "Note":
+                        Global.ModList = new ObservableCollection<Mod>(Global.ModList_All.ToList()
+                            .Where(x => x.note.ToLower().Contains(searchModName.ToLower())).ToList());
+                        break;
+                }
                 Global.SearchModListFlg = true;
-                Global.ModList = new ObservableCollection<Mod>(Global.ModList_All.ToList()
-                    .Where(x => x.name.ToLower().Contains(searchModName.ToLower())).ToList());
             }
 
             ModGrid.ItemsSource = Global.ModList;
             Global.UpdateConfig();
         }
 
-        private void ModGrid_PreviewMouseMove(object sender, MouseEventArgs e)
+        private void ModGrid_PreviewDrop(object sender, DragEventArgs e)
         {
             if (!string.IsNullOrEmpty(SearchModListTextBox.Text))
             {
                 // Prohibit mod movement by dragging when mod search is enabled.
+                MessageBox.Show("You cannot change the priority of the MOD while searching. Sorry.", "Attention.", MessageBoxButton.OK, MessageBoxImage.Information);
                 e.Handled = true;
             }
         }
@@ -2828,6 +3063,103 @@ namespace DivaModManager
             Global.ModList_All = Global.ModList;
             SearchModListTextBox.Text = "";
             ModGrid.ClearSelectedItems();
+        }
+
+        private void ModGrid_PreparingCellForEdit(object sender, DataGridPreparingCellForEditEventArgs e)
+        {
+            if (e.EditingElement is not TextBox tb) return;
+            if (tb.Parent is not DataGridCell cell) return;
+            if (cell.Column.Header?.ToString() != "Priority") return;
+
+            // Do not show the context menu when editing Priority.
+            tb.ContextMenu = null;
+        }
+
+        private void ModGrid_Loaded(object sender, RoutedEventArgs e)
+        {
+            DataGrid modGrid = (DataGrid)sender;
+            foreach (var column in modGrid.Columns)
+            {
+                var descriptor = DependencyPropertyDescriptor.FromProperty(DataGridColumn.WidthProperty, typeof(DataGridColumn));
+                descriptor.AddValueChanged(column, ColumnWidthChanged);
+            }
+        }
+
+        private void ColumnWidthChanged(object sender, EventArgs e)
+        {
+            DataGridColumn column = (DataGridColumn)sender;
+            string header = column.Header?.ToString();
+
+            switch (header)
+            {
+                case "Priority":
+                    Global.config.PriorityColumnWidth = column.Width.DisplayValue;
+                    break;
+                case "Name":
+                    Global.config.NameColumnWidth = column.Width.DisplayValue;
+                    break;
+                case "Note":
+                    Global.config.NoteColumnWidth = column.Width.DisplayValue;
+                    break;
+
+            }
+        }
+
+        private void ModGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (e.MouseDevice.DirectlyOver is not FrameworkElement elem) return;
+            if (elem.Parent is not DataGridCell cell) return;
+            if (cell.Column.Header?.ToString() != "Name") return;
+
+            string action = Global.config.DoubleClickEvent?.ToLower() ?? "open";
+
+            switch (action)
+            {
+                case "open":
+                    OpenItem_Click(sender, e);
+                    break;
+                case "rename":
+                    RenameMod_Click(sender, e);
+                    break;
+                case "configure":
+                    ConfigureModItem_Click(sender, e);
+                    break;
+                case "fetch":
+                    FetchItem_Click(sender, e);
+                    break;
+                case "update":
+                    Update_Click(sender, e);
+                    break;
+                case "delete":
+                    DeleteItem_Click(sender, e);
+                    break;
+                case "none":
+                    break;
+                default:
+                    // All unknown characters are treated as Open.
+                    OpenItem_Click(sender, e);
+                    break;
+            }
+        }
+
+        private void ModGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
+        {
+            if (e.Column is DataGridTextColumn textCol)
+            {
+                Mod mod = e.Row.DataContext as Mod;
+                var textBox = e.EditingElement as TextBox;
+                var newText = textBox.Text;
+
+                if (e.Column.Header.ToString() == "Priority")
+                {
+                    mod.priority = newText;
+                }
+                else if (e.Column.Header.ToString() == "Note")
+                {
+                    mod.note = newText;
+                }
+                UpdateModConfigToml_E(mod, e.Column.Header.ToString(), newText);
+            }
         }
     }
 }

@@ -29,7 +29,7 @@ namespace DivaModManager
             main.ConfigButton.IsEnabled = true;
             main.LaunchButton.IsEnabled = true;
             main.OpenModsButton.IsEnabled = true;
-            main.UpdateAllButton.IsEnabled = true;
+            main.UpdateCheckAllButton.IsEnabled = true;
             main.LauncherOptionsBox.IsEnabled = true;
             main.LoadoutBox.IsEnabled = true;
             main.EditLoadoutsButton.IsEnabled = true;
@@ -49,7 +49,7 @@ namespace DivaModManager
                 main.ConfigButton.IsEnabled = true;
                 main.LaunchButton.IsEnabled = true;
                 main.OpenModsButton.IsEnabled = true;
-                main.UpdateAllButton.IsEnabled = true;
+                main.UpdateCheckAllButton.IsEnabled = true;
                 main.LauncherOptionsBox.IsEnabled = true;
                 main.LoadoutBox.IsEnabled = true;
                 main.EditLoadoutsButton.IsEnabled = true;
@@ -141,7 +141,7 @@ namespace DivaModManager
                 main.ConfigButton.IsEnabled = true;
                 main.LaunchButton.IsEnabled = true;
                 main.OpenModsButton.IsEnabled = true;
-                main.UpdateAllButton.IsEnabled = true;
+                main.UpdateCheckAllButton.IsEnabled = true;
                 main.LauncherOptionsBox.IsEnabled = true;
                 main.LoadoutBox.IsEnabled = true;
                 main.EditLoadoutsButton.IsEnabled = true;
@@ -171,7 +171,7 @@ namespace DivaModManager
                             main.ConfigButton.IsEnabled = true;
                             main.LaunchButton.IsEnabled = true;
                             main.OpenModsButton.IsEnabled = true;
-                            main.UpdateAllButton.IsEnabled = true;
+                            main.UpdateCheckAllButton.IsEnabled = true;
                             main.LauncherOptionsBox.IsEnabled = true;
                             main.LoadoutBox.IsEnabled = true;
                             main.EditLoadoutsButton.IsEnabled = true;
@@ -240,7 +240,7 @@ namespace DivaModManager
             main.ConfigButton.IsEnabled = true;
             main.LaunchButton.IsEnabled = true;
             main.OpenModsButton.IsEnabled = true;
-            main.UpdateAllButton.IsEnabled = true;
+            main.UpdateCheckAllButton.IsEnabled = true;
             main.LauncherOptionsBox.IsEnabled = true;
             main.LoadoutBox.IsEnabled = true;
             main.EditLoadoutsButton.IsEnabled = true;

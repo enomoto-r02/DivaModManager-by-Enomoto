@@ -3,34 +3,71 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using DivaModManager.UI;
+using System.Text.Json.Serialization;
 
 namespace DivaModManager
 {
     public class Mod : INotifyPropertyChanged
     {
-        public string name { get; set; }
         private bool _enabled;
         public bool enabled
         {
-            get
-            {
-                return _enabled;
-            }
+            get => _enabled;
             set
             {
-                this._enabled = value;
-                OnPropertyChanged("enabled");
+                if (_enabled != value)
+                {
+                    _enabled = value;
+                    OnPropertyChanged();
+                }
             }
         }
-        public bool selected { get; set; }
 
-        public event PropertyChangedEventHandler PropertyChanged;
-        private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        [JsonIgnore]
+        private string? _priority;
+        [JsonIgnore]
+        public string? priority
         {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            get => _priority;
+            set
+            {
+                if (_priority != value)
+                {
+                    _priority = value;
+                    OnPropertyChanged();
+                }
+            }
         }
+
+        public string name { get; set; } = string.Empty;
+
+        [JsonIgnore]
+        public bool selected { get; set; }
+        [JsonIgnore]
+        private string _note = string.Empty;
+        [JsonIgnore]
+        public string note
+        {
+            get => _note;
+            set
+            {
+                string newValue = value ?? string.Empty;
+                if (_note != newValue)
+                {
+                    _note = newValue;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+        private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+
+        // Simple copy
+        public Mod Clone() => (Mod)MemberwiseClone();
     }
+
     public class Metadata
     {
         public int? id { get; set; }
@@ -55,7 +92,12 @@ namespace DivaModManager
         public double? Height { get; set; }
         public double? Width { get; set; }
         public bool Maximized { get; set; }
+        //public string? DMMVersion { get; set; } = Assembly.GetExecutingAssembly().GetName().Version.ToString();
         public bool AddModToTop { get; set; }
+        public double? PriorityColumnWidth { get; set; }
+        public double? NameColumnWidth { get; set; }
+        public double? NoteColumnWidth { get; set; }
+        public string? DoubleClickEvent { get; set; }
     }
     public class GameConfig
     {
@@ -75,5 +117,10 @@ namespace DivaModManager
         public string OptionText { get; set; }
         public string OptionSubText { get; set; }
         public int Index { get; set; }
+    }
+    public class DmmeNotes
+    {
+        public string Priority { get; set; }
+        public string Note { get; set; }
     }
 }
