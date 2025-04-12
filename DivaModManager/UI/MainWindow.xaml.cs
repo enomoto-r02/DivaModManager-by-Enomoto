@@ -890,11 +890,8 @@ namespace DivaModManager
                 var SelectModsCount = ModGrid.SelectedCells.Count / ModGrid.Columns.Count;
                 if (Global.SearchModListFlg || SelectModsCount > 1)
                 {
+                    // Restrict the context menu being searched.
                     List<string> inactiveList = new List<string>();
-                    inactiveList.Add("ConfigureMod");
-                    inactiveList.Add("RenameModFolder");
-                    inactiveList.Add("FetchMetadata");
-                    inactiveList.Add("DeleteMod");
                     inactiveList.Add("MoveToTop");
                     inactiveList.Add("MoveToBottom");
 
@@ -924,13 +921,6 @@ namespace DivaModManager
 
         private async void DeleteItem_Click(object sender, RoutedEventArgs e)
         {
-            if (Global.SearchModListFlg)
-            {
-                MessageBox.Show($"Please do it with the mod search cleared.\nSorry.", "Attention.", MessageBoxButton.OK, MessageBoxImage.Information);
-                e.Handled = true;
-                return;
-            }
-
             var selectedMods = ModGrid.SelectedItems;
             var temp = new Mod[selectedMods.Count];
             selectedMods.CopyTo(temp, 0);
@@ -985,6 +975,7 @@ namespace DivaModManager
             var temp = new Mod[selectedMods.Count];
             selectedMods.CopyTo(temp, 0);
             foreach (var row in temp)
+            {
                 if (row != null)
                 {
                     var folderName = $@"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}{row.name}";
@@ -1001,6 +992,7 @@ namespace DivaModManager
                         }
                     }
                 }
+            }
         }
         private async void RenameMod_Click(object sender, RoutedEventArgs e)
         {
@@ -1234,12 +1226,6 @@ namespace DivaModManager
         }
         private void UpdateCommon(object sender, RoutedEventArgs e, bool isSelectedUpdate)
         {
-            if (Global.SearchModListFlg)
-            {
-                MessageBox.Show($"Please do it with the mod search cleared.\nSorry.", "Attention.", MessageBoxButton.OK, MessageBoxImage.Information);
-                e.Handled = true;
-                return;
-            }
             GameBox.IsEnabled = false;
             ModGrid.IsEnabled = false;
             ConfigButton.IsEnabled = false;
