@@ -2736,6 +2736,7 @@ namespace DivaModManager
                             }
                             break;
                     }
+                    Refresh();
                 }
             });
         }
