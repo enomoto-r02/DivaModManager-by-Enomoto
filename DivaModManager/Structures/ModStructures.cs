@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Text.Json.Serialization;
 
 namespace DivaModManager
 {
@@ -22,7 +23,9 @@ namespace DivaModManager
             }
         }
 
+        [JsonIgnore]
         private string? _priority;
+        [JsonIgnore]
         public string? priority
         {
             get => _priority;
@@ -37,9 +40,12 @@ namespace DivaModManager
         }
 
         public string name { get; set; } = string.Empty;
-        public bool selected { get; set; }
 
+        [JsonIgnore]
+        public bool selected { get; set; }
+        [JsonIgnore]
         private string _note = string.Empty;
+        [JsonIgnore]
         public string note
         {
             get => _note;
@@ -111,5 +117,10 @@ namespace DivaModManager
         public string OptionText { get; set; }
         public string OptionSubText { get; set; }
         public int Index { get; set; }
+    }
+    public class DmmeNotes
+    {
+        public string Priority { get; set; }
+        public string Note { get; set; }
     }
 }

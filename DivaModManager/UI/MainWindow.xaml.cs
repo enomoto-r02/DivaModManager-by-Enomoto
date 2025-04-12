@@ -446,6 +446,112 @@ namespace DivaModManager
                             Global.logger.WriteLine("No config.toml file window triggered but it was already open.", LoggerType.Info);
                         }
                     }
+
+                    var configPath_e = $"{mod}{Global.s}config_e.toml";
+                    var mod_g_list = Global.ModList.ToList().Where(x => x.name == Path.GetFileName(mod));
+                    foreach (var mod_g in mod_g_list)
+                    {
+                        if (!File.Exists(configPath_e))
+                        {
+                            TomlTable config_dmme = new();
+                            config_dmme.Add("priority", "");
+                            config_dmme.Add("note", "");
+                            var isReady = false;
+                            while (!isReady)
+                            {
+                                try
+                                {
+                                    File.WriteAllText(configPath_e, Toml.FromModel(config_dmme));
+                                    isReady = true;
+                                }
+                                catch (Exception e)
+                                {
+                                    // Check if the exception is related to an IO error.
+                                    if (e.GetType() != typeof(IOException))
+                                    {
+                                        Global.logger.WriteLine($"Couldn't access {configPath_e} ({e.Message})", LoggerType.Error);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            var configString_e = String.Empty;
+                            while (String.IsNullOrEmpty(configString_e))
+                            {
+                                configString_e = File.ReadAllText(configPath_e);
+                                try
+                                {
+                                    if (string.IsNullOrEmpty(configPath_e))
+                                    {
+                                        string message = $"Config_e.toml's content is empty! Path : {configPath_e}";
+                                        throw new Exception(message);
+                                    }
+                                }
+                                catch (Exception e)
+                                {
+                                    // Check if the exception is related to an IO error.
+                                    if (e.GetType() != typeof(IOException))
+                                    {
+                                        Global.logger.WriteLine($"Couldn't access {configPath_e} ({e.Message})", LoggerType.Error);
+                                        MessageBox.Show(e.Message, "Attention.", MessageBoxButton.OK, MessageBoxImage.Error);
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        Global.logger.WriteLine($"Other exception {configPath_e} ({e.Message})", LoggerType.Error);
+                                        MessageBox.Show(e.Message, "Attention.", MessageBoxButton.OK, MessageBoxImage.Error);
+                                        break;
+                                    }
+                                }
+                            }
+                            if (Toml.TryToModel(configString_e, out TomlTable config_e, out var diagnostics))
+                            {
+                                if (config_e.ContainsKey("priority"))
+                                {
+                                    mod_g.priority = config_e["priority"].ToString();
+                                }
+                                if (config_e.ContainsKey("note"))
+                                {
+                                    mod_g.note = config_e["note"].ToString();
+                                }
+                            }
+                            else
+                            {
+                                // Add enabled field to be true if it doesn't exist
+                                mod_g.priority = "";
+                                mod_g.note = "";
+                                config_e.Add("priority", true);
+                                config_e.Add("note", true);
+                                var isReady = false;
+                                while (!isReady)
+                                {
+                                    try
+                                    {
+                                        File.WriteAllText(configPath_e, Toml.FromModel(config_e));
+                                        isReady = true;
+                                    }
+                                    catch (Exception e)
+                                    {
+                                        // Check if the exception is related to an IO error.
+                                        if (e.GetType() != typeof(IOException))
+                                        {
+                                            Global.logger.WriteLine($"Couldn't access {configPath_e} ({e.Message})", LoggerType.Error);
+                                            break;
+                                        }
+                                        else
+                                        {
+                                            Global.logger.WriteLine($"Other exception {configPath_e} ({e.Message})", LoggerType.Error);
+                                            MessageBox.Show(e.Message, "Attention.", MessageBoxButton.OK, MessageBoxImage.Error);
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
                 }
             }
             // Remove deleted folders that are still in the ModList
@@ -472,7 +578,7 @@ namespace DivaModManager
                     $"{StringConverters.FormatSize(new DirectoryInfo(currentModDirectory).GetDirectorySize())}";
                     if (!String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].ModLoaderVersion))
                         stats += $" • DML v{Global.config.Configs[Global.config.CurrentGame].ModLoaderVersion}";
-                    stats += $" • DMM v{version} alpha 3";
+                    stats += $" • DMM v{version}";
                     Stats.Text = stats;
                 });
             });
@@ -546,7 +652,7 @@ namespace DivaModManager
                     $"{StringConverters.FormatSize(new DirectoryInfo(Global.config.Configs[Global.config.CurrentGame].ModsFolder).GetDirectorySize())}";
                     if (!String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].ModLoaderVersion))
                         stats += $" • DML v{Global.config.Configs[Global.config.CurrentGame].ModLoaderVersion}";
-                    stats += $" • DMM v{version} alpha 3";
+                    stats += $" • DMM v{version}";
                     Stats.Text = stats;
                 });
             }
@@ -589,6 +695,41 @@ namespace DivaModManager
                 {
                     Global.logger.WriteLine("No config.toml file window triggered but it was already open.", LoggerType.Info);
                 }
+            }
+        }
+
+        private void UpdateModConfigToml_E(Mod m, string column, object value)
+        {
+            var configPath_e = $"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}{m.name}{Global.s}config_e.toml";
+            if (File.Exists(configPath_e))
+            {
+                var configString_e = File.ReadAllText(configPath_e);
+                if (Toml.TryToModel(configString_e, out TomlTable config_e, out var diagnostics))
+                {
+                    switch (column)
+                    {
+                        case "Priority":
+                            config_e["priority"] = value;
+                            break;
+                        case "Note":
+                            config_e["note"] = value;
+                            break;
+                    }
+                    File.WriteAllText(configPath_e, Toml.FromModel(config_e));
+                }
+                else
+                {
+                    Global.logger.WriteLine($"{diagnostics[0].Message} for {m.name}. Rewriting {configPath_e} with only enabled field", LoggerType.Warning);
+                    // Create config.toml with enabled field to be true if failed to parse
+                    config_e = new();
+                    config_e.Add("priority", "");
+                    config_e.Add("note", "");
+                    File.WriteAllText(configPath_e, Toml.FromModel(config_e));
+                }
+            }
+            else
+            {
+                Global.logger.WriteLine("No config_e.toml file window triggered but it was already open.", LoggerType.Info);
             }
         }
 
@@ -2996,6 +3137,26 @@ namespace DivaModManager
                     // All unknown characters are treated as Open.
                     OpenItem_Click(sender, e);
                     break;
+            }
+        }
+
+        private void ModGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
+        {
+            if (e.Column is DataGridTextColumn textCol)
+            {
+                Mod mod = e.Row.DataContext as Mod;
+                var textBox = e.EditingElement as TextBox;
+                var newText = textBox.Text;
+
+                if (e.Column.Header.ToString() == "Priority")
+                {
+                    mod.priority = newText;
+                }
+                else if (e.Column.Header.ToString() == "Note")
+                {
+                    mod.note = newText;
+                }
+                UpdateModConfigToml_E(mod, e.Column.Header.ToString(), newText);
             }
         }
     }

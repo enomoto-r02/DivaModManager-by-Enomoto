@@ -728,6 +728,7 @@
                                 PreparingCellForEdit="ModGrid_PreparingCellForEdit"
                                 Loaded="ModGrid_Loaded"
                                 MouseDoubleClick="ModGrid_MouseDoubleClick"
+                                CellEditEnding="ModGrid_CellEditEnding"
                                 >
                                 <DataGrid.Resources>
                                     <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="#115F58"/>
