@@ -2104,13 +2104,6 @@ namespace DivaModManager
             DMALoadingBar.Visibility = Visibility.Visible;
             DMAFeedBox.Visibility = Visibility.Collapsed;
             var search = DMASearchBar.Text;
-            //var search = HttpUtility.UrlEncode(DMASearchBar.Text);
-            /*
-            if (search.Contains("'"))
-            {
-                search = search.Replace("'", "\'");
-            }
-            */
             try
             {
                 await DMAFeedGenerator.GetFeed(DMApage, (DMAFeedSort)DMASortBox.SelectedIndex, (DMAFeedFilter)DMAFilterBox.SelectedIndex, search, (DMAPerPageBox.SelectedIndex + 1) * 10);

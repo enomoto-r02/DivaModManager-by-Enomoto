@@ -669,8 +669,8 @@
                         <Button Grid.Column="3" IsEnabled="False" HorizontalAlignment="Left" Click="SearchModList_Click" Name="SearchModListButton" Height="35" Width="35" Grid.Row="1">
                             <fa5:ImageAwesome Icon="Solid_Search" Foreground="#f2f2f2" Margin="3"/>
                         </Button>
-                        <ComboBox Name="SearchTargetComboBox" Grid.Column="3" HorizontalAlignment="Left" Height="30" Grid.Row="1" VerticalAlignment="Center" Width="121" Text="Search" 
-                                   FontSize="20" FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" IsEditable="False" Margin="40,0,0,0">
+                        <ComboBox Name="SearchTargetComboBox" Grid.Column="3" Grid.Row="1" Text="Search" 
+                                   FontSize="20" FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" IsEditable="False" Margin="40,10,10,10">
                             <ComboBoxItem Content="ALL" IsSelected="True"/>
                             <ComboBoxItem Content="Name"/>
                             <ComboBoxItem Content="Note"/>
