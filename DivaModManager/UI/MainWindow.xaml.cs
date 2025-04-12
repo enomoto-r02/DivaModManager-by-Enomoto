@@ -2990,6 +2990,8 @@ namespace DivaModManager
                 case "delete":
                     DeleteItem_Click(sender, e);
                     break;
+                case "none":
+                    break;
                 default:
                     // All unknown characters are treated as Open.
                     OpenItem_Click(sender, e);
