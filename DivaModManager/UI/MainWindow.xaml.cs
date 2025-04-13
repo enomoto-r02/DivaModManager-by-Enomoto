@@ -3270,6 +3270,10 @@ namespace DivaModManager
                 {
                     mod.priority = newText;
                 }
+                else if (e.Column.Header.ToString() == "Category")
+                {
+                    mod.category = newText;
+                }
                 else if (e.Column.Header.ToString() == "Note")
                 {
                     mod.note = newText;
@@ -3281,7 +3285,7 @@ namespace DivaModManager
         private void SearchCategoryComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             ComboBox combo = (ComboBox)sender;
-            SearchModList(SearchModListTextBox.Text, combo.SelectedItem.ToString());
+            SearchModList(SearchModListTextBox.Text, combo.SelectedItem?.ToString());
         }
 
         private void CategoryComboInit()
