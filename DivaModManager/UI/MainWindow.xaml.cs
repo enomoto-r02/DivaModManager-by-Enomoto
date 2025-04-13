@@ -97,8 +97,10 @@ namespace DivaModManager
                 ModGrid.Columns[1].Width = (double)Global.config.PriorityColumnWidth;
             if (Global.config.NameColumnWidth != null)
                 ModGrid.Columns[2].Width = (double)Global.config.NameColumnWidth;
-            if (Global.config.PriorityColumnWidth != null)
-                ModGrid.Columns[3].Width = (double)Global.config.NoteColumnWidth;
+            if (Global.config.CategoryColumnWidth != null)
+                ModGrid.Columns[3].Width = (double)Global.config.CategoryColumnWidth;
+            if (Global.config.NoteColumnWidth != null)
+                ModGrid.Columns[4].Width = (double)Global.config.NoteColumnWidth;
 
             Global.games = new List<string>();
             foreach (var item in GameBox.Items)
@@ -160,6 +162,7 @@ namespace DivaModManager
                     Global.CategoryItems.Add(CategoryItem.cat);
                 }
             }
+            Global.CategoryItems.Add("None");
             SearchCategoryComboBox.ItemsSource = Global.CategoryItems;
             SearchCategoryComboBox.SelectedIndex = 0;
 
@@ -3113,6 +3116,10 @@ namespace DivaModManager
                 {
                     case "ALL":
                         break;
+                    case "None":
+                        Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList()
+                            .Where(x => string.IsNullOrEmpty(x.cat)).ToList());
+                        break;
                     default:
                         Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList()
                             .Where(x => x.cat == categoryName).ToList());
@@ -3193,6 +3200,9 @@ namespace DivaModManager
                     break;
                 case "Name":
                     Global.config.NameColumnWidth = column.Width.DisplayValue;
+                    break;
+                case "Category":
+                    Global.config.CategoryColumnWidth = column.Width.DisplayValue;
                     break;
                 case "Note":
                     Global.config.NoteColumnWidth = column.Width.DisplayValue;
