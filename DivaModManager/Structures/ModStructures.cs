@@ -94,10 +94,10 @@ namespace DivaModManager
         public double? Height { get; set; }
         public double? Width { get; set; }
         public bool Maximized { get; set; }
-        //public string? DMMVersion { get; set; } = Assembly.GetExecutingAssembly().GetName().Version.ToString();
         public bool AddModToTop { get; set; }
         public double? PriorityColumnWidth { get; set; }
         public double? NameColumnWidth { get; set; }
+        public double? CategoryColumnWidth { get; set; }
         public double? NoteColumnWidth { get; set; }
         public string? DoubleClickEvent { get; set; }
     }
