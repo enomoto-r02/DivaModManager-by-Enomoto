@@ -447,6 +447,7 @@ namespace DivaModManager
                         }
                     }
 
+                    // Loading Priority and Note
                     var configPath_e = $"{mod}{Global.s}config_e.toml";
                     var mod_g_list = Global.ModList.ToList().Where(x => x.name == Path.GetFileName(mod));
                     foreach (var mod_g in mod_g_list)
@@ -527,7 +528,54 @@ namespace DivaModManager
                             }
                         }
                     }
-                    
+
+                    // Loading Priority and Note
+                    var modPath = $"{mod}{Global.s}mod.json";
+                    foreach (var mod_g in mod_g_list)
+                    {
+                        if (File.Exists(modPath))
+                        {
+                            var modJsonString = String.Empty;
+                            while (String.IsNullOrEmpty(modJsonString))
+                            {
+                                modJsonString = File.ReadAllText(modPath);
+                                try
+                                {
+                                    if (string.IsNullOrEmpty(modPath))
+                                    {
+                                        string message = $"mod.json's content is empty! Path : {modPath}";
+                                        throw new Exception(message);
+                                    }
+                                }
+                                catch (Exception e)
+                                {
+                                    // Check if the exception is related to an IO error.
+                                    if (e.GetType() != typeof(IOException))
+                                    {
+                                        Global.logger.WriteLine($"Couldn't access {modPath} ({e.Message})", LoggerType.Error);
+                                        MessageBox.Show(e.Message, "Attention.", MessageBoxButton.OK, MessageBoxImage.Error);
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        Global.logger.WriteLine($"Other exception {modPath} ({e.Message})", LoggerType.Error);
+                                        MessageBox.Show(e.Message, "Attention.", MessageBoxButton.OK, MessageBoxImage.Error);
+                                        break;
+                                    }
+                                }
+
+                                Metadata metadata = JsonSerializer.Deserialize<Metadata>(modJsonString);
+                                mod_g.cat = metadata.cat;
+                            }
+                            //if (Toml.TryToModel(modJsonString, out TomlTable mod_json, out var diagnostics))
+                            //{
+                            //    if (mod_json.ContainsKey("cat"))
+                            //    {
+                            //        mod_g.cat = mod_json["cat"].ToString();
+                            //    }
+                            //}
+                        }
+                    }
                 }
             }
             // Remove deleted folders that are still in the ModList
@@ -2865,6 +2913,30 @@ namespace DivaModManager
                         Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().OrderBy(x => x.name, new NaturalSort()).ToList());
                         Global.logger.WriteLine("Sorted alphanumerically!", LoggerType.Info);
                     }
+                    else if (colHeader.Column.Header.Equals("Category"))
+                    {
+                        if (direction == ListSortDirection.Descending)
+                        {
+                            ObservableCollection<Mod> ModList_no_cat = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.cat == "").ToList());
+                            Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.cat != "").OrderBy(x => x.cat, new NaturalSort()).ToList());
+                            foreach (Mod m in ModList_no_cat)
+                            {
+                                Global.ModList.Add(m);
+                            }
+                            direction = ListSortDirection.Ascending;
+                        }
+                        else
+                        {
+                            ObservableCollection<Mod> ModList_no_note = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.cat == "").ToList());
+                            Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.cat != "").OrderByDescending(x => x.cat, new NaturalSort()).ToList());
+                            foreach (Mod m in ModList_no_note)
+                            {
+                                Global.ModList.Add(m);
+                            }
+                            direction = ListSortDirection.Descending;
+                        }
+                        Global.logger.WriteLine("Sorted by Note column!", LoggerType.Info);
+                    }
                     else if (colHeader.Column.Header.Equals("Note"))
                     {
                         if (direction == ListSortDirection.Descending)
@@ -3015,11 +3087,15 @@ namespace DivaModManager
                 {
                     case "ALL":
                         Global.ModList = new ObservableCollection<Mod>(Global.ModList_All.ToList()
-                            .Where(x => x.name.ToLower().Contains(searchModName.ToLower()) || x.note.ToLower().Contains(searchModName.ToLower())).ToList());
+                            .Where(x => x.name.ToLower().Contains(searchModName.ToLower()) || x.note.ToLower().Contains(searchModName.ToLower()) || x.cat.ToLower().Contains(searchModName.ToLower())).ToList());
                         break;
                     case "Name":
                         Global.ModList = new ObservableCollection<Mod>(Global.ModList_All.ToList()
                             .Where(x => x.name.ToLower().Contains(searchModName.ToLower())).ToList());
+                        break;
+                    case "Category":
+                        Global.ModList = new ObservableCollection<Mod>(Global.ModList_All.ToList()
+                            .Where(x => x.cat.ToLower().Contains(searchModName.ToLower())).ToList());
                         break;
                     case "Note":
                         Global.ModList = new ObservableCollection<Mod>(Global.ModList_All.ToList()

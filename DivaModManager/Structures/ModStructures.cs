@@ -23,6 +23,10 @@ namespace DivaModManager
             }
         }
 
+        public string name { get; set; } = string.Empty;
+
+        [JsonIgnore]
+        public bool selected { get; set; }
         [JsonIgnore]
         private string? _priority;
         [JsonIgnore]
@@ -38,11 +42,6 @@ namespace DivaModManager
                 }
             }
         }
-
-        public string name { get; set; } = string.Empty;
-
-        [JsonIgnore]
-        public bool selected { get; set; }
         [JsonIgnore]
         private string _note = string.Empty;
         [JsonIgnore]
@@ -59,6 +58,9 @@ namespace DivaModManager
                 }
             }
         }
+
+        [JsonIgnore]
+        public string cat { get; set; } = string.Empty;
 
         public event PropertyChangedEventHandler? PropertyChanged;
         private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
