@@ -149,6 +149,20 @@ namespace DivaModManager
                 ModsWatcher.EnableRaisingEvents = true;
             }
 
+            // Category ComboBox Init
+            List<Mod> CategoryItems = Global.ModList.DistinctBy(x => x.cat).ToList();
+            Global.CategoryItems = new ObservableCollection<string>();
+            Global.CategoryItems.Add("ALL");
+            foreach (var CategoryItem in CategoryItems)
+            {
+                if (!string.IsNullOrEmpty(CategoryItem.cat))
+                {
+                    Global.CategoryItems.Add(CategoryItem.cat);
+                }
+            }
+            SearchCategoryComboBox.ItemsSource = Global.CategoryItems;
+            SearchCategoryComboBox.SelectedIndex = 0;
+
             defaultFlow.Blocks.Add(ConvertToFlowParagraph(defaultText));
             DescriptionWindow.Document = defaultFlow;
             var bitmap = new BitmapImage(new Uri("pack://application:,,,/DivaModManager;component/Assets/preview_enomoto.png"));
@@ -529,7 +543,7 @@ namespace DivaModManager
                         }
                     }
 
-                    // Loading Priority and Note
+                    // Loading Categor
                     var modPath = $"{mod}{Global.s}mod.json";
                     foreach (var mod_g in mod_g_list)
                     {
@@ -567,13 +581,6 @@ namespace DivaModManager
                                 Metadata metadata = JsonSerializer.Deserialize<Metadata>(modJsonString);
                                 mod_g.cat = metadata.cat;
                             }
-                            //if (Toml.TryToModel(modJsonString, out TomlTable mod_json, out var diagnostics))
-                            //{
-                            //    if (mod_json.ContainsKey("cat"))
-                            //    {
-                            //        mod_g.cat = mod_json["cat"].ToString();
-                            //    }
-                            //}
                         }
                     }
                 }
@@ -3087,15 +3094,14 @@ namespace DivaModManager
                 {
                     case "ALL":
                         Global.ModList = new ObservableCollection<Mod>(Global.ModList_All.ToList()
-                            .Where(x => x.name.ToLower().Contains(searchModName.ToLower()) || x.note.ToLower().Contains(searchModName.ToLower()) || x.cat.ToLower().Contains(searchModName.ToLower())).ToList());
+                            .Where(
+                            x => x.name.ToLower().Contains(searchModName.ToLower())
+                            || x.note.ToLower().Contains(searchModName.ToLower())
+                            ).ToList());
                         break;
                     case "Name":
                         Global.ModList = new ObservableCollection<Mod>(Global.ModList_All.ToList()
                             .Where(x => x.name.ToLower().Contains(searchModName.ToLower())).ToList());
-                        break;
-                    case "Category":
-                        Global.ModList = new ObservableCollection<Mod>(Global.ModList_All.ToList()
-                            .Where(x => x.cat.ToLower().Contains(searchModName.ToLower())).ToList());
                         break;
                     case "Note":
                         Global.ModList = new ObservableCollection<Mod>(Global.ModList_All.ToList()

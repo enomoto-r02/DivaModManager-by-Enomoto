@@ -674,7 +674,6 @@
                             <ComboBoxItem Content="ALL" IsSelected="True"/>
                             <ComboBoxItem Content="Name"/>
                             <ComboBoxItem Content="Note"/>
-                            <ComboBoxItem Content="Category"/>
                         </ComboBox>
                         <Grid x:Name="MiddleGrid" Grid.Row="2" Grid.ColumnSpan="8">
                             <Grid.ColumnDefinitions>
@@ -838,6 +837,9 @@
                                 </Style>
                             </RichTextBox.Resources>
                         </RichTextBox>
+                        <ComboBox x:Name="SearchCategoryComboBox" Grid.Column="4" Grid.Row="1" Text="" 
+                            FontSize="20" FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" IsEditable="False" Margin="10,8,10,8">
+                        </ComboBox>
                     </Grid>
                 </TabItem.Content>
             </TabItem>
