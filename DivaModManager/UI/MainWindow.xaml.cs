@@ -232,6 +232,7 @@ namespace DivaModManager
             {
                 var configPath = $"{mod}{Global.s}config.toml";
 
+                bool executeFlg = false;
                 // Add new folders found in Mods to the ModList
                 if (!Global.ModList.ToList().Where(x => x.name == Path.GetFileName(mod)).Any())
                 {
@@ -239,6 +240,7 @@ namespace DivaModManager
                     m.name = Path.GetFileName(mod);
                     if (File.Exists(configPath))
                     {
+                        executeFlg = true;
                         var configString = String.Empty;
                         while (String.IsNullOrEmpty(configString))
                         {
@@ -366,6 +368,7 @@ namespace DivaModManager
                 // Check if enabled field is changed in existing mods (different loadouts or copy loadouts)
                 else
                 {
+                    executeFlg = true;
                     var index = Global.ModList.ToList().FindIndex(x => x.name == Path.GetFileName(mod));
                     TomlTable config;
                     if (File.Exists(configPath))
@@ -545,9 +548,12 @@ namespace DivaModManager
                             }
                         }
                     }
-
+                }
+                if(executeFlg)
+                {
                     // Loading Categor
                     var modPath = $"{mod}{Global.s}mod.json";
+                    var mod_g_list = Global.ModList.ToList().Where(x => x.name == Path.GetFileName(mod));
                     foreach (var mod_g in mod_g_list)
                     {
                         if (File.Exists(modPath))
@@ -580,12 +586,12 @@ namespace DivaModManager
                                         break;
                                     }
                                 }
-
                                 Metadata metadata = JsonSerializer.Deserialize<Metadata>(modJsonString);
                                 mod_g.cat = metadata.cat;
                             }
                         }
                     }
+                    executeFlg = false;
                 }
             }
             // Remove deleted folders that are still in the ModList
