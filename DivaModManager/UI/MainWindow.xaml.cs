@@ -149,6 +149,20 @@ namespace DivaModManager
                 ModsWatcher.EnableRaisingEvents = true;
             }
 
+            // Category ComboBox Init
+            List<Mod> CategoryItems = Global.ModList.DistinctBy(x => x.cat).OrderBy(x => x.cat).ToList();
+            Global.CategoryItems = new ObservableCollection<string>();
+            Global.CategoryItems.Add("ALL");
+            foreach (var CategoryItem in CategoryItems)
+            {
+                if (!string.IsNullOrEmpty(CategoryItem.cat))
+                {
+                    Global.CategoryItems.Add(CategoryItem.cat);
+                }
+            }
+            SearchCategoryComboBox.ItemsSource = Global.CategoryItems;
+            SearchCategoryComboBox.SelectedIndex = 0;
+
             defaultFlow.Blocks.Add(ConvertToFlowParagraph(defaultText));
             DescriptionWindow.Document = defaultFlow;
             var bitmap = new BitmapImage(new Uri("pack://application:,,,/DivaModManager;component/Assets/preview_enomoto.png"));
@@ -447,6 +461,7 @@ namespace DivaModManager
                         }
                     }
 
+                    // Loading Priority and Note
                     var configPath_e = $"{mod}{Global.s}config_e.toml";
                     var mod_g_list = Global.ModList.ToList().Where(x => x.name == Path.GetFileName(mod));
                     foreach (var mod_g in mod_g_list)
@@ -527,7 +542,47 @@ namespace DivaModManager
                             }
                         }
                     }
-                    
+
+                    // Loading Categor
+                    var modPath = $"{mod}{Global.s}mod.json";
+                    foreach (var mod_g in mod_g_list)
+                    {
+                        if (File.Exists(modPath))
+                        {
+                            var modJsonString = String.Empty;
+                            while (String.IsNullOrEmpty(modJsonString))
+                            {
+                                modJsonString = File.ReadAllText(modPath);
+                                try
+                                {
+                                    if (string.IsNullOrEmpty(modPath))
+                                    {
+                                        string message = $"mod.json's content is empty! Path : {modPath}";
+                                        throw new Exception(message);
+                                    }
+                                }
+                                catch (Exception e)
+                                {
+                                    // Check if the exception is related to an IO error.
+                                    if (e.GetType() != typeof(IOException))
+                                    {
+                                        Global.logger.WriteLine($"Couldn't access {modPath} ({e.Message})", LoggerType.Error);
+                                        MessageBox.Show(e.Message, "Attention.", MessageBoxButton.OK, MessageBoxImage.Error);
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        Global.logger.WriteLine($"Other exception {modPath} ({e.Message})", LoggerType.Error);
+                                        MessageBox.Show(e.Message, "Attention.", MessageBoxButton.OK, MessageBoxImage.Error);
+                                        break;
+                                    }
+                                }
+
+                                Metadata metadata = JsonSerializer.Deserialize<Metadata>(modJsonString);
+                                mod_g.cat = metadata.cat;
+                            }
+                        }
+                    }
                 }
             }
             // Remove deleted folders that are still in the ModList
@@ -2727,7 +2782,7 @@ namespace DivaModManager
                                 Global.LoadoutItems.Add(copyLoadoutWindow.loadout);
                                 // Deep Copy over current loadout
                                 ObservableCollection<Mod> ModList_Copy = new ObservableCollection<Mod>();
-                                foreach(Mod m in Global.ModList)
+                                foreach (Mod m in Global.ModList)
                                 {
                                     ModList_Copy.Add(m.Clone());
                                 }
@@ -2865,6 +2920,30 @@ namespace DivaModManager
                         Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().OrderBy(x => x.name, new NaturalSort()).ToList());
                         Global.logger.WriteLine("Sorted alphanumerically!", LoggerType.Info);
                     }
+                    else if (colHeader.Column.Header.Equals("Category"))
+                    {
+                        if (direction == ListSortDirection.Descending)
+                        {
+                            ObservableCollection<Mod> ModList_no_cat = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.cat == "").ToList());
+                            Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.cat != "").OrderBy(x => x.cat, new NaturalSort()).ToList());
+                            foreach (Mod m in ModList_no_cat)
+                            {
+                                Global.ModList.Add(m);
+                            }
+                            direction = ListSortDirection.Ascending;
+                        }
+                        else
+                        {
+                            ObservableCollection<Mod> ModList_no_note = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.cat == "").ToList());
+                            Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.cat != "").OrderByDescending(x => x.cat, new NaturalSort()).ToList());
+                            foreach (Mod m in ModList_no_note)
+                            {
+                                Global.ModList.Add(m);
+                            }
+                            direction = ListSortDirection.Descending;
+                        }
+                        Global.logger.WriteLine("Sorted by Note column!", LoggerType.Info);
+                    }
                     else if (colHeader.Column.Header.Equals("Note"))
                     {
                         if (direction == ListSortDirection.Descending)
@@ -2967,7 +3046,7 @@ namespace DivaModManager
                             checkbox.IsChecked = !checkbox.IsChecked;
                         }
                     }
-                } 
+                }
                 else if (e.Key == Key.Enter)
                 {
                     OpenItem_Click(sender, e);
@@ -2989,22 +3068,22 @@ namespace DivaModManager
 
         private void SearchModList_Click(object sender, RoutedEventArgs e)
         {
-            SearchModList(SearchModListTextBox.Text);
+            SearchModList(SearchModListTextBox.Text, SearchCategoryComboBox.Text);
         }
 
         private void SearchModListTextBox_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
             {
-                SearchModList(SearchModListTextBox.Text);
+                SearchModList(SearchModListTextBox.Text, SearchCategoryComboBox.Text);
             }
         }
 
-        private void SearchModList(string searchModName)
+        private void SearchModList(string searchModName, string categoryName)
         {
             ModGrid.ClearSelectedItems();
 
-            if (string.IsNullOrEmpty(searchModName))
+            if (string.IsNullOrEmpty(searchModName) && categoryName == "ALL")
             {
                 // Restore all evacuated mods.
                 InitSearchMod();
@@ -3015,7 +3094,10 @@ namespace DivaModManager
                 {
                     case "ALL":
                         Global.ModList = new ObservableCollection<Mod>(Global.ModList_All.ToList()
-                            .Where(x => x.name.ToLower().Contains(searchModName.ToLower()) || x.note.ToLower().Contains(searchModName.ToLower())).ToList());
+                            .Where(
+                            x => x.name.ToLower().Contains(searchModName.ToLower())
+                            || x.note.ToLower().Contains(searchModName.ToLower())
+                            ).ToList());
                         break;
                     case "Name":
                         Global.ModList = new ObservableCollection<Mod>(Global.ModList_All.ToList()
@@ -3024,6 +3106,16 @@ namespace DivaModManager
                     case "Note":
                         Global.ModList = new ObservableCollection<Mod>(Global.ModList_All.ToList()
                             .Where(x => x.note.ToLower().Contains(searchModName.ToLower())).ToList());
+                        break;
+                }
+
+                switch (categoryName)
+                {
+                    case "ALL":
+                        break;
+                    default:
+                        Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList()
+                            .Where(x => x.cat == categoryName).ToList());
                         break;
                 }
                 Global.SearchModListFlg = true;
@@ -3054,6 +3146,8 @@ namespace DivaModManager
             Global.ModList = Global.ModList_All;
             ModGrid.ItemsSource = Global.ModList;
             SearchModListTextBox.Text = "";
+            SearchTargetComboBox.SelectedIndex = 0;
+            SearchCategoryComboBox.SelectedIndex = 0;
             ModGrid.ClearSelectedItems();
         }
 
@@ -3062,6 +3156,8 @@ namespace DivaModManager
             Global.SearchModListFlg = false;
             Global.ModList_All = Global.ModList;
             SearchModListTextBox.Text = "";
+            SearchTargetComboBox.SelectedIndex = 0;
+            SearchCategoryComboBox.SelectedIndex = 0;
             ModGrid.ClearSelectedItems();
         }
 
@@ -3101,7 +3197,6 @@ namespace DivaModManager
                 case "Note":
                     Global.config.NoteColumnWidth = column.Width.DisplayValue;
                     break;
-
             }
         }
 
@@ -3160,6 +3255,12 @@ namespace DivaModManager
                 }
                 UpdateModConfigToml_E(mod, e.Column.Header.ToString(), newText);
             }
+        }
+
+        private void SearchCategoryComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            ComboBox combo = (ComboBox)sender;
+            SearchModList(SearchModListTextBox.Text, combo.SelectedItem.ToString());
         }
     }
 }
