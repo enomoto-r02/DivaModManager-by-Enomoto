@@ -118,9 +118,4 @@ namespace DivaModManager
         public string OptionSubText { get; set; }
         public int Index { get; set; }
     }
-    public class DmmeNotes
-    {
-        public string Priority { get; set; }
-        public string Note { get; set; }
-    }
 }
