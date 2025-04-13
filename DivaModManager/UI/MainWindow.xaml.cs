@@ -196,10 +196,11 @@ namespace DivaModManager
         }
         private void OnModified(object sender, FileSystemEventArgs e)
         {
-            Refresh();
             // Bring window to front after download is done
             App.Current.Dispatcher.Invoke((Action)delegate
             {
+                InitSearchMod();
+                Refresh();
                 Activate();
             });
         }
