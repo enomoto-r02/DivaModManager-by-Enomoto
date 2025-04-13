@@ -151,20 +151,7 @@ namespace DivaModManager
                 ModsWatcher.EnableRaisingEvents = true;
             }
 
-            // Category ComboBox Init
-            List<Mod> CategoryItems = Global.ModList.DistinctBy(x => x.cat).OrderBy(x => x.cat).ToList();
-            Global.CategoryItems = new ObservableCollection<string>();
-            Global.CategoryItems.Add("ALL");
-            foreach (var CategoryItem in CategoryItems)
-            {
-                if (!string.IsNullOrEmpty(CategoryItem.cat))
-                {
-                    Global.CategoryItems.Add(CategoryItem.cat);
-                }
-            }
-            Global.CategoryItems.Add("None");
-            SearchCategoryComboBox.ItemsSource = Global.CategoryItems;
-            SearchCategoryComboBox.SelectedIndex = 0;
+            CategoryComboInit();
 
             defaultFlow.Blocks.Add(ConvertToFlowParagraph(defaultText));
             DescriptionWindow.Document = defaultFlow;
@@ -614,6 +601,7 @@ namespace DivaModManager
                 {
                     ModGrid.ItemsSource = Global.ModList;
                     ModGrid.Items.Refresh();
+                    CategoryComboInit();
                     var stats = $"{Global.ModList.ToList().Where(x => x.enabled).ToList().Count}/{Global.ModList.Count} mods • {Directory.GetFiles(currentModDirectory, "*", SearchOption.AllDirectories).Length.ToString("N0")} files • " +
                     $"{StringConverters.FormatSize(new DirectoryInfo(currentModDirectory).GetDirectorySize())}";
                     if (!String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].ModLoaderVersion))
@@ -3277,6 +3265,23 @@ namespace DivaModManager
         {
             ComboBox combo = (ComboBox)sender;
             SearchModList(SearchModListTextBox.Text, combo.SelectedItem.ToString());
+        }
+
+        private void CategoryComboInit()
+        {
+            List<Mod> CategoryItems = Global.ModList.DistinctBy(x => x.cat).OrderBy(x => x.cat).ToList();
+            Global.CategoryItems = new ObservableCollection<string>();
+            Global.CategoryItems.Add("ALL");
+            foreach (var CategoryItem in CategoryItems)
+            {
+                if (!string.IsNullOrEmpty(CategoryItem.cat))
+                {
+                    Global.CategoryItems.Add(CategoryItem.cat);
+                }
+            }
+            Global.CategoryItems.Add("None");
+            SearchCategoryComboBox.ItemsSource = Global.CategoryItems;
+            SearchCategoryComboBox.SelectedIndex = 0;
         }
     }
 }
