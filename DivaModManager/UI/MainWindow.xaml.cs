@@ -150,7 +150,7 @@ namespace DivaModManager
             }
 
             // Category ComboBox Init
-            List<Mod> CategoryItems = Global.ModList.DistinctBy(x => x.cat).ToList();
+            List<Mod> CategoryItems = Global.ModList.DistinctBy(x => x.cat).OrderBy(x => x.cat).ToList();
             Global.CategoryItems = new ObservableCollection<string>();
             Global.CategoryItems.Add("ALL");
             foreach (var CategoryItem in CategoryItems)
@@ -2782,7 +2782,7 @@ namespace DivaModManager
                                 Global.LoadoutItems.Add(copyLoadoutWindow.loadout);
                                 // Deep Copy over current loadout
                                 ObservableCollection<Mod> ModList_Copy = new ObservableCollection<Mod>();
-                                foreach(Mod m in Global.ModList)
+                                foreach (Mod m in Global.ModList)
                                 {
                                     ModList_Copy.Add(m.Clone());
                                 }
@@ -3046,7 +3046,7 @@ namespace DivaModManager
                             checkbox.IsChecked = !checkbox.IsChecked;
                         }
                     }
-                } 
+                }
                 else if (e.Key == Key.Enter)
                 {
                     OpenItem_Click(sender, e);
@@ -3068,22 +3068,22 @@ namespace DivaModManager
 
         private void SearchModList_Click(object sender, RoutedEventArgs e)
         {
-            SearchModList(SearchModListTextBox.Text);
+            SearchModList(SearchModListTextBox.Text, SearchCategoryComboBox.Text);
         }
 
         private void SearchModListTextBox_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
             {
-                SearchModList(SearchModListTextBox.Text);
+                SearchModList(SearchModListTextBox.Text, SearchCategoryComboBox.Text);
             }
         }
 
-        private void SearchModList(string searchModName)
+        private void SearchModList(string searchModName, string categoryName)
         {
             ModGrid.ClearSelectedItems();
 
-            if (string.IsNullOrEmpty(searchModName))
+            if (string.IsNullOrEmpty(searchModName) && categoryName == "ALL")
             {
                 // Restore all evacuated mods.
                 InitSearchMod();
@@ -3106,6 +3106,16 @@ namespace DivaModManager
                     case "Note":
                         Global.ModList = new ObservableCollection<Mod>(Global.ModList_All.ToList()
                             .Where(x => x.note.ToLower().Contains(searchModName.ToLower())).ToList());
+                        break;
+                }
+
+                switch (categoryName)
+                {
+                    case "ALL":
+                        break;
+                    default:
+                        Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList()
+                            .Where(x => x.cat == categoryName).ToList());
                         break;
                 }
                 Global.SearchModListFlg = true;
@@ -3183,7 +3193,6 @@ namespace DivaModManager
                 case "Note":
                     Global.config.NoteColumnWidth = column.Width.DisplayValue;
                     break;
-
             }
         }
 
@@ -3242,6 +3251,12 @@ namespace DivaModManager
                 }
                 UpdateModConfigToml_E(mod, e.Column.Header.ToString(), newText);
             }
+        }
+
+        private void SearchCategoryComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            ComboBox combo = (ComboBox)sender;
+            SearchModList(SearchModListTextBox.Text, combo.SelectedItem.ToString());
         }
     }
 }
