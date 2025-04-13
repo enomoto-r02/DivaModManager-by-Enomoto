@@ -3146,6 +3146,8 @@ namespace DivaModManager
             Global.ModList = Global.ModList_All;
             ModGrid.ItemsSource = Global.ModList;
             SearchModListTextBox.Text = "";
+            SearchTargetComboBox.SelectedIndex = 0;
+            SearchCategoryComboBox.SelectedIndex = 0;
             ModGrid.ClearSelectedItems();
         }
 
@@ -3154,6 +3156,8 @@ namespace DivaModManager
             Global.SearchModListFlg = false;
             Global.ModList_All = Global.ModList;
             SearchModListTextBox.Text = "";
+            SearchTargetComboBox.SelectedIndex = 0;
+            SearchCategoryComboBox.SelectedIndex = 0;
             ModGrid.ClearSelectedItems();
         }
 
