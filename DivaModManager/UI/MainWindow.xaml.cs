@@ -41,7 +41,6 @@ namespace DivaModManager
             "\nand/or Right Click Row > Fetch Metadata and confirm the GameBanana URL of the mod";
         private ObservableCollection<String> LauncherOptions = new ObservableCollection<String>(new string[] { "Executable", "Steam" });
         ListSortDirection direction = ListSortDirection.Ascending;
-        private bool CategoryDelItemMsgShow = false;
 
         public MainWindow()
         {
@@ -3275,18 +3274,17 @@ namespace DivaModManager
                 {
                     mod.category = newText;
 
-                    // If the number of categories increases, reload the category combo box.
                     if (!SearchCategoryComboBox.Items.Contains(newText))
                     {
                         if (Global.ModList.Count > 1)
                         {
+                            // If the number of categories increases, reload the category combo box.
                             CategoryComboInit();
-                        } 
-                        else if (!CategoryDelItemMsgShow)
+                        }
+                        else
                         {
-                            MessageBox.Show("The MOD for the target category has been removed.\nPlease restart the application to reload the category combo box.",
-                                "Attention.", MessageBoxButton.OK, MessageBoxImage.Information);
-                            CategoryDelItemMsgShow = true;
+                            // If the number of categories decreases, please set the category combobox to ALL.
+                            CategoryComboInit(0);
                         }
                     }
                 }
