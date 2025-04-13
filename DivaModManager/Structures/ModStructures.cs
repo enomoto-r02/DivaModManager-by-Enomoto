@@ -60,7 +60,7 @@ namespace DivaModManager
         }
 
         [JsonIgnore]
-        public string cat { get; set; } = string.Empty;
+        public string category { get; set; } = string.Empty;
 
         public event PropertyChangedEventHandler? PropertyChanged;
         private void OnPropertyChanged([CallerMemberName] string? propertyName = null)

@@ -797,7 +797,7 @@
                                         </DataGridTextColumn.EditingElementStyle>
                                     </DataGridTextColumn>
                                     <DataGridTextColumn Header="Name" Binding="{Binding name, Mode=TwoWay}" IsReadOnly="True" Width="1.5*" CanUserResize="True"/>
-                                    <DataGridTextColumn Header="Category" Binding="{Binding cat, Mode=TwoWay}" Width="1.0*" IsReadOnly="True" CanUserResize="True"/>
+                                    <DataGridTextColumn Header="Category" Binding="{Binding category, Mode=TwoWay}" Width="1.0*" CanUserResize="True"/>
                                     <DataGridTextColumn Header="Note" Binding="{Binding note, Mode=TwoWay}" Width="1.5*" IsReadOnly="False" CanUserResize="True">
                                         <DataGridTextColumn.EditingElementStyle>
                                             <Style TargetType="TextBox">
