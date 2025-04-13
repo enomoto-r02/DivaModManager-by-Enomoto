@@ -41,6 +41,7 @@ namespace DivaModManager
             "\nand/or Right Click Row > Fetch Metadata and confirm the GameBanana URL of the mod";
         private ObservableCollection<String> LauncherOptions = new ObservableCollection<String>(new string[] { "Executable", "Steam" });
         ListSortDirection direction = ListSortDirection.Ascending;
+        private bool CategoryDelItemMsgShow = false;
 
         public MainWindow()
         {
@@ -151,7 +152,7 @@ namespace DivaModManager
                 ModsWatcher.EnableRaisingEvents = true;
             }
 
-            CategoryComboInit();
+            CategoryComboInit(0);
 
             defaultFlow.Blocks.Add(ConvertToFlowParagraph(defaultText));
             DescriptionWindow.Document = defaultFlow;
@@ -613,7 +614,7 @@ namespace DivaModManager
                 {
                     ModGrid.ItemsSource = Global.ModList;
                     ModGrid.Items.Refresh();
-                    CategoryComboInit();
+                    CategoryComboInit(0);
                     var stats = $"{Global.ModList.ToList().Where(x => x.enabled).ToList().Count}/{Global.ModList.Count} mods • {Directory.GetFiles(currentModDirectory, "*", SearchOption.AllDirectories).Length.ToString("N0")} files • " +
                     $"{StringConverters.FormatSize(new DirectoryInfo(currentModDirectory).GetDirectorySize())}";
                     if (!String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].ModLoaderVersion))
@@ -3273,6 +3274,21 @@ namespace DivaModManager
                 else if (e.Column.Header.ToString() == "Category")
                 {
                     mod.category = newText;
+
+                    // If the number of categories increases, reload the category combo box.
+                    if (!SearchCategoryComboBox.Items.Contains(newText))
+                    {
+                        if (Global.ModList.Count > 1)
+                        {
+                            CategoryComboInit();
+                        } 
+                        else if (!CategoryDelItemMsgShow)
+                        {
+                            MessageBox.Show("The MOD for the target category has been removed.\nPlease restart the application to reload the category combo box.",
+                                "Attention.", MessageBoxButton.OK, MessageBoxImage.Information);
+                            CategoryDelItemMsgShow = true;
+                        }
+                    }
                 }
                 else if (e.Column.Header.ToString() == "Note")
                 {
@@ -3288,9 +3304,9 @@ namespace DivaModManager
             SearchModList(SearchModListTextBox.Text, combo.SelectedItem?.ToString());
         }
 
-        private void CategoryComboInit()
+        private void CategoryComboInit(int? selected = null)
         {
-            List<Mod> CategoryItems = Global.ModList.DistinctBy(x => x.category).OrderBy(x => x.category).ToList();
+            List<Mod> CategoryItems = Global.ModList_All.DistinctBy(x => x.category).OrderBy(x => x.category).ToList();
             Global.CategoryItems = new ObservableCollection<string>();
             Global.CategoryItems.Add("ALL");
             foreach (var CategoryItem in CategoryItems)
@@ -3302,7 +3318,10 @@ namespace DivaModManager
             }
             Global.CategoryItems.Add("Unspecified");
             SearchCategoryComboBox.ItemsSource = Global.CategoryItems;
-            SearchCategoryComboBox.SelectedIndex = 0;
+            if (selected != null)
+            {
+                SearchCategoryComboBox.SelectedIndex = (int)selected;
+            }
         }
     }
 }
