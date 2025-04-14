@@ -3097,7 +3097,7 @@ namespace DivaModManager
         {
             ModGrid.ClearSelectedItems();
 
-            if (string.IsNullOrEmpty(searchModName) && categoryName == "ALL")
+            if (string.IsNullOrEmpty(searchModName) && (SearchCategoryComboBox.SelectedIndex == 0))
             {
                 // Restore all evacuated mods.
                 InitSearchMod();
@@ -3123,9 +3123,16 @@ namespace DivaModManager
                         break;
                 }
 
+                //switch (categoryName)
                 switch (categoryName)
                 {
                     case "ALL":
+                        if (SearchCategoryComboBox.SelectedIndex != 0)
+                        {
+                            Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList()
+                                .Where(x => x.category == categoryName).ToList());
+                            break;
+                        }
                         break;
                     case "Unspecified":
                         Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList()
@@ -3135,7 +3142,7 @@ namespace DivaModManager
                         Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList()
                             .Where(x => x.category == categoryName).ToList());
                         break;
-                }
+                    }
                 Global.SearchModListFlg = true;
             }
 
