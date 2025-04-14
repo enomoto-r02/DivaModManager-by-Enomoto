@@ -63,6 +63,8 @@ namespace DivaModManager
         public string category { get; set; } = string.Empty;
         [JsonIgnore]
         public bool categoryByConfig_e { get; set; } = false;
+        [JsonIgnore]
+        public bool categoryColumnColor { get; set; } = false;
 
 
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -102,6 +104,7 @@ namespace DivaModManager
         public double? NameColumnWidth { get; set; }
         public double? CategoryColumnWidth { get; set; }
         public double? NoteColumnWidth { get; set; }
+        public bool CategoryColumnColor { get; set; } = false;
         public string? DoubleClickEvent { get; set; }
     }
     public class GameConfig

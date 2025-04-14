@@ -501,6 +501,7 @@ namespace DivaModManager
                                 {
                                     mod_g.category = config_e["category"].ToString();
                                     mod_g.categoryByConfig_e = true;
+                                    mod_g.categoryColumnColor = Global.config.CategoryColumnColor;
                                 }
                                 if (config_e.ContainsKey("note"))
                                 {
@@ -2911,9 +2912,15 @@ namespace DivaModManager
                     {
                         if (direction == ListSortDirection.Descending)
                         {
+                            ObservableCollection<Mod> ModList_minus = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => !string.IsNullOrEmpty(x.priority)).Where(x => x.priority.StartsWith('-')).OrderBy(x => x.priority, new NaturalSort()).ToList());
                             ObservableCollection<Mod> ModList_no_priority = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => string.IsNullOrEmpty(x.priority)).ToList());
-                            Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => !string.IsNullOrEmpty(x.priority)).OrderBy(x => x.priority, new NaturalSort()).ToList());
+                            Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => !string.IsNullOrEmpty(x.priority)).Where(x => !x.priority.StartsWith('-')).OrderBy(x => x.priority, new NaturalSort()).ToList());
+                            
                             foreach (Mod m in ModList_no_priority)
+                            {
+                                Global.ModList.Add(m);
+                            }
+                            foreach (Mod m in ModList_minus)
                             {
                                 Global.ModList.Add(m);
                             }
@@ -2921,9 +2928,16 @@ namespace DivaModManager
                         }
                         else
                         {
-                            ObservableCollection<Mod> ModList_no_priority = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => string.IsNullOrEmpty(x.priority)).ToList());
-                            Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => !string.IsNullOrEmpty(x.priority)).OrderByDescending(x => x.priority, new NaturalSort()).ToList());
+                            ObservableCollection<Mod> ModList_minus = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => !string.IsNullOrEmpty(x.priority)).Where(x => x.priority.StartsWith('-')).OrderByDescending(x => x.priority, new NaturalSort()).ToList());
+                            ObservableCollection<Mod> ModList_no_priority = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => string.IsNullOrEmpty(x.priority)).OrderByDescending(x => x.priority).ToList());
+
+                            Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => !string.IsNullOrEmpty(x.priority)).Where(x => !x.priority.StartsWith('-')).OrderByDescending(x => x.priority, new NaturalSort()).ToList());
+                            
                             foreach (Mod m in ModList_no_priority)
+                            {
+                                Global.ModList.Add(m);
+                            }
+                            foreach (Mod m in ModList_minus)
                             {
                                 Global.ModList.Add(m);
                             }
@@ -3072,6 +3086,32 @@ namespace DivaModManager
             else if (ModGrid.CurrentColumn.Header.ToString() == "Priority")
             {
                 e.Handled = true;
+
+                string cell_value = null;
+
+                // Double click to select
+                if (e.OriginalSource is TextBox)
+                {
+                    TextBox obj_text = (TextBox)e.OriginalSource;
+                    cell_value = obj_text.Text;
+                }
+                // F2 to select
+                else if (e.OriginalSource is DataGridCell)
+                {
+                    DataGridCell obj_cell = (DataGridCell)e.OriginalSource;
+                    Mod mod_cell = obj_cell.DataContext as Mod;
+                    cell_value = mod_cell.priority;
+                }
+
+                if (string.IsNullOrEmpty(cell_value))
+                {
+                    // Only the first character can be entered as a negative.
+                    if (e.Key == Key.Subtract || e.Key == Key.OemMinus)
+                    {
+                        e.Handled = false;
+                    }
+                }
+
                 if ((e.Key >= Key.D0 && e.Key <= Key.D9) || (e.Key >= Key.NumPad0 && e.Key <= Key.NumPad9)
                     || (e.Key == Key.Enter || e.Key == Key.Back || e.Key == Key.Delete)
                     || (e.Key == Key.Up || e.Key == Key.Down || e.Key == Key.Left || e.Key == Key.Right)
