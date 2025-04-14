@@ -682,7 +682,7 @@
                             <fa5:ImageAwesome Icon="Solid_Search" Foreground="#f2f2f2" Margin="3"/>
                         </Button>
                         <ComboBox Name="SearchTargetComboBox" Grid.Column="3" Grid.Row="1" Text="Search" 
-                                   FontSize="20" FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" IsEditable="False" Margin="40,10,10,10">
+                                   FontSize="20" FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" IsEditable="False" Margin="75,8,10,8">
                             <ComboBoxItem Content="ALL" IsSelected="True"/>
                             <ComboBoxItem Content="Name"/>
                             <ComboBoxItem Content="Note"/>
@@ -861,8 +861,10 @@
                         </RichTextBox>
                         <ComboBox x:Name="SearchCategoryComboBox" Grid.Column="4" Grid.Row="1" Text="" FontSize="20" 
                                   FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" IsEditable="False" Margin="0,8,10,8"
-                            SelectionChanged="SearchCategoryComboBox_SelectionChanged">
-                        </ComboBox>
+                            SelectionChanged="SearchCategoryComboBox_SelectionChanged"/>
+                        <Button Grid.Column="3" IsEnabled="True" HorizontalAlignment="Left" Click="SearchClear_Click" x:Name="SearchClearButton" Height="35" Width="35" Grid.Row="1" Margin="35,8,0,8">
+                            <fa5:ImageAwesome Icon="Solid_TimesCircle" Foreground="#f2f2f2" Margin="3"/>
+                        </Button>
                     </Grid>
                 </TabItem.Content>
             </TabItem>

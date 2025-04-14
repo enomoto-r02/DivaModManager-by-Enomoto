@@ -3133,6 +3133,11 @@ namespace DivaModManager
             SearchModList(SearchModListTextBox.Text, SearchCategoryComboBox.Text);
         }
 
+        private void SearchClear_Click(object sender, RoutedEventArgs e)
+        {
+            InitSearchMod();
+        }
+
         private void SearchModListTextBox_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
@@ -3145,53 +3150,45 @@ namespace DivaModManager
         {
             ModGrid.ClearSelectedItems();
 
-            if (string.IsNullOrEmpty(searchModName) && (SearchCategoryComboBox.SelectedIndex == 0))
+            switch (SearchTargetComboBox.Text)
             {
-                // Restore all evacuated mods.
-                InitSearchMod();
+                case "ALL":
+                    Global.ModList = new ObservableCollection<Mod>(Global.ModList_All.ToList()
+                        .Where(
+                        x => x.name.ToLower().Contains(searchModName.ToLower())
+                        || x.note.ToLower().Contains(searchModName.ToLower())
+                        ).ToList());
+                    break;
+                case "Name":
+                    Global.ModList = new ObservableCollection<Mod>(Global.ModList_All.ToList()
+                        .Where(x => x.name.ToLower().Contains(searchModName.ToLower())).ToList());
+                    break;
+                case "Note":
+                    Global.ModList = new ObservableCollection<Mod>(Global.ModList_All.ToList()
+                        .Where(x => x.note.ToLower().Contains(searchModName.ToLower())).ToList());
+                    break;
             }
-            else
-            {
-                switch (SearchTargetComboBox.Text)
-                {
-                    case "ALL":
-                        Global.ModList = new ObservableCollection<Mod>(Global.ModList_All.ToList()
-                            .Where(
-                            x => x.name.ToLower().Contains(searchModName.ToLower())
-                            || x.note.ToLower().Contains(searchModName.ToLower())
-                            ).ToList());
-                        break;
-                    case "Name":
-                        Global.ModList = new ObservableCollection<Mod>(Global.ModList_All.ToList()
-                            .Where(x => x.name.ToLower().Contains(searchModName.ToLower())).ToList());
-                        break;
-                    case "Note":
-                        Global.ModList = new ObservableCollection<Mod>(Global.ModList_All.ToList()
-                            .Where(x => x.note.ToLower().Contains(searchModName.ToLower())).ToList());
-                        break;
-                }
 
-                switch (categoryName)
-                {
-                    case "ALL":
-                        if (SearchCategoryComboBox.SelectedIndex != 0)
-                        {
-                            Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList()
-                                .Where(x => x.category == categoryName).ToList());
-                            break;
-                        }
-                        break;
-                    case "Unspecified":
-                        Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList()
-                            .Where(x => string.IsNullOrEmpty(x.category)).ToList());
-                        break;
-                    default:
+            switch (categoryName)
+            {
+                case "ALL":
+                    if (SearchCategoryComboBox.SelectedIndex != 0)
+                    {
                         Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList()
                             .Where(x => x.category == categoryName).ToList());
                         break;
-                }
-                Global.SearchModListFlg = true;
+                    }
+                    break;
+                case "Unspecified":
+                    Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList()
+                        .Where(x => string.IsNullOrEmpty(x.category)).ToList());
+                    break;
+                default:
+                    Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList()
+                        .Where(x => x.category == categoryName).ToList());
+                    break;
             }
+            Global.SearchModListFlg = true;
 
             ModGrid.ItemsSource = Global.ModList;
             Global.UpdateConfig();
@@ -3359,8 +3356,10 @@ namespace DivaModManager
 
         private void SearchCategoryComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            ComboBox combo = (ComboBox)sender;
-            SearchModList(SearchModListTextBox.Text, combo.SelectedItem?.ToString());
+            if (sender is ComboBox checkBox && checkBox.IsKeyboardFocusWithin)
+            {
+                SearchModList(SearchModListTextBox.Text, checkBox.SelectedItem?.ToString());
+            }
         }
 
         private void CategoryComboInit(int? selected = null)
