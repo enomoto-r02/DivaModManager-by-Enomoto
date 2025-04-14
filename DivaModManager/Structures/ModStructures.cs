@@ -65,6 +65,8 @@ namespace DivaModManager
         public bool categoryByConfig_e { get; set; } = false;
         [JsonIgnore]
         public bool categoryColumnColor { get; set; } = false;
+        [JsonIgnore]
+        public bool IsCategoryHighlighted { get; set; } = false;
 
 
         public event PropertyChangedEventHandler? PropertyChanged;

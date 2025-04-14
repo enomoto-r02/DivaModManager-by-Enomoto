@@ -813,11 +813,8 @@
                                         <DataGridTextColumn.CellStyle>
                                             <Style TargetType="DataGridCell">
                                                 <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding categoryByConfig_e}" Value="true">
+                                                    <DataTrigger Binding="{Binding IsCategoryHighlighted}" Value="true">
                                                         <Setter Property="Foreground" Value="LimeGreen" />
-                                                    </DataTrigger>
-                                                    <DataTrigger Binding="{Binding categoryColumnColor}" Value="false">
-                                                        <Setter Property="Foreground" Value="#f2f2f2" />
                                                     </DataTrigger>
                                                 </Style.Triggers>
                                             </Style>

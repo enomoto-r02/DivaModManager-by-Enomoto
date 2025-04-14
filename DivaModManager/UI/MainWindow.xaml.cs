@@ -502,6 +502,7 @@ namespace DivaModManager
                                     mod_g.category = config_e["category"].ToString();
                                     mod_g.categoryByConfig_e = true;
                                     mod_g.categoryColumnColor = Global.config.CategoryColumnColor;
+                                    mod_g.IsCategoryHighlighted = mod_g.categoryColumnColor && mod_g.categoryByConfig_e;
                                 }
                                 if (config_e.ContainsKey("note"))
                                 {
@@ -547,7 +548,7 @@ namespace DivaModManager
                 }
                 if (executeFlg)
                 {
-                    // Loading Categor
+                    // Loading Category
                     var modPath = $"{mod}{Global.s}mod.json";
                     var mod_g_list = Global.ModList.ToList().Where(x => x.name == Path.GetFileName(mod));
                     foreach (var mod_g in mod_g_list)
@@ -1123,7 +1124,7 @@ namespace DivaModManager
                 {
                     for (var i = 0; i < element.ContextMenu.Items.Count; i++)
                     {
-                        var contextMenu = element.ContextMenu.Items[i] as MenuItem;
+                        MenuItem contextMenu = element.ContextMenu.Items[i] as MenuItem;
                         if (contextMenu != null)
                         {
                             contextMenu.IsEnabled = true;
