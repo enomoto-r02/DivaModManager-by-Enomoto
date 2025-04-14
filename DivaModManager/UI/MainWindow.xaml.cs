@@ -2943,6 +2943,7 @@ namespace DivaModManager
                             }
                             direction = ListSortDirection.Descending;
                         }
+                        Global.logger.WriteLine("Sorted by Priority column!", LoggerType.Info);
                     }
                     else if (colHeader.Column.Header.Equals("Name"))
                     {
@@ -2972,7 +2973,7 @@ namespace DivaModManager
                             }
                             direction = ListSortDirection.Descending;
                         }
-                        Global.logger.WriteLine("Sorted by Note column!", LoggerType.Info);
+                        Global.logger.WriteLine("Sorted by Category column!", LoggerType.Info);
                     }
                     else if (colHeader.Column.Header.Equals("Note"))
                     {

@@ -851,7 +851,7 @@
                             </RichTextBox.Resources>
                         </RichTextBox>
                         <ComboBox x:Name="SearchCategoryComboBox" Grid.Column="4" Grid.Row="1" Text="" FontSize="20" 
-                                  FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" IsEditable="False" Margin="10,8,10,8"
+                                  FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" IsEditable="False" Margin="0,8,10,8"
                             SelectionChanged="SearchCategoryComboBox_SelectionChanged">
                         </ComboBox>
                     </Grid>
