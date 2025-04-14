@@ -62,7 +62,7 @@ namespace DivaModManager
         [JsonIgnore]
         public string category { get; set; } = string.Empty;
         [JsonIgnore]
-        public bool IsCategoryHighlighted { get; set; } = false;
+        public bool IsCategoryHighlighted { get; set; } = true;
 
 
         public event PropertyChangedEventHandler? PropertyChanged;
