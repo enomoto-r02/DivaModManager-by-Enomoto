@@ -500,9 +500,7 @@ namespace DivaModManager
                                 if (config_e.ContainsKey("category"))
                                 {
                                     mod_g.category = config_e["category"].ToString();
-                                    mod_g.categoryByConfig_e = true;
-                                    mod_g.categoryColumnColor = Global.config.CategoryColumnColor;
-                                    mod_g.IsCategoryHighlighted = mod_g.categoryColumnColor && mod_g.categoryByConfig_e;
+                                    mod_g.IsCategoryHighlighted = true;
                                 }
                                 if (config_e.ContainsKey("note"))
                                 {
@@ -590,7 +588,10 @@ namespace DivaModManager
                                 {
                                     mod_g.category = metadata.cat;
                                 }
-                                mod_g.categoryByConfig_e = false;
+                                if (mod_g.category == metadata.cat)
+                                {
+                                    mod_g.IsCategoryHighlighted = false;
+                                }
                             }
                         }
                     }

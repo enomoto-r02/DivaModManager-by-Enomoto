@@ -62,10 +62,6 @@ namespace DivaModManager
         [JsonIgnore]
         public string category { get; set; } = string.Empty;
         [JsonIgnore]
-        public bool categoryByConfig_e { get; set; } = false;
-        [JsonIgnore]
-        public bool categoryColumnColor { get; set; } = false;
-        [JsonIgnore]
         public bool IsCategoryHighlighted { get; set; } = false;
 
 
