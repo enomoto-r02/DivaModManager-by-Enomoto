@@ -797,7 +797,17 @@
                                         </DataGridTextColumn.EditingElementStyle>
                                     </DataGridTextColumn>
                                     <DataGridTextColumn Header="Name" Binding="{Binding name, Mode=TwoWay}" IsReadOnly="True" Width="1.5*" CanUserResize="True"/>
-                                    <DataGridTextColumn Header="Category" Binding="{Binding category, Mode=TwoWay}" Width="1.0*" CanUserResize="True"/>
+                                    <DataGridTextColumn Header="Category" Binding="{Binding category, Mode=TwoWay}" Width="1.0*" CanUserResize="True">
+                                        <DataGridTextColumn.CellStyle>
+                                            <Style TargetType="DataGridCell">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding categoryByConfig_e}" Value="True">
+                                                        <Setter Property="Foreground" Value="LimeGreen" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </DataGridTextColumn.CellStyle>
+                                    </DataGridTextColumn>
                                     <DataGridTextColumn Header="Note" Binding="{Binding note, Mode=TwoWay}" Width="1.5*" IsReadOnly="False" CanUserResize="True">
                                         <DataGridTextColumn.EditingElementStyle>
                                             <Style TargetType="TextBox">

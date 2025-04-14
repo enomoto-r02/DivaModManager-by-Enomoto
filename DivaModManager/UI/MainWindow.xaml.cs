@@ -500,6 +500,7 @@ namespace DivaModManager
                                 if (config_e.ContainsKey("category"))
                                 {
                                     mod_g.category = config_e["category"].ToString();
+                                    mod_g.categoryByConfig_e = true;
                                 }
                                 if (config_e.ContainsKey("note"))
                                 {
@@ -587,6 +588,7 @@ namespace DivaModManager
                                 {
                                     mod_g.category = metadata.cat;
                                 }
+                                mod_g.categoryByConfig_e = false;
                             }
                         }
                     }
