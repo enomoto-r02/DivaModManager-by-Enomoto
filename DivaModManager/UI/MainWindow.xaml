@@ -661,10 +661,10 @@
                         <ComboBox Grid.Column="5" Margin="0,0,10,0" Height="35" FontSize="20" FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" Name="LauncherOptionsBox" SelectionChanged="LauncherOptionsBox_SelectionChanged"/>
                         <ComboBox Grid.Column="1" Margin="10,0,10,0" Height="35" FontSize="20" FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" Name="LoadoutBox" SelectionChanged="LoadoutsBox_SelectionChanged"/>
 
-                        <TextBox Name="SearchModListTextBox" Grid.Column ="0" Grid.Row ="1" Grid.ColumnSpan="3" Margin="10,0,10,0" TextWrapping="Wrap" 
-                                 VerticalAlignment="Center" Width="2000" FontSize="20" KeyDown="SearchModListTextBox_KeyDown" HorizontalAlignment="Left"
+                        <TextBox Name="SearchModListTextBox" Grid.Column ="0" Grid.Row ="1" Grid.ColumnSpan="3" Margin="10,0,0,0" TextWrapping="Wrap" 
+                                 VerticalAlignment="Center" Width="322" FontSize="20" KeyDown="SearchModListTextBox_KeyDown" HorizontalAlignment="Left"
                                  Foreground="#303030" Padding="4,0,0,0" FontFamily="{StaticResource AnekLatin}" IsEnabled="False" 
-                                 VerticalContentAlignment="Center" Height="35"/>
+                                 VerticalContentAlignment="Center" Height="34"/>
                         <TextBlock Margin="13,0,0,0" Padding="5,5,3,3" Grid.Column ="0" Grid.Row ="1" FontFamily="{StaticResource AnekLatin}" 
                                    IsHitTestVisible="False" Height="30" MinWidth="200" HorizontalAlignment="Left" Text="Search..." 
                                    VerticalAlignment="Center" Foreground="#303030" Grid.ColumnSpan="2" FontSize="20">
@@ -678,11 +678,11 @@
                                 </Style>
                             </TextBlock.Style>
                         </TextBlock>
-                        <Button Grid.Column="3" IsEnabled="False" HorizontalAlignment="Left" Click="SearchModList_Click" Name="SearchModListButton" Height="35" Width="35" Grid.Row="1">
+                        <Button Grid.Column="2" IsEnabled="False" HorizontalAlignment="Left" Click="SearchModList_Click" Name="SearchModListButton" Width="35" Grid.Row="1" Margin="86,8,0,8">
                             <fa5:ImageAwesome Icon="Solid_Search" Foreground="#f2f2f2" Margin="3"/>
                         </Button>
                         <ComboBox Name="SearchTargetComboBox" Grid.Column="3" Grid.Row="1" Text="Search" 
-                                   FontSize="20" FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" IsEditable="False" Margin="75,8,10,8">
+                                   FontSize="20" FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" IsEditable="False" Margin="0,8,10,8">
                             <ComboBoxItem Content="ALL" IsSelected="True"/>
                             <ComboBoxItem Content="Name"/>
                             <ComboBoxItem Content="Note"/>
@@ -862,7 +862,7 @@
                         <ComboBox x:Name="SearchCategoryComboBox" Grid.Column="4" Grid.Row="1" Text="" FontSize="20" 
                                   FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" IsEditable="False" Margin="0,8,10,8"
                             SelectionChanged="SearchCategoryComboBox_SelectionChanged"/>
-                        <Button Grid.Column="3" IsEnabled="True" HorizontalAlignment="Left" Click="SearchClear_Click" x:Name="SearchClearButton" Height="35" Width="35" Grid.Row="1" Margin="35,8,0,8">
+                        <Button Grid.Column="2" IsEnabled="True" HorizontalAlignment="Left" Click="SearchClear_Click" x:Name="SearchClearButton" Width="35" Grid.Row="1" Margin="127,8,0,8">
                             <fa5:ImageAwesome Icon="Solid_TimesCircle" Foreground="#f2f2f2" Margin="3"/>
                         </Button>
                     </Grid>
