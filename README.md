@@ -9,7 +9,12 @@ For an overview and basic operation, please refer to the [original Diva Mod Mana
 ### Changes in Version from the Original v1.3.1
 - Added support for checking multiple mods
 - Added support for dragging and moving multiple mods
-- Added a filter function by mod name
+- Added a filter function by mod
+- Added 'Primary' column and 'Note' column and 'Category' column.
+  When you enter information in the Priority or Category or Note column, a file named config_e.toml will be generated in each mod's folder.
+  This file contains the contents of the Priority and Note columns, so it can be safely deleted when, for example, restoring DMM to its original version.
+- You can open the corresponding mod folder by double-clicking the name field or by selecting the row and pressing the Enter key.
+- Column width can now be changed and retained.
 - Improved mod list display and scrolling speed
 - Added "Move to Top" and "Move to Bottom" options to the context menu
 - Added the AddToTop setting in Config.json, allowing users to choose whether newly added mods appear at the top or bottom of the list
@@ -22,8 +27,7 @@ For an overview and basic operation, please refer to the [original Diva Mod Mana
 - Fixed an issue where searching with a single quotation mark (') in the GAMEBANANA tab caused an error
 - Fix for the issue where the tool does not start when the contents of config.toml in the MOD folder are blank.
 - Fixed an issue where only the first MOD would be selected when multiple versions were available during DMA's one-click installation.
-- Changed the minimum window size to 1280x720 (as the layout breaks at 1160x750).
-  If you experience any issues related to resolution, please let us know.
+- Changed the minimum window size to 1280x720 (as the layout breaks at 1160x750). If you experience any issues related to resolution, please let us know.
 - Added a link to the GitHub page.
 
 ### Notes  
