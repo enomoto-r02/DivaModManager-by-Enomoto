@@ -3065,62 +3065,81 @@ namespace DivaModManager
 
         private void ModGrid_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (ModGrid.CurrentColumn.Header.ToString() == "Name")
+            string header = ModGrid.CurrentColumn?.Header?.ToString();
+            if (string.IsNullOrEmpty(header)) return;
+
+            switch (header)
             {
-                if (e.Key == Key.Space)
-                {
-                    foreach (var item in ModGrid.SelectedItems)
-                    {
-                        var checkbox = ModGrid.Columns[0].GetCellContent(item) as CheckBox;
-                        if (checkbox != null)
-                        {
-                            checkbox.IsChecked = !checkbox.IsChecked;
-                        }
-                    }
-                }
-                else if (e.Key == Key.Enter)
-                {
-                    OpenItem_Click(sender, e);
-                    e.Handled = true;
-                }
+                case "Name":
+                    HandleNameColumnKeyDown(e, sender);
+                    break;
+
+                case "Priority":
+                    HandlePriorityColumnKeyDown(e);
+                    break;
             }
-            else if (ModGrid.CurrentColumn.Header.ToString() == "Priority")
+        }
+
+        private void HandleNameColumnKeyDown(KeyEventArgs e, object sender)
+        {
+            if (e.Key == Key.Space)
             {
+                ToggleCheckBoxes();
+            }
+            else if (e.Key == Key.Enter)
+            {
+                ExecConfigAction(sender, e);
                 e.Handled = true;
+            }
+        }
 
-                string cell_value = null;
-
-                // Double click to select
-                if (e.OriginalSource is TextBox)
+        private void ToggleCheckBoxes()
+        {
+            foreach (var item in ModGrid.SelectedItems)
+            {
+                if (ModGrid.Columns[0].GetCellContent(item) is CheckBox checkbox)
                 {
-                    TextBox obj_text = (TextBox)e.OriginalSource;
-                    cell_value = obj_text.Text;
-                }
-                // F2 to select
-                else if (e.OriginalSource is DataGridCell)
-                {
-                    DataGridCell obj_cell = (DataGridCell)e.OriginalSource;
-                    Mod mod_cell = obj_cell.DataContext as Mod;
-                    cell_value = mod_cell.priority;
-                }
-
-                if (string.IsNullOrEmpty(cell_value))
-                {
-                    // Only the first character can be entered as a negative.
-                    if (e.Key == Key.Subtract || e.Key == Key.OemMinus)
-                    {
-                        e.Handled = false;
-                    }
-                }
-
-                if ((e.Key >= Key.D0 && e.Key <= Key.D9) || (e.Key >= Key.NumPad0 && e.Key <= Key.NumPad9)
-                    || (e.Key == Key.Enter || e.Key == Key.Back || e.Key == Key.Delete)
-                    || (e.Key == Key.Up || e.Key == Key.Down || e.Key == Key.Left || e.Key == Key.Right)
-                    || (e.Key == Key.Tab || e.Key == Key.F2 || e.Key == Key.Escape))
-                {
-                    e.Handled = false;
+                    checkbox.IsChecked = !checkbox.IsChecked;
                 }
             }
+        }
+
+        private void HandlePriorityColumnKeyDown(KeyEventArgs e)
+        {
+            e.Handled = true;
+
+            string cellValue = GetPriorityCellValue(e.OriginalSource);
+
+            // Only allow minus sign if value is empty
+            if (string.IsNullOrEmpty(cellValue) && (e.Key == Key.Subtract || e.Key == Key.OemMinus))
+            {
+                e.Handled = false;
+                return;
+            }
+
+            if (IsNumericOrControlKey(e.Key))
+            {
+                e.Handled = false;
+            }
+        }
+
+        private string GetPriorityCellValue(object source)
+        {
+            return source switch
+            {
+                TextBox textBox => textBox.Text,
+                DataGridCell cell when cell.DataContext is Mod mod => mod.priority,
+                _ => null
+            };
+        }
+
+        private bool IsNumericOrControlKey(Key key)
+        {
+            return (key >= Key.D0 && key <= Key.D9) ||
+                   (key >= Key.NumPad0 && key <= Key.NumPad9) ||
+                   key is Key.Enter or Key.Back or Key.Delete or
+                        Key.Up or Key.Down or Key.Left or Key.Right or
+                        Key.Tab or Key.F2 or Key.Escape;
         }
 
         private void SearchModList_Click(object sender, RoutedEventArgs e)
@@ -3166,7 +3185,6 @@ namespace DivaModManager
                         break;
                 }
 
-                //switch (categoryName)
                 switch (categoryName)
                 {
                     case "ALL":
@@ -3198,7 +3216,8 @@ namespace DivaModManager
             if (!string.IsNullOrEmpty(SearchModListTextBox.Text))
             {
                 // Prohibit mod movement by dragging when mod search is enabled.
-                MessageBox.Show("You cannot change the priority of the MOD while searching. Sorry.", "Attention.", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("You cannot change the priority of the MOD while searching. Sorry.",
+                    "Attention.", MessageBoxButton.OK, MessageBoxImage.Information);
                 e.Handled = true;
             }
         }
@@ -3277,51 +3296,59 @@ namespace DivaModManager
             if (elem.Parent is not DataGridCell cell) return;
             if (cell.Column.Header?.ToString() != "Name") return;
 
+            ExecConfigAction(sender, e);
+        }
+
+        private void ExecConfigAction(object sender, EventArgs e)
+        {
             string action = Global.config.DoubleClickEvent?.ToLower() ?? "open";
+            RoutedEventArgs _e = (RoutedEventArgs)e;
 
             switch (action)
             {
                 case "open":
-                    OpenItem_Click(sender, e);
+                    OpenItem_Click(sender, _e);
                     break;
                 case "rename":
-                    RenameMod_Click(sender, e);
+                    RenameMod_Click(sender, _e);
                     break;
                 case "configure":
-                    ConfigureModItem_Click(sender, e);
+                    ConfigureModItem_Click(sender, _e);
                     break;
                 case "fetch":
-                    FetchItem_Click(sender, e);
+                    FetchItem_Click(sender, _e);
                     break;
                 case "update":
-                    Update_Click(sender, e);
+                    Update_Click(sender, _e);
                     break;
                 case "delete":
-                    DeleteItem_Click(sender, e);
+                    DeleteItem_Click(sender, _e);
                     break;
                 case "nothing":
                     break;
                 default:
                     // All unknown characters are treated as Open.
-                    OpenItem_Click(sender, e);
+                    OpenItem_Click(sender, _e);
                     break;
             }
         }
 
         private void ModGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
         {
-            if (e.Column is DataGridTextColumn textCol)
-            {
-                Mod mod = e.Row.DataContext as Mod;
-                var textBox = e.EditingElement as TextBox;
-                var newText = textBox.Text;
+            if (e.Column is not DataGridTextColumn textCol) return;
+            if (e.Row.DataContext is not Mod mod) return;
+            if (e.EditingElement is not TextBox textBox) return;
 
-                if (e.Column.Header.ToString() == "Priority")
-                {
+            string newText = textBox.Text;
+            string columnHeader = e.Column.Header.ToString();
+
+            switch (columnHeader)
+            {
+                case "Priority":
                     mod.priority = newText;
-                }
-                else if (e.Column.Header.ToString() == "Category")
-                {
+                    break;
+
+                case "Category":
                     mod.category = newText;
 
                     if (Global.ModList.Count > 1)
@@ -3334,13 +3361,14 @@ namespace DivaModManager
                         // If the number of categories decreases, please set the category combobox to ALL.
                         CategoryComboInit(0);
                     }
-                }
-                else if (e.Column.Header.ToString() == "Note")
-                {
+                    break;
+
+                case "Note":
                     mod.note = newText;
-                }
-                UpdateModConfigToml_e(mod, e.Column.Header.ToString(), newText);
+                    break;
             }
+
+            UpdateModConfigToml_e(mod, columnHeader, newText);
         }
 
         private void SearchCategoryComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
