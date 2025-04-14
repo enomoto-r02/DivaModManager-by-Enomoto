@@ -151,7 +151,7 @@ namespace DivaModManager
                 ModsWatcher.EnableRaisingEvents = true;
             }
 
-            CategoryComboInit();
+            CategoryComboInit(0);
 
             defaultFlow.Blocks.Add(ConvertToFlowParagraph(defaultText));
             DescriptionWindow.Document = defaultFlow;
@@ -497,6 +497,10 @@ namespace DivaModManager
                                 {
                                     mod_g.priority = config_e["priority"].ToString();
                                 }
+                                if (config_e.ContainsKey("category"))
+                                {
+                                    mod_g.category = config_e["category"].ToString();
+                                }
                                 if (config_e.ContainsKey("note"))
                                 {
                                     mod_g.note = config_e["note"].ToString();
@@ -506,8 +510,10 @@ namespace DivaModManager
                             {
                                 // Add enabled field to be true if it doesn't exist
                                 mod_g.priority = "";
+                                mod_g.category = "";
                                 mod_g.note = "";
                                 config_e.Add("priority", true);
+                                config_e.Add("category", true);
                                 config_e.Add("note", true);
                                 var isReady = false;
                                 while (!isReady)
@@ -575,7 +581,12 @@ namespace DivaModManager
                                     }
                                 }
                                 Metadata metadata = JsonSerializer.Deserialize<Metadata>(modJsonString);
-                                mod_g.cat = metadata.cat;
+
+                                // Prioritize the category in config_e.toml
+                                if (string.IsNullOrEmpty(mod_g.category))
+                                {
+                                    mod_g.category = metadata.cat;
+                                }
                             }
                         }
                     }
@@ -602,7 +613,7 @@ namespace DivaModManager
                 {
                     ModGrid.ItemsSource = Global.ModList;
                     ModGrid.Items.Refresh();
-                    CategoryComboInit();
+                    CategoryComboInit(0);
                     var stats = $"{Global.ModList.ToList().Where(x => x.enabled).ToList().Count}/{Global.ModList.Count} mods • {Directory.GetFiles(currentModDirectory, "*", SearchOption.AllDirectories).Length.ToString("N0")} files • " +
                     $"{StringConverters.FormatSize(new DirectoryInfo(currentModDirectory).GetDirectorySize())}";
                     if (!String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].ModLoaderVersion))
@@ -727,7 +738,7 @@ namespace DivaModManager
             }
         }
 
-        private void UpdateModConfigToml_E(Mod m, string column, object value)
+        private void UpdateModConfigToml_e(Mod m, string column, object value)
         {
             var configPath_e = $"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}{m.name}{Global.s}config_e.toml";
 
@@ -735,6 +746,7 @@ namespace DivaModManager
             {
                 TomlTable config_dmme = new();
                 config_dmme.Add("priority", "");
+                config_dmme.Add("category", "");
                 config_dmme.Add("note", "");
                 var isReady = false;
                 while (!isReady)
@@ -765,6 +777,9 @@ namespace DivaModManager
                         case "Priority":
                             config_e["priority"] = value;
                             break;
+                        case "Category":
+                            config_e["category"] = value;
+                            break;
                         case "Note":
                             config_e["note"] = value;
                             break;
@@ -774,9 +789,10 @@ namespace DivaModManager
                 else
                 {
                     Global.logger.WriteLine($"{diagnostics[0].Message} for {m.name}. Rewriting {configPath_e} with only enabled field", LoggerType.Warning);
-                    // Create config.toml with enabled field to be true if failed to parse
+                    // Create config_e.toml with enabled field to be true if failed to parse
                     config_e = new();
                     config_e.Add("priority", "");
+                    config_e.Add("category", "");
                     config_e.Add("note", "");
                     File.WriteAllText(configPath_e, Toml.FromModel(config_e));
                 }
@@ -2922,8 +2938,8 @@ namespace DivaModManager
                     {
                         if (direction == ListSortDirection.Descending)
                         {
-                            ObservableCollection<Mod> ModList_no_cat = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.cat == "").ToList());
-                            Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.cat != "").OrderBy(x => x.cat, new NaturalSort()).ToList());
+                            ObservableCollection<Mod> ModList_no_cat = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.category == "").ToList());
+                            Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.category != "").OrderBy(x => x.category, new NaturalSort()).ToList());
                             foreach (Mod m in ModList_no_cat)
                             {
                                 Global.ModList.Add(m);
@@ -2932,8 +2948,8 @@ namespace DivaModManager
                         }
                         else
                         {
-                            ObservableCollection<Mod> ModList_no_note = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.cat == "").ToList());
-                            Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.cat != "").OrderByDescending(x => x.cat, new NaturalSort()).ToList());
+                            ObservableCollection<Mod> ModList_no_note = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.category == "").ToList());
+                            Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.category != "").OrderByDescending(x => x.category, new NaturalSort()).ToList());
                             foreach (Mod m in ModList_no_note)
                             {
                                 Global.ModList.Add(m);
@@ -3081,7 +3097,7 @@ namespace DivaModManager
         {
             ModGrid.ClearSelectedItems();
 
-            if (string.IsNullOrEmpty(searchModName) && categoryName == "ALL")
+            if (string.IsNullOrEmpty(searchModName) && (SearchCategoryComboBox.SelectedIndex == 0))
             {
                 // Restore all evacuated mods.
                 InitSearchMod();
@@ -3107,19 +3123,26 @@ namespace DivaModManager
                         break;
                 }
 
+                //switch (categoryName)
                 switch (categoryName)
                 {
                     case "ALL":
+                        if (SearchCategoryComboBox.SelectedIndex != 0)
+                        {
+                            Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList()
+                                .Where(x => x.category == categoryName).ToList());
+                            break;
+                        }
                         break;
-                    case "None":
+                    case "Unspecified":
                         Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList()
-                            .Where(x => string.IsNullOrEmpty(x.cat)).ToList());
+                            .Where(x => string.IsNullOrEmpty(x.category)).ToList());
                         break;
                     default:
                         Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList()
-                            .Where(x => x.cat == categoryName).ToList());
+                            .Where(x => x.category == categoryName).ToList());
                         break;
-                }
+                    }
                 Global.SearchModListFlg = true;
             }
 
@@ -3233,7 +3256,7 @@ namespace DivaModManager
                 case "delete":
                     DeleteItem_Click(sender, e);
                     break;
-                case "none":
+                case "nothing":
                     break;
                 default:
                     // All unknown characters are treated as Open.
@@ -3254,35 +3277,53 @@ namespace DivaModManager
                 {
                     mod.priority = newText;
                 }
+                else if (e.Column.Header.ToString() == "Category")
+                {
+                    mod.category = newText;
+
+                    if (Global.ModList.Count > 1)
+                    {
+                        // If the number of categories increases, reload the category combo box.
+                        CategoryComboInit();
+                    }
+                    else
+                    {
+                        // If the number of categories decreases, please set the category combobox to ALL.
+                        CategoryComboInit(0);
+                    }
+                }
                 else if (e.Column.Header.ToString() == "Note")
                 {
                     mod.note = newText;
                 }
-                UpdateModConfigToml_E(mod, e.Column.Header.ToString(), newText);
+                UpdateModConfigToml_e(mod, e.Column.Header.ToString(), newText);
             }
         }
 
         private void SearchCategoryComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             ComboBox combo = (ComboBox)sender;
-            SearchModList(SearchModListTextBox.Text, combo.SelectedItem.ToString());
+            SearchModList(SearchModListTextBox.Text, combo.SelectedItem?.ToString());
         }
 
-        private void CategoryComboInit()
+        private void CategoryComboInit(int? selected = null)
         {
-            List<Mod> CategoryItems = Global.ModList.DistinctBy(x => x.cat).OrderBy(x => x.cat).ToList();
+            List<Mod> CategoryItems = Global.ModList_All.DistinctBy(x => x.category).OrderBy(x => x.category).ToList();
             Global.CategoryItems = new ObservableCollection<string>();
             Global.CategoryItems.Add("ALL");
             foreach (var CategoryItem in CategoryItems)
             {
-                if (!string.IsNullOrEmpty(CategoryItem.cat))
+                if (!string.IsNullOrEmpty(CategoryItem.category))
                 {
-                    Global.CategoryItems.Add(CategoryItem.cat);
+                    Global.CategoryItems.Add(CategoryItem.category);
                 }
             }
-            Global.CategoryItems.Add("None");
+            Global.CategoryItems.Add("Unspecified");
             SearchCategoryComboBox.ItemsSource = Global.CategoryItems;
-            SearchCategoryComboBox.SelectedIndex = 0;
+            if (selected != null)
+            {
+                SearchCategoryComboBox.SelectedIndex = (int)selected;
+            }
         }
     }
 }
