@@ -3274,18 +3274,15 @@ namespace DivaModManager
                 {
                     mod.category = newText;
 
-                    if (!SearchCategoryComboBox.Items.Contains(newText))
+                    if (Global.ModList.Count > 1)
                     {
-                        if (Global.ModList.Count > 1)
-                        {
-                            // If the number of categories increases, reload the category combo box.
-                            CategoryComboInit();
-                        }
-                        else
-                        {
-                            // If the number of categories decreases, please set the category combobox to ALL.
-                            CategoryComboInit(0);
-                        }
+                        // If the number of categories increases, reload the category combo box.
+                        CategoryComboInit();
+                    }
+                    else
+                    {
+                        // If the number of categories decreases, please set the category combobox to ALL.
+                        CategoryComboInit(0);
                     }
                 }
                 else if (e.Column.Header.ToString() == "Note")
