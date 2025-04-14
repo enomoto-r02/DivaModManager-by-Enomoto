@@ -764,7 +764,7 @@
                                         <Setter Property="Height" Value="17"/>
                                         <Setter Property="FontSize" Value="15"/>
                                         <Setter Property="FontWeight" Value="Medium"/>
-                                        <EventSetter Event="ButtonBase.Click" Handler="SortAlphabeticallyAndGroupEnabled_Click"/>
+                                        <EventSetter Event="ButtonBase.Click" Handler="ModGridHeader_Click"/>
                                     </Style>
                                 </DataGrid.ColumnHeaderStyle>
                                 <DataGrid.ContextMenu>

@@ -2883,135 +2883,119 @@ namespace DivaModManager
             }
         }
 
-        private async void SortAlphabeticallyAndGroupEnabled_Click(object sender, RoutedEventArgs e)
+        private async void ModGridHeader_Click(object sender, RoutedEventArgs e)
         {
-            DataGridColumnHeader colHeader = sender as DataGridColumnHeader;
-            if (colHeader != null)
+            if (sender is not DataGridColumnHeader colHeader) return;
+
+            string header = colHeader.Column?.Header?.ToString();
+            if (string.IsNullOrEmpty(header)) return;
+
+            if (!string.IsNullOrEmpty(SearchModListTextBox.Text))
             {
-                if (!string.IsNullOrEmpty(SearchModListTextBox.Text))
-                {
-                    MessageBox.Show($"Please do it with the mod search cleared.\nSorry.", "Attention.", MessageBoxButton.OK, MessageBoxImage.Information);
-                    return;
-                }
-                var colStr = colHeader.Column.Header;
-                var msgRes = MessageBox.Show($"Sort by {colStr}.\nThe priority of the mod will change significantly.\n\nAre you sure?", "Attention.", MessageBoxButton.OKCancel, MessageBoxImage.Question);
-                if (msgRes != MessageBoxResult.OK)
-                {
-                    return;
-                }
-
-                if (colHeader != null)
-                {
-                    if (colHeader.Column.Header.Equals("Enabled"))
-                    {
-                        // Move all enabled mods to top
-                        Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().OrderByDescending(x => x.enabled).ToList());
-                        Global.logger.WriteLine("Moved all enabled mods to the top!", LoggerType.Info);
-                    }
-                    else if (colHeader.Column.Header.Equals("Priority"))
-                    {
-                        if (direction == ListSortDirection.Descending)
-                        {
-                            ObservableCollection<Mod> ModList_minus = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => !string.IsNullOrEmpty(x.priority)).Where(x => x.priority.StartsWith('-')).OrderBy(x => x.priority, new NaturalSort()).ToList());
-                            ObservableCollection<Mod> ModList_no_priority = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => string.IsNullOrEmpty(x.priority)).ToList());
-                            Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => !string.IsNullOrEmpty(x.priority)).Where(x => !x.priority.StartsWith('-')).OrderBy(x => x.priority, new NaturalSort()).ToList());
-
-                            foreach (Mod m in ModList_no_priority)
-                            {
-                                Global.ModList.Add(m);
-                            }
-                            foreach (Mod m in ModList_minus)
-                            {
-                                Global.ModList.Add(m);
-                            }
-                            direction = ListSortDirection.Ascending;
-                        }
-                        else
-                        {
-                            ObservableCollection<Mod> ModList_minus = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => !string.IsNullOrEmpty(x.priority)).Where(x => x.priority.StartsWith('-')).OrderByDescending(x => x.priority, new NaturalSort()).ToList());
-                            ObservableCollection<Mod> ModList_no_priority = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => string.IsNullOrEmpty(x.priority)).OrderByDescending(x => x.priority).ToList());
-
-                            Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => !string.IsNullOrEmpty(x.priority)).Where(x => !x.priority.StartsWith('-')).OrderByDescending(x => x.priority, new NaturalSort()).ToList());
-
-                            foreach (Mod m in ModList_no_priority)
-                            {
-                                Global.ModList.Add(m);
-                            }
-                            foreach (Mod m in ModList_minus)
-                            {
-                                Global.ModList.Add(m);
-                            }
-                            direction = ListSortDirection.Descending;
-                        }
-                        Global.logger.WriteLine("Sorted by Priority column!", LoggerType.Info);
-                    }
-                    else if (colHeader.Column.Header.Equals("Name"))
-                    {
-                        // Sort alphabetically
-                        Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().OrderBy(x => x.name, new NaturalSort()).ToList());
-                        Global.logger.WriteLine("Sorted alphanumerically!", LoggerType.Info);
-                    }
-                    else if (colHeader.Column.Header.Equals("Category"))
-                    {
-                        if (direction == ListSortDirection.Descending)
-                        {
-                            ObservableCollection<Mod> ModList_no_cat = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.category == "").ToList());
-                            Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.category != "").OrderBy(x => x.category, new NaturalSort()).ToList());
-                            foreach (Mod m in ModList_no_cat)
-                            {
-                                Global.ModList.Add(m);
-                            }
-                            direction = ListSortDirection.Ascending;
-                        }
-                        else
-                        {
-                            ObservableCollection<Mod> ModList_no_note = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.category == "").ToList());
-                            Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.category != "").OrderByDescending(x => x.category, new NaturalSort()).ToList());
-                            foreach (Mod m in ModList_no_note)
-                            {
-                                Global.ModList.Add(m);
-                            }
-                            direction = ListSortDirection.Descending;
-                        }
-                        Global.logger.WriteLine("Sorted by Category column!", LoggerType.Info);
-                    }
-                    else if (colHeader.Column.Header.Equals("Note"))
-                    {
-                        if (direction == ListSortDirection.Descending)
-                        {
-                            ObservableCollection<Mod> ModList_no_note = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.note == "").ToList());
-                            Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.note != "").OrderBy(x => x.note, new NaturalSort()).ToList());
-                            foreach (Mod m in ModList_no_note)
-                            {
-                                Global.ModList.Add(m);
-                            }
-                            direction = ListSortDirection.Ascending;
-                        }
-                        else
-                        {
-                            ObservableCollection<Mod> ModList_no_note = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.note == "").ToList());
-                            Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.note != "").OrderByDescending(x => x.note, new NaturalSort()).ToList());
-                            foreach (Mod m in ModList_no_note)
-                            {
-                                Global.ModList.Add(m);
-                            }
-                            direction = ListSortDirection.Descending;
-                        }
-                        Global.logger.WriteLine("Sorted by Note column!", LoggerType.Info);
-                    }
-                    await Task.Run(() =>
-                    {
-                        App.Current.Dispatcher.Invoke((Action)delegate
-                        {
-                            ModGrid.ItemsSource = Global.ModList;
-                        });
-                    });
-                    UpdateSearchMod();
-                    Global.UpdateConfig();
-                    await Task.Run(() => ModLoader.Build());
-                }
-                e.Handled = true;
+                MessageBox.Show("Please do it with the mod search cleared.\nSorry.", "Attention.", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
             }
+
+            var confirm = MessageBox.Show($"Sort by {header}.\nThe priority of the mod will change significantly.\n\nAre you sure?",
+                                          "Attention.", MessageBoxButton.OKCancel, MessageBoxImage.Question);
+            if (confirm != MessageBoxResult.OK) return;
+
+            switch (header)
+            {
+                case "Enabled":
+                    SortByEnabled();
+                    break;
+                case "Priority":
+                    SortByPriority();
+                    break;
+                case "Name":
+                    SortAlphabetically();
+                    break;
+                case "Category":
+                    SortByCategory();
+                    break;
+                case "Note":
+                    SortByNote();
+                    break;
+                default:
+                    return;
+            }
+
+            await RefreshUIAndUpdateAsync();
+            e.Handled = true;
+        }
+
+        private void SortByEnabled()
+        {
+            Global.ModList = new ObservableCollection<Mod>(Global.ModList.OrderByDescending(x => x.enabled));
+            Global.logger.WriteLine("Moved all enabled mods to the top!", LoggerType.Info);
+        }
+
+        private void SortAlphabetically()
+        {
+            Global.ModList = new ObservableCollection<Mod>(Global.ModList.OrderBy(x => x.name, new NaturalSort()));
+            Global.logger.WriteLine("Sorted alphanumerically!", LoggerType.Info);
+        }
+
+        private void SortByCategory()
+        {
+            SortByField(m => m.category, "Category");
+        }
+
+        private void SortByNote()
+        {
+            SortByField(m => m.note, "Note");
+        }
+
+        private void SortByPriority()
+        {
+            var list = Global.ModList.ToList();
+            var hasMinus = list.Where(x => !string.IsNullOrEmpty(x.priority) && x.priority.StartsWith("-"));
+            var noPriority = list.Where(x => string.IsNullOrEmpty(x.priority));
+            var rest = list.Where(x => !string.IsNullOrEmpty(x.priority) && !x.priority.StartsWith("-"));
+
+            Global.ModList = new ObservableCollection<Mod>(
+                (direction == ListSortDirection.Descending
+                    ? rest.OrderByDescending(x => x.priority, new NaturalSort())
+                    : rest.OrderBy(x => x.priority, new NaturalSort()))
+                .Concat(noPriority)
+                .Concat(direction == ListSortDirection.Descending ? hasMinus.OrderByDescending(x => x.priority, new NaturalSort()) : hasMinus.OrderBy(x => x.priority, new NaturalSort()))
+            );
+
+            direction = direction == ListSortDirection.Descending ? ListSortDirection.Ascending : ListSortDirection.Descending;
+            Global.logger.WriteLine("Sorted by Priority column!", LoggerType.Info);
+        }
+
+        private void SortByField(Func<Mod, string> selector, string fieldName)
+        {
+            var list = Global.ModList.ToList();
+            var noValue = list.Where(x => string.IsNullOrEmpty(selector(x)));
+            var hasValue = list.Where(x => !string.IsNullOrEmpty(selector(x)));
+
+            Global.ModList = new ObservableCollection<Mod>(
+                (direction == ListSortDirection.Descending
+                    ? hasValue.OrderByDescending(selector, new NaturalSort())
+                    : hasValue.OrderBy(selector, new NaturalSort()))
+                .Concat(noValue)
+            );
+
+            direction = direction == ListSortDirection.Descending ? ListSortDirection.Ascending : ListSortDirection.Descending;
+            Global.logger.WriteLine($"Sorted by {fieldName} column!", LoggerType.Info);
+        }
+
+        private async Task RefreshUIAndUpdateAsync()
+        {
+            await Task.Run(() =>
+            {
+                App.Current.Dispatcher.Invoke(() =>
+                {
+                    ModGrid.ItemsSource = Global.ModList;
+                });
+            });
+
+            UpdateSearchMod();
+            Global.UpdateConfig();
+            await Task.Run(() => ModLoader.Build());
         }
 
         private void Search()
