@@ -545,7 +545,7 @@ namespace DivaModManager
                         }
                     }
                 }
-                if(executeFlg)
+                if (executeFlg)
                 {
                     // Loading Categor
                     var modPath = $"{mod}{Global.s}mod.json";
@@ -2915,7 +2915,7 @@ namespace DivaModManager
                             ObservableCollection<Mod> ModList_minus = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => !string.IsNullOrEmpty(x.priority)).Where(x => x.priority.StartsWith('-')).OrderBy(x => x.priority, new NaturalSort()).ToList());
                             ObservableCollection<Mod> ModList_no_priority = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => string.IsNullOrEmpty(x.priority)).ToList());
                             Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => !string.IsNullOrEmpty(x.priority)).Where(x => !x.priority.StartsWith('-')).OrderBy(x => x.priority, new NaturalSort()).ToList());
-                            
+
                             foreach (Mod m in ModList_no_priority)
                             {
                                 Global.ModList.Add(m);
@@ -2932,7 +2932,7 @@ namespace DivaModManager
                             ObservableCollection<Mod> ModList_no_priority = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => string.IsNullOrEmpty(x.priority)).OrderByDescending(x => x.priority).ToList());
 
                             Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => !string.IsNullOrEmpty(x.priority)).Where(x => !x.priority.StartsWith('-')).OrderByDescending(x => x.priority, new NaturalSort()).ToList());
-                            
+
                             foreach (Mod m in ModList_no_priority)
                             {
                                 Global.ModList.Add(m);
@@ -3185,7 +3185,7 @@ namespace DivaModManager
                         Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList()
                             .Where(x => x.category == categoryName).ToList());
                         break;
-                    }
+                }
                 Global.SearchModListFlg = true;
             }
 
@@ -3366,6 +3366,23 @@ namespace DivaModManager
             if (selected != null)
             {
                 SearchCategoryComboBox.SelectedIndex = (int)selected;
+            }
+        }
+
+        private void DMM_Folder_Click(object sender, RoutedEventArgs e)
+        {
+            var folderName = $@"{Global.assemblyLocation}";
+            if (Directory.Exists(folderName))
+            {
+                try
+                {
+                    Process process = Process.Start("explorer.exe", folderName);
+                    Global.logger.WriteLine($@"Opened {folderName}.", LoggerType.Info);
+                }
+                catch (Exception ex)
+                {
+                    Global.logger.WriteLine($@"Couldn't open {folderName}. ({ex.Message})", LoggerType.Error);
+                }
             }
         }
     }

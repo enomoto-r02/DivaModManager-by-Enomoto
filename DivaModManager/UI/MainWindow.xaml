@@ -535,6 +535,18 @@
     </Window.Resources>
     <Grid>
         <StackPanel Panel.ZIndex="3" Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Right" Grid.ColumnSpan="5">
+            <Image x:Name="DMM_Folder" Source="../Assets/load.gif" Height="30" Width="30" Stretch="Uniform" MouseLeftButtonDown="DMM_Folder_Click" Cursor="Hand"/>
+            <Popup IsOpen="{Binding IsMouseDirectlyOver, ElementName=DMM_Folder, Mode=OneWay}" AllowsTransparency="True" Cursor="">
+                <Border CornerRadius="5" Panel.ZIndex="0" Margin="10">
+                    <Border.BorderBrush>
+                        <SolidColorBrush Color="#101010" Opacity="0.9"/>
+                    </Border.BorderBrush>
+                    <Border.Background>
+                        <SolidColorBrush Color="#101010" Opacity="0.9"/>
+                    </Border.Background>
+                    <TextBlock Margin="10" FontFamily="{StaticResource AnekLatin}" Text="DMM Folder Open" Foreground="#f2f2f2" FontWeight="Medium" FontSize="20" VerticalAlignment="Center" />
+                </Border>
+            </Popup>
             <Image x:Name="Github" Source="../Assets/github-mark-white.png" Height="30" Width="30" Stretch="Uniform" MouseLeftButtonDown="Github_Click" Margin="10,0,10,0" Cursor="Hand"/>
             <Popup PlacementTarget="{Binding ElementName=Github}" IsOpen="{Binding IsMouseDirectlyOver, ElementName=Github, Mode=OneWay}" AllowsTransparency="True" Cursor="">
                 <Border CornerRadius="5" Panel.ZIndex="0" Margin="10">
