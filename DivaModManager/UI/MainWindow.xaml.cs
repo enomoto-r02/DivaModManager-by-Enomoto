@@ -111,6 +111,12 @@ namespace DivaModManager
             if (Global.config.NoteColumnWidth != null)
                 ModGrid.Columns[4].Width = (double)Global.config.NoteColumnWidth;
 
+            ModGrid.Columns[0].Visibility = (Visibility)Global.config.EnabledColumnVisible;
+            ModGrid.Columns[1].Visibility = (Visibility)Global.config.PriorityColumnVisible;
+            ModGrid.Columns[2].Visibility = (Visibility)Global.config.NameColumnVisible;
+            ModGrid.Columns[3].Visibility = (Visibility)Global.config.CategoryColumnVisible;
+            ModGrid.Columns[4].Visibility = (Visibility)Global.config.NoteColumnVisible;
+
             Global.games = new List<string>();
             foreach (var item in GameBox.Items)
             {

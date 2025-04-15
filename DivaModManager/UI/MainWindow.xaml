@@ -723,7 +723,7 @@
                                 RowBackground="#202020"
                                 Foreground="#f2f2f2"
                                 LoadingRow="ModGrid_LoadingRow"
-                                HorizontalScrollBarVisibility="Auto"
+                                HorizontalScrollBarVisibility="Hidden"
                                 HorizontalAlignment="Stretch"
                                 Background="#202020"
                                 Grid.Column="0"
