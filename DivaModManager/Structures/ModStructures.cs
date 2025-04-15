@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
+using System.Windows;
 
 namespace DivaModManager
 {
@@ -98,10 +99,22 @@ namespace DivaModManager
         public double? Width { get; set; }
         public bool Maximized { get; set; }
         public bool AddModToTop { get; set; }
+
+        public Visibility EnabledColumnVisible { get; set; } = Visibility.Visible;
+        public int? EnabledColumnIndex { get; set; } = 0;
+        public Visibility PriorityColumnVisible { get; set; } = Visibility.Visible;
+        public int? PriorityColumnIndex { get; set; } = 1;
         public double? PriorityColumnWidth { get; set; }
+        public Visibility NameColumnVisible { get; set; } = Visibility.Visible;
+        public int? NameColumnIndex { get; set; } = 2;
         public double? NameColumnWidth { get; set; }
+        public Visibility CategoryColumnVisible { get; set; } = Visibility.Visible;
+        public int? CategoryColumnIndex { get; set; } = 3;
         public double? CategoryColumnWidth { get; set; }
+        public Visibility NoteColumnVisible { get; set; } = Visibility.Visible;
+        public int? NoteColumnIndex { get; set; } = 4;
         public double? NoteColumnWidth { get; set; }
+
         public bool CategoryColumnColor { get; set; } = false;
         public string? DoubleClickEvent { get; set; }
     }

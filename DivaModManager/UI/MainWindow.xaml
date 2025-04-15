@@ -7,9 +7,13 @@
         xmlns:fa5="http://schemas.fontawesome.com/icons/"
         xmlns:gif="http://wpfanimatedgif.codeplex.com"
         Background="#131313"
-        Title="Diva Mod Manager by Enomoto" SizeChanged="OnResize"
-        mc:Ignorable="d" Closing="Window_Closing" WindowStartupLocation="CenterScreen"
-        Height="720" Width="1280" MinHeight="720" MinWidth="1280" Loaded="WindowLoaded">
+        Title="Diva Mod Manager by Enomoto"
+        SizeChanged="OnResize"
+        mc:Ignorable="d"
+        Closing="Window_Closing"
+        WindowStartupLocation="CenterScreen"
+        Height="720" Width="1280" MinHeight="720" MinWidth="1280"
+        Loaded="WindowLoaded">
     <Window.Resources>
         <DataTemplate x:Key="GBModTemplate">
             <Border CornerRadius="5" Margin="5">
@@ -710,7 +714,6 @@
                                 BorderBrush="#424242"
                                 CanUserAddRows="False"
                                 CanUserDeleteRows="False"
-                                CanUserReorderColumns="False"
                                 CanUserResizeRows="False"
                                 CanUserSortColumns="False"
                                 AlternatingRowBackground="#2A2A2A"
@@ -744,6 +747,7 @@
                                 Loaded="ModGrid_Loaded"
                                 MouseDoubleClick="ModGrid_MouseDoubleClick"
                                 CellEditEnding="ModGrid_CellEditEnding"
+                                CanUserReorderColumns="True"
                                 >
                                 <DataGrid.Resources>
                                     <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="#115F58"/>
@@ -798,7 +802,7 @@
                                             </Style>
                                         </DataGridCheckBoxColumn.CellStyle>
                                     </DataGridCheckBoxColumn>
-                                    <DataGridTextColumn Header="Priority" Binding="{Binding priority, Mode=TwoWay}" Width="58" IsReadOnly="False" CanUserResize="True">
+                                    <DataGridTextColumn Header="Priority"  Binding="{Binding priority, Mode=TwoWay}" Width="58" IsReadOnly="False" CanUserResize="True">
                                         <DataGridTextColumn.ElementStyle>
                                             <Style TargetType="TextBlock">
                                                 <Setter Property="HorizontalAlignment" Value="Center" />
@@ -865,6 +869,17 @@
                         <ComboBox x:Name="SearchCategoryComboBox" Grid.Column="4" Grid.Row="1" Text="" FontSize="20" 
                                   FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" IsEditable="False" Margin="0,8,10,8"
                             SelectionChanged="SearchCategoryComboBox_SelectionChanged"/>
+                        <ComboBox x:Name="VisibleColumnComboBox" Grid.Column="5" Grid.Row="1" Text="Visible" FontSize="20" 
+                                  FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" IsEditable="False" Margin="0,8,10,8"
+                            SelectionChanged="VisibleColumnComboBox_SelectionChanged">
+                            <ComboBoxItem Content="Visible Column" IsSelected="True"/>
+                            <!--<ComboBoxItem Content="Enabled"/>-->
+                            <ComboBoxItem Content="Priority"/>
+                            <!--<ComboBoxItem Content="Name"/>-->
+                            <ComboBoxItem Content="Category"/>
+                            <ComboBoxItem Content="Note"/>
+                        </ComboBox>
+                        
                     </Grid>
                 </TabItem.Content>
             </TabItem>
