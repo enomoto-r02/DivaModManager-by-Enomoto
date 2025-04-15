@@ -535,6 +535,18 @@
     </Window.Resources>
     <Grid>
         <StackPanel Panel.ZIndex="3" Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Right" Grid.ColumnSpan="5">
+            <Image x:Name="DMM_Folder" Source="../Assets/load.gif" Height="30" Width="30" Stretch="Uniform" MouseLeftButtonDown="DMM_Folder_Click" Cursor="Hand"/>
+            <Popup IsOpen="{Binding IsMouseDirectlyOver, ElementName=DMM_Folder, Mode=OneWay}" AllowsTransparency="True" Cursor="">
+                <Border CornerRadius="5" Panel.ZIndex="0" Margin="10">
+                    <Border.BorderBrush>
+                        <SolidColorBrush Color="#101010" Opacity="0.9"/>
+                    </Border.BorderBrush>
+                    <Border.Background>
+                        <SolidColorBrush Color="#101010" Opacity="0.9"/>
+                    </Border.Background>
+                    <TextBlock Margin="10" FontFamily="{StaticResource AnekLatin}" Text="Open DMM Folder" Foreground="#f2f2f2" FontWeight="Medium" FontSize="20" VerticalAlignment="Center" />
+                </Border>
+            </Popup>
             <Image x:Name="Github" Source="../Assets/github-mark-white.png" Height="30" Width="30" Stretch="Uniform" MouseLeftButtonDown="Github_Click" Margin="10,0,10,0" Cursor="Hand"/>
             <Popup PlacementTarget="{Binding ElementName=Github}" IsOpen="{Binding IsMouseDirectlyOver, ElementName=Github, Mode=OneWay}" AllowsTransparency="True" Cursor="">
                 <Border CornerRadius="5" Panel.ZIndex="0" Margin="10">
@@ -649,12 +661,12 @@
                         <ComboBox Grid.Column="5" Margin="0,0,10,0" Height="35" FontSize="20" FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" Name="LauncherOptionsBox" SelectionChanged="LauncherOptionsBox_SelectionChanged"/>
                         <ComboBox Grid.Column="1" Margin="10,0,10,0" Height="35" FontSize="20" FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" Name="LoadoutBox" SelectionChanged="LoadoutsBox_SelectionChanged"/>
 
-                        <TextBox Name="SearchModListTextBox" Grid.Column ="0" Grid.Row ="1" Grid.ColumnSpan="3" Margin="10,0,10,0" TextWrapping="Wrap" 
-                                 VerticalAlignment="Center" Width="2000" FontSize="20" KeyDown="SearchModListTextBox_KeyDown" HorizontalAlignment="Left"
+                        <TextBox Name="SearchModListTextBox" Grid.Column ="0" Grid.Row ="1" Grid.ColumnSpan="3" Margin="10,0,86,0" TextWrapping="Wrap" 
+                                 VerticalAlignment="Center" FontSize="20" KeyDown="SearchModListTextBox_KeyDown"
                                  Foreground="#303030" Padding="4,0,0,0" FontFamily="{StaticResource AnekLatin}" IsEnabled="False" 
-                                 VerticalContentAlignment="Center" Height="35"/>
+                                 VerticalContentAlignment="Center" Height="34"/>
                         <TextBlock Margin="13,0,0,0" Padding="5,5,3,3" Grid.Column ="0" Grid.Row ="1" FontFamily="{StaticResource AnekLatin}" 
-                                   IsHitTestVisible="False" Height="30" MinWidth="200" HorizontalAlignment="Left" Text="Search..." 
+                                   IsHitTestVisible="False" Height="30" MinWidth="200" HorizontalAlignment="Stretch" Text="Search..." 
                                    VerticalAlignment="Center" Foreground="#303030" Grid.ColumnSpan="2" FontSize="20">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
@@ -666,11 +678,14 @@
                                 </Style>
                             </TextBlock.Style>
                         </TextBlock>
-                        <Button Grid.Column="3" IsEnabled="False" HorizontalAlignment="Left" Click="SearchModList_Click" Name="SearchModListButton" Height="35" Width="35" Grid.Row="1">
+                        <Button Grid.Column="2" IsEnabled="False" HorizontalAlignment="Right" Click="SearchModList_Click" Name="SearchModListButton" Width="35" Grid.Row="1" Margin="88,8,47,8">
                             <fa5:ImageAwesome Icon="Solid_Search" Foreground="#f2f2f2" Margin="3"/>
                         </Button>
+                        <Button Grid.Column="2" IsEnabled="True" Click="SearchClear_Click" x:Name="SearchClearButton" Grid.Row="1" Margin="127,8,10,8" HorizontalAlignment="Right">
+                            <fa5:ImageAwesome Icon="Solid_TimesCircle" Foreground="#f2f2f2" Margin="3"/>
+                        </Button>
                         <ComboBox Name="SearchTargetComboBox" Grid.Column="3" Grid.Row="1" Text="Search" 
-                                   FontSize="20" FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" IsEditable="False" Margin="40,10,10,10">
+                                   FontSize="20" FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" IsEditable="False" Margin="0,8,10,8">
                             <ComboBoxItem Content="ALL" IsSelected="True"/>
                             <ComboBoxItem Content="Name"/>
                             <ComboBoxItem Content="Note"/>
@@ -752,7 +767,7 @@
                                         <Setter Property="Height" Value="17"/>
                                         <Setter Property="FontSize" Value="15"/>
                                         <Setter Property="FontWeight" Value="Medium"/>
-                                        <EventSetter Event="ButtonBase.Click" Handler="SortAlphabeticallyAndGroupEnabled_Click"/>
+                                        <EventSetter Event="ButtonBase.Click" Handler="ModGridHeader_Click"/>
                                     </Style>
                                 </DataGrid.ColumnHeaderStyle>
                                 <DataGrid.ContextMenu>
@@ -797,7 +812,17 @@
                                         </DataGridTextColumn.EditingElementStyle>
                                     </DataGridTextColumn>
                                     <DataGridTextColumn Header="Name" Binding="{Binding name, Mode=TwoWay}" IsReadOnly="True" Width="1.5*" CanUserResize="True"/>
-                                    <DataGridTextColumn Header="Category" Binding="{Binding category, Mode=TwoWay}" Width="1.0*" CanUserResize="True"/>
+                                    <DataGridTextColumn Header="Category" Binding="{Binding category, Mode=TwoWay}" Width="1.0*" CanUserResize="True">
+                                        <DataGridTextColumn.CellStyle>
+                                            <Style TargetType="DataGridCell">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsCategoryHighlighted}" Value="true">
+                                                        <Setter Property="Foreground" Value="LimeGreen" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </DataGridTextColumn.CellStyle>
+                                    </DataGridTextColumn>
                                     <DataGridTextColumn Header="Note" Binding="{Binding note, Mode=TwoWay}" Width="1.5*" IsReadOnly="False" CanUserResize="True">
                                         <DataGridTextColumn.EditingElementStyle>
                                             <Style TargetType="TextBox">
@@ -838,9 +863,8 @@
                             </RichTextBox.Resources>
                         </RichTextBox>
                         <ComboBox x:Name="SearchCategoryComboBox" Grid.Column="4" Grid.Row="1" Text="" FontSize="20" 
-                                  FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" IsEditable="False" Margin="10,8,10,8"
-                            SelectionChanged="SearchCategoryComboBox_SelectionChanged">
-                        </ComboBox>
+                                  FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" IsEditable="False" Margin="0,8,10,8"
+                            SelectionChanged="SearchCategoryComboBox_SelectionChanged"/>
                     </Grid>
                 </TabItem.Content>
             </TabItem>

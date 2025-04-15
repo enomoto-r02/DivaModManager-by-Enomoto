@@ -500,6 +500,7 @@ namespace DivaModManager
                                 if (config_e.ContainsKey("category"))
                                 {
                                     mod_g.category = config_e["category"].ToString();
+                                    mod_g.IsCategoryHighlighted = true;
                                 }
                                 if (config_e.ContainsKey("note"))
                                 {
@@ -543,9 +544,9 @@ namespace DivaModManager
                         }
                     }
                 }
-                if(executeFlg)
+                if (executeFlg)
                 {
-                    // Loading Categor
+                    // Loading Category
                     var modPath = $"{mod}{Global.s}mod.json";
                     var mod_g_list = Global.ModList.ToList().Where(x => x.name == Path.GetFileName(mod));
                     foreach (var mod_g in mod_g_list)
@@ -586,6 +587,10 @@ namespace DivaModManager
                                 if (string.IsNullOrEmpty(mod_g.category))
                                 {
                                     mod_g.category = metadata.cat;
+                                }
+                                if (mod_g.category == metadata.cat)
+                                {
+                                    mod_g.IsCategoryHighlighted = false;
                                 }
                             }
                         }
@@ -1120,7 +1125,7 @@ namespace DivaModManager
                 {
                     for (var i = 0; i < element.ContextMenu.Items.Count; i++)
                     {
-                        var contextMenu = element.ContextMenu.Items[i] as MenuItem;
+                        MenuItem contextMenu = element.ContextMenu.Items[i] as MenuItem;
                         if (contextMenu != null)
                         {
                             contextMenu.IsEnabled = true;
@@ -2880,121 +2885,119 @@ namespace DivaModManager
             }
         }
 
-        private async void SortAlphabeticallyAndGroupEnabled_Click(object sender, RoutedEventArgs e)
+        private async void ModGridHeader_Click(object sender, RoutedEventArgs e)
         {
-            DataGridColumnHeader colHeader = sender as DataGridColumnHeader;
-            if (colHeader != null)
-            {
-                if (!string.IsNullOrEmpty(SearchModListTextBox.Text))
-                {
-                    MessageBox.Show($"Please do it with the mod search cleared.\nSorry.", "Attention.", MessageBoxButton.OK, MessageBoxImage.Information);
-                    return;
-                }
-                var colStr = colHeader.Column.Header;
-                var msgRes = MessageBox.Show($"Sort by {colStr}.\nThe priority of the mod will change significantly.\n\nAre you sure?", "Attention.", MessageBoxButton.OKCancel, MessageBoxImage.Question);
-                if (msgRes != MessageBoxResult.OK)
-                {
-                    return;
-                }
+            if (sender is not DataGridColumnHeader colHeader) return;
 
-                if (colHeader != null)
-                {
-                    if (colHeader.Column.Header.Equals("Enabled"))
-                    {
-                        // Move all enabled mods to top
-                        Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().OrderByDescending(x => x.enabled).ToList());
-                        Global.logger.WriteLine("Moved all enabled mods to the top!", LoggerType.Info);
-                    }
-                    else if (colHeader.Column.Header.Equals("Priority"))
-                    {
-                        if (direction == ListSortDirection.Descending)
-                        {
-                            ObservableCollection<Mod> ModList_no_priority = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => string.IsNullOrEmpty(x.priority)).ToList());
-                            Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => !string.IsNullOrEmpty(x.priority)).OrderBy(x => x.priority, new NaturalSort()).ToList());
-                            foreach (Mod m in ModList_no_priority)
-                            {
-                                Global.ModList.Add(m);
-                            }
-                            direction = ListSortDirection.Ascending;
-                        }
-                        else
-                        {
-                            ObservableCollection<Mod> ModList_no_priority = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => string.IsNullOrEmpty(x.priority)).ToList());
-                            Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => !string.IsNullOrEmpty(x.priority)).OrderByDescending(x => x.priority, new NaturalSort()).ToList());
-                            foreach (Mod m in ModList_no_priority)
-                            {
-                                Global.ModList.Add(m);
-                            }
-                            direction = ListSortDirection.Descending;
-                        }
-                    }
-                    else if (colHeader.Column.Header.Equals("Name"))
-                    {
-                        // Sort alphabetically
-                        Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().OrderBy(x => x.name, new NaturalSort()).ToList());
-                        Global.logger.WriteLine("Sorted alphanumerically!", LoggerType.Info);
-                    }
-                    else if (colHeader.Column.Header.Equals("Category"))
-                    {
-                        if (direction == ListSortDirection.Descending)
-                        {
-                            ObservableCollection<Mod> ModList_no_cat = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.category == "").ToList());
-                            Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.category != "").OrderBy(x => x.category, new NaturalSort()).ToList());
-                            foreach (Mod m in ModList_no_cat)
-                            {
-                                Global.ModList.Add(m);
-                            }
-                            direction = ListSortDirection.Ascending;
-                        }
-                        else
-                        {
-                            ObservableCollection<Mod> ModList_no_note = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.category == "").ToList());
-                            Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.category != "").OrderByDescending(x => x.category, new NaturalSort()).ToList());
-                            foreach (Mod m in ModList_no_note)
-                            {
-                                Global.ModList.Add(m);
-                            }
-                            direction = ListSortDirection.Descending;
-                        }
-                        Global.logger.WriteLine("Sorted by Note column!", LoggerType.Info);
-                    }
-                    else if (colHeader.Column.Header.Equals("Note"))
-                    {
-                        if (direction == ListSortDirection.Descending)
-                        {
-                            ObservableCollection<Mod> ModList_no_note = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.note == "").ToList());
-                            Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.note != "").OrderBy(x => x.note, new NaturalSort()).ToList());
-                            foreach (Mod m in ModList_no_note)
-                            {
-                                Global.ModList.Add(m);
-                            }
-                            direction = ListSortDirection.Ascending;
-                        }
-                        else
-                        {
-                            ObservableCollection<Mod> ModList_no_note = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.note == "").ToList());
-                            Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList().Where(x => x.note != "").OrderByDescending(x => x.note, new NaturalSort()).ToList());
-                            foreach (Mod m in ModList_no_note)
-                            {
-                                Global.ModList.Add(m);
-                            }
-                            direction = ListSortDirection.Descending;
-                        }
-                        Global.logger.WriteLine("Sorted by Note column!", LoggerType.Info);
-                    }
-                    await Task.Run(() =>
-                    {
-                        App.Current.Dispatcher.Invoke((Action)delegate
-                        {
-                            ModGrid.ItemsSource = Global.ModList;
-                        });
-                    });
-                    UpdateSearchMod();
-                    Global.UpdateConfig();
-                    await Task.Run(() => ModLoader.Build());
-                }
-                e.Handled = true;
+            string header = colHeader.Column?.Header?.ToString();
+            if (string.IsNullOrEmpty(header)) return;
+
+            if (!string.IsNullOrEmpty(SearchModListTextBox.Text))
+            {
+                MessageBox.Show("Please do it with the mod search cleared.\nSorry.", "Attention.", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
             }
+
+            var confirm = MessageBox.Show($"Sort by {header}.\nThe priority of the mod will change significantly.\n\nAre you sure?",
+                                          "Attention.", MessageBoxButton.OKCancel, MessageBoxImage.Question);
+            if (confirm != MessageBoxResult.OK) return;
+
+            switch (header)
+            {
+                case "Enabled":
+                    SortByEnabled();
+                    break;
+                case "Priority":
+                    SortByPriority();
+                    break;
+                case "Name":
+                    SortAlphabetically();
+                    break;
+                case "Category":
+                    SortByCategory();
+                    break;
+                case "Note":
+                    SortByNote();
+                    break;
+                default:
+                    return;
+            }
+
+            await RefreshUIAndUpdateAsync();
+            e.Handled = true;
+        }
+
+        private void SortByEnabled()
+        {
+            Global.ModList = new ObservableCollection<Mod>(Global.ModList.OrderByDescending(x => x.enabled));
+            Global.logger.WriteLine("Moved all enabled mods to the top!", LoggerType.Info);
+        }
+
+        private void SortAlphabetically()
+        {
+            Global.ModList = new ObservableCollection<Mod>(Global.ModList.OrderBy(x => x.name, new NaturalSort()));
+            Global.logger.WriteLine("Sorted alphanumerically!", LoggerType.Info);
+        }
+
+        private void SortByCategory()
+        {
+            SortByField(m => m.category, "Category");
+        }
+
+        private void SortByNote()
+        {
+            SortByField(m => m.note, "Note");
+        }
+
+        private void SortByPriority()
+        {
+            var list = Global.ModList.ToList();
+            var hasMinus = list.Where(x => !string.IsNullOrEmpty(x.priority) && x.priority.StartsWith("-"));
+            var noPriority = list.Where(x => string.IsNullOrEmpty(x.priority));
+            var rest = list.Where(x => !string.IsNullOrEmpty(x.priority) && !x.priority.StartsWith("-"));
+
+            Global.ModList = new ObservableCollection<Mod>(
+                (direction == ListSortDirection.Descending
+                    ? rest.OrderByDescending(x => x.priority, new NaturalSort())
+                    : rest.OrderBy(x => x.priority, new NaturalSort()))
+                .Concat(noPriority)
+                .Concat(direction == ListSortDirection.Descending ? hasMinus.OrderByDescending(x => x.priority, new NaturalSort()) : hasMinus.OrderBy(x => x.priority, new NaturalSort()))
+            );
+
+            direction = direction == ListSortDirection.Descending ? ListSortDirection.Ascending : ListSortDirection.Descending;
+            Global.logger.WriteLine("Sorted by Priority column!", LoggerType.Info);
+        }
+
+        private void SortByField(Func<Mod, string> selector, string fieldName)
+        {
+            var list = Global.ModList.ToList();
+            var noValue = list.Where(x => string.IsNullOrEmpty(selector(x)));
+            var hasValue = list.Where(x => !string.IsNullOrEmpty(selector(x)));
+
+            Global.ModList = new ObservableCollection<Mod>(
+                (direction == ListSortDirection.Descending
+                    ? hasValue.OrderByDescending(selector, new NaturalSort())
+                    : hasValue.OrderBy(selector, new NaturalSort()))
+                .Concat(noValue)
+            );
+
+            direction = direction == ListSortDirection.Descending ? ListSortDirection.Ascending : ListSortDirection.Descending;
+            Global.logger.WriteLine($"Sorted by {fieldName} column!", LoggerType.Info);
+        }
+
+        private async Task RefreshUIAndUpdateAsync()
+        {
+            await Task.Run(() =>
+            {
+                App.Current.Dispatcher.Invoke(() =>
+                {
+                    ModGrid.ItemsSource = Global.ModList;
+                });
+            });
+
+            UpdateSearchMod();
+            Global.UpdateConfig();
+            await Task.Run(() => ModLoader.Build());
         }
 
         private void Search()
@@ -3048,41 +3051,91 @@ namespace DivaModManager
 
         private void ModGrid_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (ModGrid.CurrentColumn.Header.ToString() == "Name")
+            string header = ModGrid.CurrentColumn?.Header?.ToString();
+            if (string.IsNullOrEmpty(header)) return;
+
+            switch (header)
             {
-                if (e.Key == Key.Space)
-                {
-                    foreach (var item in ModGrid.SelectedItems)
-                    {
-                        var checkbox = ModGrid.Columns[0].GetCellContent(item) as CheckBox;
-                        if (checkbox != null)
-                        {
-                            checkbox.IsChecked = !checkbox.IsChecked;
-                        }
-                    }
-                }
-                else if (e.Key == Key.Enter)
-                {
-                    OpenItem_Click(sender, e);
-                    e.Handled = true;
-                }
+                case "Name":
+                    HandleNameColumnKeyDown(e, sender);
+                    break;
+
+                case "Priority":
+                    HandlePriorityColumnKeyDown(e);
+                    break;
             }
-            else if (ModGrid.CurrentColumn.Header.ToString() == "Priority")
+        }
+
+        private void HandleNameColumnKeyDown(KeyEventArgs e, object sender)
+        {
+            if (e.Key == Key.Space)
             {
+                ToggleCheckBoxes();
+            }
+            else if (e.Key == Key.Enter)
+            {
+                ExecConfigAction(sender, e);
                 e.Handled = true;
-                if ((e.Key >= Key.D0 && e.Key <= Key.D9) || (e.Key >= Key.NumPad0 && e.Key <= Key.NumPad9)
-                    || (e.Key == Key.Enter || e.Key == Key.Back || e.Key == Key.Delete)
-                    || (e.Key == Key.Up || e.Key == Key.Down || e.Key == Key.Left || e.Key == Key.Right)
-                    || (e.Key == Key.Tab || e.Key == Key.F2 || e.Key == Key.Escape))
+            }
+        }
+
+        private void ToggleCheckBoxes()
+        {
+            foreach (var item in ModGrid.SelectedItems)
+            {
+                if (ModGrid.Columns[0].GetCellContent(item) is CheckBox checkbox)
                 {
-                    e.Handled = false;
+                    checkbox.IsChecked = !checkbox.IsChecked;
                 }
             }
+        }
+
+        private void HandlePriorityColumnKeyDown(KeyEventArgs e)
+        {
+            e.Handled = true;
+
+            string cellValue = GetPriorityCellValue(e.OriginalSource);
+
+            // Only allow minus sign if value is empty
+            if (string.IsNullOrEmpty(cellValue) && (e.Key == Key.Subtract || e.Key == Key.OemMinus))
+            {
+                e.Handled = false;
+                return;
+            }
+
+            if (IsNumericOrControlKey(e.Key))
+            {
+                e.Handled = false;
+            }
+        }
+
+        private string GetPriorityCellValue(object source)
+        {
+            return source switch
+            {
+                TextBox textBox => textBox.Text,
+                DataGridCell cell when cell.DataContext is Mod mod => mod.priority,
+                _ => null
+            };
+        }
+
+        private bool IsNumericOrControlKey(Key key)
+        {
+            return (key >= Key.D0 && key <= Key.D9) ||
+                   (key >= Key.NumPad0 && key <= Key.NumPad9) ||
+                   key is Key.Enter or Key.Back or Key.Delete or
+                        Key.Up or Key.Down or Key.Left or Key.Right or
+                        Key.Tab or Key.F2 or Key.Escape;
         }
 
         private void SearchModList_Click(object sender, RoutedEventArgs e)
         {
             SearchModList(SearchModListTextBox.Text, SearchCategoryComboBox.Text);
+        }
+
+        private void SearchClear_Click(object sender, RoutedEventArgs e)
+        {
+            InitSearchMod();
         }
 
         private void SearchModListTextBox_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
@@ -3097,54 +3150,45 @@ namespace DivaModManager
         {
             ModGrid.ClearSelectedItems();
 
-            if (string.IsNullOrEmpty(searchModName) && (SearchCategoryComboBox.SelectedIndex == 0))
+            switch (SearchTargetComboBox.Text)
             {
-                // Restore all evacuated mods.
-                InitSearchMod();
+                case "ALL":
+                    Global.ModList = new ObservableCollection<Mod>(Global.ModList_All.ToList()
+                        .Where(
+                        x => x.name.ToLower().Contains(searchModName.ToLower())
+                        || x.note.ToLower().Contains(searchModName.ToLower())
+                        ).ToList());
+                    break;
+                case "Name":
+                    Global.ModList = new ObservableCollection<Mod>(Global.ModList_All.ToList()
+                        .Where(x => x.name.ToLower().Contains(searchModName.ToLower())).ToList());
+                    break;
+                case "Note":
+                    Global.ModList = new ObservableCollection<Mod>(Global.ModList_All.ToList()
+                        .Where(x => x.note.ToLower().Contains(searchModName.ToLower())).ToList());
+                    break;
             }
-            else
-            {
-                switch (SearchTargetComboBox.Text)
-                {
-                    case "ALL":
-                        Global.ModList = new ObservableCollection<Mod>(Global.ModList_All.ToList()
-                            .Where(
-                            x => x.name.ToLower().Contains(searchModName.ToLower())
-                            || x.note.ToLower().Contains(searchModName.ToLower())
-                            ).ToList());
-                        break;
-                    case "Name":
-                        Global.ModList = new ObservableCollection<Mod>(Global.ModList_All.ToList()
-                            .Where(x => x.name.ToLower().Contains(searchModName.ToLower())).ToList());
-                        break;
-                    case "Note":
-                        Global.ModList = new ObservableCollection<Mod>(Global.ModList_All.ToList()
-                            .Where(x => x.note.ToLower().Contains(searchModName.ToLower())).ToList());
-                        break;
-                }
 
-                //switch (categoryName)
-                switch (categoryName)
-                {
-                    case "ALL":
-                        if (SearchCategoryComboBox.SelectedIndex != 0)
-                        {
-                            Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList()
-                                .Where(x => x.category == categoryName).ToList());
-                            break;
-                        }
-                        break;
-                    case "Unspecified":
-                        Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList()
-                            .Where(x => string.IsNullOrEmpty(x.category)).ToList());
-                        break;
-                    default:
+            switch (categoryName)
+            {
+                case "ALL":
+                    if (SearchCategoryComboBox.SelectedIndex != 0)
+                    {
                         Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList()
                             .Where(x => x.category == categoryName).ToList());
                         break;
                     }
-                Global.SearchModListFlg = true;
+                    break;
+                case "Unspecified":
+                    Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList()
+                        .Where(x => string.IsNullOrEmpty(x.category)).ToList());
+                    break;
+                default:
+                    Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList()
+                        .Where(x => x.category == categoryName).ToList());
+                    break;
             }
+            Global.SearchModListFlg = true;
 
             ModGrid.ItemsSource = Global.ModList;
             Global.UpdateConfig();
@@ -3155,7 +3199,8 @@ namespace DivaModManager
             if (!string.IsNullOrEmpty(SearchModListTextBox.Text))
             {
                 // Prohibit mod movement by dragging when mod search is enabled.
-                MessageBox.Show("You cannot change the priority of the MOD while searching. Sorry.", "Attention.", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("You cannot change the priority of the MOD while searching. Sorry.",
+                    "Attention.", MessageBoxButton.OK, MessageBoxImage.Information);
                 e.Handled = true;
             }
         }
@@ -3234,51 +3279,59 @@ namespace DivaModManager
             if (elem.Parent is not DataGridCell cell) return;
             if (cell.Column.Header?.ToString() != "Name") return;
 
+            ExecConfigAction(sender, e);
+        }
+
+        private void ExecConfigAction(object sender, EventArgs e)
+        {
             string action = Global.config.DoubleClickEvent?.ToLower() ?? "open";
+            RoutedEventArgs _e = (RoutedEventArgs)e;
 
             switch (action)
             {
                 case "open":
-                    OpenItem_Click(sender, e);
+                    OpenItem_Click(sender, _e);
                     break;
                 case "rename":
-                    RenameMod_Click(sender, e);
+                    RenameMod_Click(sender, _e);
                     break;
                 case "configure":
-                    ConfigureModItem_Click(sender, e);
+                    ConfigureModItem_Click(sender, _e);
                     break;
                 case "fetch":
-                    FetchItem_Click(sender, e);
+                    FetchItem_Click(sender, _e);
                     break;
                 case "update":
-                    Update_Click(sender, e);
+                    Update_Click(sender, _e);
                     break;
                 case "delete":
-                    DeleteItem_Click(sender, e);
+                    DeleteItem_Click(sender, _e);
                     break;
                 case "nothing":
                     break;
                 default:
                     // All unknown characters are treated as Open.
-                    OpenItem_Click(sender, e);
+                    OpenItem_Click(sender, _e);
                     break;
             }
         }
 
         private void ModGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
         {
-            if (e.Column is DataGridTextColumn textCol)
-            {
-                Mod mod = e.Row.DataContext as Mod;
-                var textBox = e.EditingElement as TextBox;
-                var newText = textBox.Text;
+            if (e.Column is not DataGridTextColumn textCol) return;
+            if (e.Row.DataContext is not Mod mod) return;
+            if (e.EditingElement is not TextBox textBox) return;
 
-                if (e.Column.Header.ToString() == "Priority")
-                {
+            string newText = textBox.Text;
+            string columnHeader = e.Column.Header.ToString();
+
+            switch (columnHeader)
+            {
+                case "Priority":
                     mod.priority = newText;
-                }
-                else if (e.Column.Header.ToString() == "Category")
-                {
+                    break;
+
+                case "Category":
                     mod.category = newText;
 
                     if (Global.ModList.Count > 1)
@@ -3291,19 +3344,22 @@ namespace DivaModManager
                         // If the number of categories decreases, please set the category combobox to ALL.
                         CategoryComboInit(0);
                     }
-                }
-                else if (e.Column.Header.ToString() == "Note")
-                {
+                    break;
+
+                case "Note":
                     mod.note = newText;
-                }
-                UpdateModConfigToml_e(mod, e.Column.Header.ToString(), newText);
+                    break;
             }
+
+            UpdateModConfigToml_e(mod, columnHeader, newText);
         }
 
         private void SearchCategoryComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            ComboBox combo = (ComboBox)sender;
-            SearchModList(SearchModListTextBox.Text, combo.SelectedItem?.ToString());
+            if (sender is ComboBox checkBox && checkBox.IsKeyboardFocusWithin)
+            {
+                SearchModList(SearchModListTextBox.Text, checkBox.SelectedItem?.ToString());
+            }
         }
 
         private void CategoryComboInit(int? selected = null)
@@ -3323,6 +3379,23 @@ namespace DivaModManager
             if (selected != null)
             {
                 SearchCategoryComboBox.SelectedIndex = (int)selected;
+            }
+        }
+
+        private void DMM_Folder_Click(object sender, RoutedEventArgs e)
+        {
+            var folderName = $@"{Global.assemblyLocation}";
+            if (Directory.Exists(folderName))
+            {
+                try
+                {
+                    Process process = Process.Start("explorer.exe", folderName);
+                    Global.logger.WriteLine($@"Opened {folderName}.", LoggerType.Info);
+                }
+                catch (Exception ex)
+                {
+                    Global.logger.WriteLine($@"Couldn't open {folderName}. ({ex.Message})", LoggerType.Error);
+                }
             }
         }
     }

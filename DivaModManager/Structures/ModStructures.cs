@@ -61,6 +61,9 @@ namespace DivaModManager
 
         [JsonIgnore]
         public string category { get; set; } = string.Empty;
+        [JsonIgnore]
+        public bool IsCategoryHighlighted { get; set; } = true;
+
 
         public event PropertyChangedEventHandler? PropertyChanged;
         private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
@@ -99,6 +102,7 @@ namespace DivaModManager
         public double? NameColumnWidth { get; set; }
         public double? CategoryColumnWidth { get; set; }
         public double? NoteColumnWidth { get; set; }
+        public bool CategoryColumnColor { get; set; } = false;
         public string? DoubleClickEvent { get; set; }
     }
     public class GameConfig
