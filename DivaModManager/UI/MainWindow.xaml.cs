@@ -330,15 +330,18 @@ namespace DivaModManager
                     }
                     else
                     {
-                        // Create config.toml with enabled field to be true and include set, if the user desires
-                        if (!IsWindowOpen<ChoiceWindow>())
+                        App.Current.Dispatcher.Invoke((Action)delegate
                         {
-                            ConfirmConfigCreation(configPath, m, true);
-                        }
-                        else
-                        {
-                            Global.logger.WriteLine("No config.toml file window triggered but it was already open.", LoggerType.Info);
-                        }
+                            // Create config.toml with enabled field to be true and include set, if the user desires
+                            if (!IsWindowOpen<ChoiceWindow>())
+                            {
+                                ConfirmConfigCreation(configPath, m, true);
+                            }
+                            else
+                            {
+                                Global.logger.WriteLine("No config.toml file window triggered but it was already open.", LoggerType.Info);
+                            }
+                        });
                     }
                     App.Current.Dispatcher.Invoke((Action)delegate
                     {
@@ -443,16 +446,19 @@ namespace DivaModManager
                     }
                     else
                     {
-                        if (!IsWindowOpen<ChoiceWindow>())
+                        App.Current.Dispatcher.Invoke((Action)delegate
                         {
-                            Mod m = new Mod();
-                            m.name = Path.GetFileName(mod);
-                            ConfirmConfigCreation(configPath, m, true);
-                        }
-                        else
-                        {
-                            Global.logger.WriteLine("No config.toml file window triggered but it was already open.", LoggerType.Info);
-                        }
+                            if (!IsWindowOpen<ChoiceWindow>())
+                            {
+                                Mod m = new Mod();
+                                m.name = Path.GetFileName(mod);
+                                ConfirmConfigCreation(configPath, m, true);
+                            }
+                            else
+                            {
+                                Global.logger.WriteLine("No config.toml file window triggered but it was already open.", LoggerType.Info);
+                            }
+                        });
                     }
 
                     // Loading Priority and Note
@@ -731,15 +737,19 @@ namespace DivaModManager
             }
             else
             {
-                // Create config.toml with enabled field to be true and include set, if the user desires
-                if (!IsWindowOpen<ChoiceWindow>())
+
+                App.Current.Dispatcher.Invoke((Action)delegate
                 {
-                    ConfirmConfigCreation(configPath, m, false);
-                }
-                else
-                {
-                    Global.logger.WriteLine("No config.toml file window triggered but it was already open.", LoggerType.Info);
-                }
+                    // Create config.toml with enabled field to be true and include set, if the user desires
+                    if (!IsWindowOpen<ChoiceWindow>())
+                    {
+                        ConfirmConfigCreation(configPath, m, false);
+                    }
+                    else
+                    {
+                        Global.logger.WriteLine("No config.toml file window triggered but it was already open.", LoggerType.Info);
+                    }
+                });
             }
         }
 
