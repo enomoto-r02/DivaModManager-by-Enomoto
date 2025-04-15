@@ -1201,6 +1201,7 @@ namespace DivaModManager
             Global.config.RightGridWidth = MiddleGrid.ColumnDefinitions[2].Width.Value;
             InitSearchMod();
             SetColumnDisplayIndex();
+            SetColumnVisible();
             Global.UpdateConfig();
             System.Windows.Application.Current.Shutdown();
         }
@@ -3445,6 +3446,92 @@ namespace DivaModManager
                         break;
                 }
             }
+        }
+
+        private void SetColumnVisible()
+        {
+            foreach (var col in ModGrid.Columns)
+            {
+                string headerName = col.Header.ToString();
+                switch (headerName)
+                {
+                    case "Enabled":
+                        Global.config.EnabledColumnVisible = col.Visibility;
+                        break;
+                    case "Priority":
+                        Global.config.PriorityColumnVisible = col.Visibility;
+                        break;
+                    case "Name":
+                        Global.config.NameColumnVisible = col.Visibility;
+                        break;
+                    case "Category":
+                        Global.config.CategoryColumnVisible = col.Visibility;
+                        break;
+                    case "Note":
+                        Global.config.NoteColumnVisible = col.Visibility;
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+
+        private void VisibleColumnComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (sender is ComboBox checkBox && checkBox.IsKeyboardFocusWithin)
+            {
+                ComboBoxItem item = VisibleColumnComboBox.SelectedItem as ComboBoxItem;
+                if (item != null)
+                {
+                    DataGridColumn col;
+                    switch (item.Content.ToString())
+                    {
+                        case "Visible Column":
+                            break;
+                        case "Enabled":
+                            col = GetDataGridColumnByName(ModGrid, "Enabled");
+                            col.Visibility = col.Visibility == Visibility.Visible ? Visibility.Hidden : col.Visibility = Visibility.Visible;
+                            break;
+                        case "Priority":
+                            col = GetDataGridColumnByName(ModGrid, "Priority");
+                            col.Visibility = col.Visibility == Visibility.Visible ? Visibility.Hidden : col.Visibility = Visibility.Visible;
+                            break;
+                        case "Name":
+                            col = GetDataGridColumnByName(ModGrid, "Name");
+                            col.Visibility = col.Visibility == Visibility.Visible ? Visibility.Hidden : col.Visibility = Visibility.Visible;
+                            break;
+                        case "Category":
+                            col = GetDataGridColumnByName(ModGrid, "Category");
+                            col.Visibility = col.Visibility == Visibility.Visible ? Visibility.Hidden : col.Visibility = Visibility.Visible;
+                            break;
+                        case "Note":
+                            col = GetDataGridColumnByName(ModGrid, "Note");
+                            col.Visibility = col.Visibility == Visibility.Visible ? Visibility.Hidden : col.Visibility = Visibility.Visible;
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                checkBox.SelectedIndex = 0;
+            }
+        }
+
+        private DataGridColumn GetDataGridColumnByName(DataGrid grid, string headerName)
+        {
+            if(grid == null || string.IsNullOrEmpty(headerName))
+            {
+                return null;
+            }
+
+            foreach (DataGridColumn col in grid.Columns)
+            {
+                if (col.Header.ToString() == headerName)
+                {
+                    return col;
+                }
+            }
+
+            return null;
         }
     }
 }

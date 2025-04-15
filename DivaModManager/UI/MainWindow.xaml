@@ -869,6 +869,17 @@
                         <ComboBox x:Name="SearchCategoryComboBox" Grid.Column="4" Grid.Row="1" Text="" FontSize="20" 
                                   FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" IsEditable="False" Margin="0,8,10,8"
                             SelectionChanged="SearchCategoryComboBox_SelectionChanged"/>
+                        <ComboBox x:Name="VisibleColumnComboBox" Grid.Column="5" Grid.Row="1" Text="Visible" FontSize="20" 
+                                  FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" IsEditable="False" Margin="0,8,10,8"
+                            SelectionChanged="VisibleColumnComboBox_SelectionChanged">
+                            <ComboBoxItem Content="Visible Column" IsSelected="True"/>
+                            <!--<ComboBoxItem Content="Enabled"/>-->
+                            <ComboBoxItem Content="Priority"/>
+                            <!--<ComboBoxItem Content="Name"/>-->
+                            <ComboBoxItem Content="Category"/>
+                            <ComboBoxItem Content="Note"/>
+                        </ComboBox>
+                        
                     </Grid>
                 </TabItem.Content>
             </TabItem>
