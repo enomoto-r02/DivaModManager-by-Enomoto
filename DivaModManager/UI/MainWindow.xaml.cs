@@ -93,6 +93,15 @@ namespace DivaModManager
             if (Global.config.RightGridWidth != null)
                 MiddleGrid.ColumnDefinitions[2].Width = new GridLength((double)Global.config.RightGridWidth, GridUnitType.Star);
 
+            if (Global.config.PriorityColumnIndex != null)
+                ModGrid.Columns[1].DisplayIndex = (int)Global.config.PriorityColumnIndex;
+            if (Global.config.NameColumnIndex != null)
+                ModGrid.Columns[2].DisplayIndex = (int)Global.config.NameColumnIndex;
+            if (Global.config.CategoryColumnIndex != null)
+                ModGrid.Columns[3].DisplayIndex = (int)Global.config.CategoryColumnIndex;
+            if (Global.config.NoteColumnIndex != null)
+                ModGrid.Columns[4].DisplayIndex = (int)Global.config.NoteColumnIndex;
+
             if (Global.config.PriorityColumnWidth != null)
                 ModGrid.Columns[1].Width = (double)Global.config.PriorityColumnWidth;
             if (Global.config.NameColumnWidth != null)
@@ -1191,6 +1200,7 @@ namespace DivaModManager
             Global.config.LeftGridWidth = MiddleGrid.ColumnDefinitions[0].Width.Value;
             Global.config.RightGridWidth = MiddleGrid.ColumnDefinitions[2].Width.Value;
             InitSearchMod();
+            SetColumnDisplayIndex();
             Global.UpdateConfig();
             System.Windows.Application.Current.Shutdown();
         }
@@ -3405,6 +3415,34 @@ namespace DivaModManager
                 catch (Exception ex)
                 {
                     Global.logger.WriteLine($@"Couldn't open {folderName}. ({ex.Message})", LoggerType.Error);
+                }
+            }
+        }
+
+        private void SetColumnDisplayIndex()
+        {
+            foreach(var col in ModGrid.Columns)
+            {
+                string headerName = col.Header.ToString();
+                switch (headerName)
+                {
+                    case "Enabled":
+                        Global.config.EnabledColumnIndex = col.DisplayIndex;
+                        break;
+                    case "Priority":
+                        Global.config.PriorityColumnIndex = col.DisplayIndex;
+                        break;
+                    case "Name":
+                        Global.config.NameColumnIndex = col.DisplayIndex;
+                        break;
+                    case "Category":
+                        Global.config.CategoryColumnIndex = col.DisplayIndex;
+                        break;
+                    case "Note":
+                        Global.config.NoteColumnIndex = col.DisplayIndex;
+                        break;
+                    default:
+                        break;
                 }
             }
         }
