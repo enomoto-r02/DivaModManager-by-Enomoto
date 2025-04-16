@@ -3139,7 +3139,7 @@ namespace DivaModManager
             InitSearchMod();
         }
 
-        private void SearchModListTextBox_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        private void SearchModListTextBox_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
             {

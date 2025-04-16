@@ -661,10 +661,9 @@
                         <Button FontWeight="Medium" Name="UpdateCheckAllButton" Margin="0,0,10,0"  Height="34" VerticalAlignment="Center" Grid.Column="7" Background="#181818" BorderBrush="#252525"  Click="UpdateAll_Click">
                             <TextBlock Text="Update Check All" TextTrimming="CharacterEllipsis" Foreground="#f2f2f2" FontFamily="{StaticResource AnekLatin}" FontSize="20" FontWeight="Medium"/>
                         </Button>
-
                         <ComboBox Grid.Column="5" Margin="0,0,10,0" Height="35" FontSize="20" FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" Name="LauncherOptionsBox" SelectionChanged="LauncherOptionsBox_SelectionChanged"/>
                         <ComboBox Grid.Column="1" Margin="10,0,10,0" Height="35" FontSize="20" FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" Name="LoadoutBox" SelectionChanged="LoadoutsBox_SelectionChanged"/>
-
+                        
                         <TextBox Name="SearchModListTextBox" Grid.Column ="0" Grid.Row ="1" Grid.ColumnSpan="3" Margin="10,0,86,0" TextWrapping="Wrap" 
                                  VerticalAlignment="Center" FontSize="20" KeyDown="SearchModListTextBox_KeyDown"
                                  Foreground="#303030" Padding="4,0,0,0" FontFamily="{StaticResource AnekLatin}" IsEnabled="False" 
@@ -692,6 +691,19 @@
                                    FontSize="20" FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" IsEditable="False" Margin="0,8,10,8">
                             <ComboBoxItem Content="ALL" IsSelected="True"/>
                             <ComboBoxItem Content="Name"/>
+                            <ComboBoxItem Content="Note"/>
+                        </ComboBox>
+                        <ComboBox x:Name="SearchCategoryComboBox" Grid.Column="4" Grid.Row="1" Text="" FontSize="20" 
+                                FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" IsEditable="False" Margin="0,8,10,8"
+                                SelectionChanged="SearchCategoryComboBox_SelectionChanged"/>
+                        <ComboBox x:Name="VisibleColumnComboBox" Grid.Column="5" Grid.Row="1" Text="Visible" FontSize="20" 
+                                FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" IsEditable="False" Margin="0,8,10,8"
+                                SelectionChanged="VisibleColumnComboBox_SelectionChanged">
+                            <ComboBoxItem Content="Visible Column" IsSelected="True"/>
+                            <!--<ComboBoxItem Content="Enabled"/>-->
+                            <ComboBoxItem Content="Priority"/>
+                            <!--<ComboBoxItem Content="Name"/>-->
+                            <ComboBoxItem Content="Category"/>
                             <ComboBoxItem Content="Note"/>
                         </ComboBox>
                         <Grid x:Name="MiddleGrid" Grid.Row="2" Grid.ColumnSpan="8">
@@ -808,7 +820,7 @@
                                             </Style>
                                         </DataGridCheckBoxColumn.CellStyle>
                                     </DataGridCheckBoxColumn>
-                                    <DataGridTextColumn Header="Priority"  Binding="{Binding priority, Mode=TwoWay}" Width="58" IsReadOnly="False" CanUserResize="True">
+                                    <DataGridTextColumn Header="Priority"  Binding="{Binding priority, Mode=TwoWay}" Width="67" IsReadOnly="False" CanUserResize="True">
                                         <DataGridTextColumn.ElementStyle>
                                             <Style TargetType="TextBlock">
                                                 <Setter Property="HorizontalAlignment" Value="Center" />
@@ -872,20 +884,6 @@
                                 </Style>
                             </RichTextBox.Resources>
                         </RichTextBox>
-                        <ComboBox x:Name="SearchCategoryComboBox" Grid.Column="4" Grid.Row="1" Text="" FontSize="20" 
-                                  FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" IsEditable="False" Margin="0,8,10,8"
-                            SelectionChanged="SearchCategoryComboBox_SelectionChanged"/>
-                        <ComboBox x:Name="VisibleColumnComboBox" Grid.Column="5" Grid.Row="1" Text="Visible" FontSize="20" 
-                                  FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" IsEditable="False" Margin="0,8,10,8"
-                            SelectionChanged="VisibleColumnComboBox_SelectionChanged">
-                            <ComboBoxItem Content="Visible Column" IsSelected="True"/>
-                            <!--<ComboBoxItem Content="Enabled"/>-->
-                            <ComboBoxItem Content="Priority"/>
-                            <!--<ComboBoxItem Content="Name"/>-->
-                            <ComboBoxItem Content="Category"/>
-                            <ComboBoxItem Content="Note"/>
-                        </ComboBox>
-                        
                     </Grid>
                 </TabItem.Content>
             </TabItem>
