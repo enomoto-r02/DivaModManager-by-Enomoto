@@ -749,6 +749,12 @@
                                 CanUserReorderColumns="True"
                                 HorizontalScrollBarVisibility="Auto"
                                 >
+                                <DataGrid.CellStyle>
+                                    <Style TargetType="{x:Type DataGridCell}">
+                                        <Setter Property="BorderThickness" Value="1,0,1,0"/>
+                                        <Setter Property="BorderBrush" Value="Black"/>
+                                    </Style>
+                                </DataGrid.CellStyle>
                                 <DataGrid.Resources>
                                     <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="#115F58"/>
                                     <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="#f2f2f2"/>
