@@ -102,6 +102,7 @@ namespace DivaModManager
 
         public Visibility EnabledColumnVisible { get; set; } = Visibility.Visible;
         public int? EnabledColumnIndex { get; set; } = 0;
+        public double? EnabledColumnWidth { get; set; }
         public Visibility PriorityColumnVisible { get; set; } = Visibility.Visible;
         public int? PriorityColumnIndex { get; set; } = 1;
         public double? PriorityColumnWidth { get; set; }

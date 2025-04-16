@@ -83,6 +83,7 @@ namespace DivaModManager.UI
                     catch (Exception ex)
                     {
                         Global.logger.WriteLine($"Couldn't rename {oldDirectory} to {newDirectory} ({ex.Message})", LoggerType.Error);
+                        Close();
                     }
                 }
                 else

@@ -102,6 +102,8 @@ namespace DivaModManager
             if (Global.config.NoteColumnIndex != null)
                 ModGrid.Columns[4].DisplayIndex = (int)Global.config.NoteColumnIndex;
 
+            if (Global.config.EnabledColumnWidth != null)
+                ModGrid.Columns[0].Width = (double)Global.config.EnabledColumnWidth;
             if (Global.config.PriorityColumnWidth != null)
                 ModGrid.Columns[1].Width = (double)Global.config.PriorityColumnWidth;
             if (Global.config.NameColumnWidth != null)
@@ -174,19 +176,9 @@ namespace DivaModManager
             ImageBehavior.SetAnimatedSource(Preview, bitmap);
             ImageBehavior.SetAnimatedSource(PreviewBG, null);
 
-            GameBox.IsEnabled = false;
-            ModGrid.IsEnabled = false;
-            ConfigButton.IsEnabled = false;
-            LaunchButton.IsEnabled = false;
-            OpenModsButton.IsEnabled = false;
-            UpdateCheckAllButton.IsEnabled = false;
-            LauncherOptionsBox.IsEnabled = false;
-            LoadoutBox.IsEnabled = false;
-            EditLoadoutsButton.IsEnabled = false;
-            SearchModListButton.IsEnabled = false;
-            SearchModListTextBox.IsEnabled = false;
             App.Current.Dispatcher.Invoke(async () =>
             {
+                IsEnabledControls(false);
                 Global.logger.WriteLine("Checking for mod updates...", LoggerType.Info);
                 //await ModUpdater.CheckForUpdates(Global.config.Configs[Global.config.CurrentGame].ModsFolder, this);
                 await ModUpdater.CheckForUpdatesInit(this);
@@ -199,6 +191,7 @@ namespace DivaModManager
                     Global.logger.WriteLine("Checking for DivaModLoader update...", LoggerType.Info);
                     await Setup.CheckForDMLUpdate(new CancellationTokenSource());
                 }
+                IsEnabledControls(true);
             });
         }
         private async void WindowLoaded(object sender, RoutedEventArgs e)
@@ -752,7 +745,6 @@ namespace DivaModManager
             }
             else
             {
-
                 App.Current.Dispatcher.Invoke((Action)delegate
                 {
                     // Create config.toml with enabled field to be true and include set, if the user desires
@@ -1469,19 +1461,9 @@ namespace DivaModManager
         }
         private void UpdateCommon(object sender, RoutedEventArgs e, bool isSelectedUpdate)
         {
-            GameBox.IsEnabled = false;
-            ModGrid.IsEnabled = false;
-            ConfigButton.IsEnabled = false;
-            LaunchButton.IsEnabled = false;
-            OpenModsButton.IsEnabled = false;
-            UpdateCheckAllButton.IsEnabled = false;
-            LauncherOptionsBox.IsEnabled = false;
-            LoadoutBox.IsEnabled = false;
-            EditLoadoutsButton.IsEnabled = false;
-            SearchModListButton.IsEnabled = false;
-            SearchModListTextBox.IsEnabled = false;
             App.Current.Dispatcher.Invoke(async () =>
             {
+                IsEnabledControls(false);
                 Global.logger.WriteLine("Checking for mod updates...", LoggerType.Info);
                 await ModUpdater.CheckForUpdates(Global.config.Configs[Global.config.CurrentGame].ModsFolder, this, isSelectedUpdate);
                 Global.logger.WriteLine("Checking for Diva Mod Manager update...", LoggerType.Info);
@@ -1489,6 +1471,7 @@ namespace DivaModManager
                     Close();
                 Global.logger.WriteLine("Checking for DivaModLoader update...", LoggerType.Info);
                 await Setup.CheckForDMLUpdate(new CancellationTokenSource());
+                IsEnabledControls(true);
             });
         }
         private Paragraph ConvertToFlowParagraph(string text)
@@ -2888,25 +2871,16 @@ namespace DivaModManager
                 var bitmap = new BitmapImage(new Uri("pack://application:,,,/DivaModManager;component/Assets/preview_enomoto.png"));
                 ImageBehavior.SetAnimatedSource(Preview, bitmap);
                 ImageBehavior.SetAnimatedSource(PreviewBG, null);
-
-                GameBox.IsEnabled = false;
-                ModGrid.IsEnabled = false;
-                ConfigButton.IsEnabled = false;
-                LaunchButton.IsEnabled = false;
-                OpenModsButton.IsEnabled = false;
-                UpdateCheckAllButton.IsEnabled = false;
-                LauncherOptionsBox.IsEnabled = false;
-                LoadoutBox.IsEnabled = false;
-                EditLoadoutsButton.IsEnabled = false;
-                SearchModListButton.IsEnabled = false;
-                SearchModListTextBox.IsEnabled = false;
+                
                 await App.Current.Dispatcher.Invoke(async () =>
                 {
+                    IsEnabledControls(false);
                     Global.logger.WriteLine("Checking for mod updates...", LoggerType.Info);
                     await ModUpdater.CheckForUpdates(Global.config.Configs[Global.config.CurrentGame].ModsFolder, this, true);
                     Global.logger.WriteLine("Checking for Diva Mod Manager update...", LoggerType.Info);
                     if (await AutoUpdater.CheckForDMMUpdate(new CancellationTokenSource()))
                         Close();
+                    IsEnabledControls(true);
                 });
                 handle = false;
             }
@@ -3165,7 +3139,7 @@ namespace DivaModManager
             InitSearchMod();
         }
 
-        private void SearchModListTextBox_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        private void SearchModListTextBox_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
             {
@@ -3538,6 +3512,31 @@ namespace DivaModManager
             }
 
             return null;
+        }
+
+        private void IsEnabledControls(bool isEnabled)
+        {
+            GBModBrowser.IsEnabled = isEnabled;
+            DMAModBrowser.IsEnabled = isEnabled;
+
+            GameBox.IsEnabled = isEnabled;
+            LauncherOptionsBox.IsEnabled = isEnabled;
+            EditLoadoutsButton.IsEnabled = isEnabled;
+            ConfigButton.IsEnabled = isEnabled;
+            LaunchButton.IsEnabled = isEnabled;
+            OpenModsButton.IsEnabled = isEnabled;
+            UpdateCheckAllButton.IsEnabled = isEnabled;
+            LoadoutBox.IsEnabled = isEnabled;
+            
+            SearchModListButton.IsEnabled = isEnabled;
+            SearchModListTextBox.IsEnabled = isEnabled;
+            SearchModListButton.IsEnabled = IsEnabled;
+            SearchClearButton.IsEnabled = isEnabled;
+            SearchTargetComboBox.IsEnabled = isEnabled;
+            SearchCategoryComboBox.IsEnabled = isEnabled;
+            VisibleColumnComboBox.IsEnabled = isEnabled;
+            
+            ModGrid.IsEnabled = isEnabled;
         }
     }
 }
