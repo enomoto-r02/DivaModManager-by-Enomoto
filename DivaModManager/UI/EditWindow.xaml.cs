@@ -77,7 +77,8 @@ namespace DivaModManager.UI
                             var index = Global.config.Configs[Global.config.CurrentGame].Loadouts[key].ToList().FindIndex(x => x.name == _name);
                             if (index == -1)
                             {
-                                Global.logger.WriteLine($"Couldn't find {oldDirectory} in {key}", LoggerType.Error);
+                                // ロードアウトにフォルダが登録されていない場合に発生する。エラーとは言いがたいためコメント化
+                                //Global.logger.WriteLine($"Couldn't find {oldDirectory} in {key}", LoggerType.Info);
                                 continue;
                             }
                             Global.config.Configs[Global.config.CurrentGame].Loadouts[key][index].name = NameBox.Text;

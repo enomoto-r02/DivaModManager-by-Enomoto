@@ -933,7 +933,7 @@ namespace DivaModManager
                             {
                                 m.enabled = setEnabled;
                                 //UpdateModConfigToml(checkMod, setEnabled);
-                                RefreshAsync();
+                                RefreshAsync(); // 同期させるためawaitはなし
                             }
                         }
                     }
