@@ -231,7 +231,7 @@ namespace DivaModManager
                 // Debounceタイマーの初期化
                 _debounceTimer = new Timer(DebounceTimerCallback, null, Timeout.Infinite, Timeout.Infinite);
 
-                Global.logger.WriteLine($"Initialized watcher for: {modsFolder}", LoggerType.Debug); // デバッグ用ログ
+                //Global.logger.WriteLine($"Initialized watcher for: {modsFolder}", LoggerType.Debug); // デバッグ用ログ
             }
             else
             {
@@ -246,7 +246,7 @@ namespace DivaModManager
                 try
                 {
                     ModsWatcher.EnableRaisingEvents = true;
-                    Global.logger.WriteLine($"Started watching: {ModsWatcher.Path}", LoggerType.Debug); // デバッグ用ログ
+                    //Global.logger.WriteLine($"Started watching: {ModsWatcher.Path}", LoggerType.Debug); // デバッグ用ログ
                 }
                 catch (Exception ex)
                 {
@@ -263,7 +263,7 @@ namespace DivaModManager
                 try
                 {
                     ModsWatcher.EnableRaisingEvents = false;
-                    Global.logger.WriteLine($"Stopped watching: {ModsWatcher.Path}", LoggerType.Debug); // デバッグ用ログ
+                    //Global.logger.WriteLine($"Stopped watching: {ModsWatcher.Path}", LoggerType.Debug); // デバッグ用ログ
                 }
                 catch (Exception ex)
                 {
@@ -283,7 +283,7 @@ namespace DivaModManager
 
             ModsWatcher?.Dispose();
             ModsWatcher = null;
-            Global.logger.WriteLine($"Disposed watcher and timer.", LoggerType.Debug); // デバッグ用ログ
+            //Global.logger.WriteLine($"Disposed watcher and timer.", LoggerType.Debug); // デバッグ用ログ
         }
 
         private async void WindowLoaded(object sender, RoutedEventArgs e)
@@ -300,7 +300,7 @@ namespace DivaModManager
             // 特定のファイル（例：一時ファイル）を除外したい場合はここでフィルタリング
             // if (e.Name.EndsWith(".tmp")) return;
 
-            Global.logger.WriteLine($"File system change detected: {e.ChangeType} - {e.FullPath}", LoggerType.Debug); // デバッグ用ログ
+            //Global.logger.WriteLine($"File system change detected: {e.ChangeType} - {e.FullPath}", LoggerType.Debug); // デバッグ用ログ
 
             // タイマーが破棄されていないか確認
             if (_debounceTimer == null) return;
@@ -315,7 +315,7 @@ namespace DivaModManager
             // タイマーが無効（Dispose済みなど）なら何もしない
             if (_debounceTimer == null) return;
 
-            Global.logger.WriteLine($"Debounce timer triggered. Refreshing mods...", LoggerType.Debug); // デバッグ用ログ
+            //Global.logger.WriteLine($"Debounce timer triggered. Refreshing mods...", LoggerType.Debug); // デバッグ用ログ
 
             // UIスレッドで RefreshAsync() を実行
             // Application.Currentがnullになる可能性も考慮（シャットダウン時など）
@@ -332,7 +332,7 @@ namespace DivaModManager
             catch (TaskCanceledException)
             {
                 // アプリケーション終了時などに発生する可能性
-                Global.logger.WriteLine($"RefreshAsync was canceled, likely due to application shutdown.", LoggerType.Debug);
+                //Global.logger.WriteLine($"RefreshAsync was canceled, likely due to application shutdown.", LoggerType.Debug);
             }
             catch (Exception ex)
             {
@@ -550,7 +550,7 @@ namespace DivaModManager
                         {
                             config["enabled"] = mod.enabled;
                             needsWriteBack = true;
-                            Global.logger.WriteLine($"Updating enabled state in {configPath} for {mod.name} to {mod.enabled}.", LoggerType.Debug);
+                            //Global.logger.WriteLine($"Updating enabled state in {configPath} for {mod.name} to {mod.enabled}.", LoggerType.Debug);
                         }
                     }
                 }
@@ -569,7 +569,7 @@ namespace DivaModManager
                 // 既存、新規どちらの場合も enabled フィールドを追加
                 config.Add("enabled", mod.enabled);
                 needsWriteBack = true;
-                Global.logger.WriteLine($"Adding missing 'enabled' field to {configPath} for {mod.name}.", LoggerType.Debug);
+                //Global.logger.WriteLine($"Adding missing 'enabled' field to {configPath} for {mod.name}.", LoggerType.Debug);
             }
 
             // Include プロパティの処理 (常に確認・追加)
@@ -577,7 +577,7 @@ namespace DivaModManager
             {
                 AddInclude(config); // AddInclude は同期のまま？ 中で await してないならOK
                 needsWriteBack = true;
-                Global.logger.WriteLine($"Adding missing 'include' field to {configPath} for {mod.name}.", LoggerType.Debug);
+                //Global.logger.WriteLine($"Adding missing 'include' field to {configPath} for {mod.name}.", LoggerType.Debug);
             }
 
             // ファイルに書き戻す必要がある場合
@@ -1013,7 +1013,7 @@ namespace DivaModManager
                 config_e.Add("priority", "");
                 config_e.Add("category", "");
                 config_e.Add("note", "");
-                Global.logger.WriteLine($"Creating new config_e.toml for {m.name}.", LoggerType.Debug);
+                //Global.logger.WriteLine($"Creating new config_e.toml for {m.name}.", LoggerType.Debug);
                 needsWrite = true; // 新規作成なので書き込み必要
             }
 
@@ -1050,7 +1050,7 @@ namespace DivaModManager
             if (needsWrite)
             {
                 await TryWriteTomlAsync(configPath_e, config_e);
-                Global.logger.WriteLine($"Updated '{column}' in config_e.toml for {m.name}.", LoggerType.Debug);
+                //Global.logger.WriteLine($"Updated '{column}' in config_e.toml for {m.name}.", LoggerType.Debug);
             }
         }
 
