@@ -1183,6 +1183,17 @@ namespace DivaModManager
 
         private void Window_Closing(object sender, CancelEventArgs e)
         {
+            try
+            {
+                ModsWatcher.EnableRaisingEvents = false;
+            }
+            catch (Exception ex)
+            {
+                Global.logger.WriteLine($"Error stopping FileSystemWatcher: {ex.Message}", LoggerType.Error);
+            }
+            ModsWatcher?.Dispose();
+            ModsWatcher = null;
+
             if (WindowState == WindowState.Maximized)
             {
                 Global.config.Height = RestoreBounds.Height;

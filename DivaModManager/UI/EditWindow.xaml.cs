@@ -75,6 +75,11 @@ namespace DivaModManager.UI
                         foreach (var key in Global.config.Configs[Global.config.CurrentGame].Loadouts.Keys)
                         {
                             var index = Global.config.Configs[Global.config.CurrentGame].Loadouts[key].ToList().FindIndex(x => x.name == _name);
+                            if (index == -1)
+                            {
+                                Global.logger.WriteLine($"Couldn't find {oldDirectory} in {key}", LoggerType.Error);
+                                continue;
+                            }
                             Global.config.Configs[Global.config.CurrentGame].Loadouts[key][index].name = NameBox.Text;
                         }
                         Global.ModList = Global.config.Configs[Global.config.CurrentGame].Loadouts[Global.config.Configs[Global.config.CurrentGame].CurrentLoadout];
