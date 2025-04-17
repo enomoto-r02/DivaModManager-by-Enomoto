@@ -3357,6 +3357,7 @@ namespace DivaModManager
                     {
                         // If the number of categories decreases, please set the category combobox to ALL.
                         CategoryComboInit(0);
+                        SearchModList(SearchModListTextBox.Text, SearchCategoryComboBox.Text);
                     }
                     break;
 
