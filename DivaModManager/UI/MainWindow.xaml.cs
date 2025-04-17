@@ -93,31 +93,33 @@ namespace DivaModManager
             if (Global.config.RightGridWidth != null)
                 MiddleGrid.ColumnDefinitions[2].Width = new GridLength((double)Global.config.RightGridWidth, GridUnitType.Star);
 
+            if (Global.config.EnabledColumnIndex != null)
+                ModGrid.Columns[(int)Global.Col.Enabled].DisplayIndex = (int)Global.config.EnabledColumnIndex;
             if (Global.config.PriorityColumnIndex != null)
-                ModGrid.Columns[1].DisplayIndex = (int)Global.config.PriorityColumnIndex;
+                ModGrid.Columns[(int)Global.Col.Priority].DisplayIndex = (int)Global.config.PriorityColumnIndex;
             if (Global.config.NameColumnIndex != null)
-                ModGrid.Columns[2].DisplayIndex = (int)Global.config.NameColumnIndex;
+                ModGrid.Columns[(int)Global.Col.Name].DisplayIndex = (int)Global.config.NameColumnIndex;
             if (Global.config.CategoryColumnIndex != null)
-                ModGrid.Columns[3].DisplayIndex = (int)Global.config.CategoryColumnIndex;
+                ModGrid.Columns[(int)Global.Col.Category].DisplayIndex = (int)Global.config.CategoryColumnIndex;
             if (Global.config.NoteColumnIndex != null)
-                ModGrid.Columns[4].DisplayIndex = (int)Global.config.NoteColumnIndex;
+                ModGrid.Columns[(int)Global.Col.Note].DisplayIndex = (int)Global.config.NoteColumnIndex;
 
             if (Global.config.EnabledColumnWidth != null)
-                ModGrid.Columns[0].Width = (double)Global.config.EnabledColumnWidth;
+                ModGrid.Columns[(int)Global.Col.Enabled].Width = (double)Global.config.EnabledColumnWidth;
             if (Global.config.PriorityColumnWidth != null)
-                ModGrid.Columns[1].Width = (double)Global.config.PriorityColumnWidth;
+                ModGrid.Columns[(int)Global.Col.Priority].Width = (double)Global.config.PriorityColumnWidth;
             if (Global.config.NameColumnWidth != null)
-                ModGrid.Columns[2].Width = (double)Global.config.NameColumnWidth;
+                ModGrid.Columns[(int)Global.Col.Name].Width = (double)Global.config.NameColumnWidth;
             if (Global.config.CategoryColumnWidth != null)
-                ModGrid.Columns[3].Width = (double)Global.config.CategoryColumnWidth;
+                ModGrid.Columns[(int)Global.Col.Category].Width = (double)Global.config.CategoryColumnWidth;
             if (Global.config.NoteColumnWidth != null)
-                ModGrid.Columns[4].Width = (double)Global.config.NoteColumnWidth;
+                ModGrid.Columns[(int)Global.Col.Note].Width = (double)Global.config.NoteColumnWidth;
 
-            ModGrid.Columns[0].Visibility = (Visibility)Global.config.EnabledColumnVisible;
-            ModGrid.Columns[1].Visibility = (Visibility)Global.config.PriorityColumnVisible;
-            ModGrid.Columns[2].Visibility = (Visibility)Global.config.NameColumnVisible;
-            ModGrid.Columns[3].Visibility = (Visibility)Global.config.CategoryColumnVisible;
-            ModGrid.Columns[4].Visibility = (Visibility)Global.config.NoteColumnVisible;
+            ModGrid.Columns[(int)Global.Col.Enabled].Visibility = (Visibility)Global.config.EnabledColumnVisible;
+            ModGrid.Columns[(int)Global.Col.Priority].Visibility = (Visibility)Global.config.PriorityColumnVisible;
+            ModGrid.Columns[(int)Global.Col.Name].Visibility = (Visibility)Global.config.NameColumnVisible;
+            ModGrid.Columns[(int)Global.Col.Category].Visibility = (Visibility)Global.config.CategoryColumnVisible;
+            ModGrid.Columns[(int)Global.Col.Note].Visibility = (Visibility)Global.config.NoteColumnVisible;
 
             Global.games = new List<string>();
             foreach (var item in GameBox.Items)
@@ -3084,7 +3086,7 @@ namespace DivaModManager
         {
             foreach (var item in ModGrid.SelectedItems)
             {
-                if (ModGrid.Columns[0].GetCellContent(item) is CheckBox checkbox)
+                if (ModGrid.Columns[(int)Global.Col.Enabled].GetCellContent(item) is CheckBox checkbox)
                 {
                     checkbox.IsChecked = !checkbox.IsChecked;
                 }

@@ -20,6 +20,15 @@ namespace DivaModManager
         public static bool SearchModListFlg;
         public static ObservableCollection<String> LoadoutItems;
         public static ObservableCollection<String> CategoryItems;
+        public enum Col
+        {
+            Enabled = 0,
+            Priority,
+            Name,
+            Category,
+            Note,
+        }
+
         public static void UpdateConfig()
         {
             config.Configs[config.CurrentGame].Loadouts[config.Configs[config.CurrentGame].CurrentLoadout] = ModList_All;
