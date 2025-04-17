@@ -41,6 +41,10 @@ namespace DivaModManager
             "\nand/or Right Click Row > Fetch Metadata and confirm the GameBanana URL of the mod";
         private ObservableCollection<String> LauncherOptions = new ObservableCollection<String>(new string[] { "Executable", "Steam" });
         ListSortDirection direction = ListSortDirection.Ascending;
+        // --- FileSystemWatcher Debounce 用の追加 ---
+        private Timer _debounceTimer;
+        private const int DebounceTimeoutMs = 500; // 500ミリ秒待機してからRefreshを実行
+        // -----------------------------------------
 
         public MainWindow()
         {
@@ -65,6 +69,7 @@ namespace DivaModManager
                     {
                         if (Global.config.Configs[game].FirstOpen && !Global.config.Configs[game].LauncherOptionConverted)
                         {
+
                             Global.config.Configs[game].LauncherOptionIndex = Convert.ToInt32(Global.config.Configs[game].LauncherOption);
                             Global.config.Configs[game].LauncherOptionConverted = true;
                             Global.UpdateConfig();
@@ -136,7 +141,6 @@ namespace DivaModManager
             }
             else
                 GameBox.SelectedIndex = Global.games.IndexOf(Global.config.CurrentGame);
-
             if (String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].CurrentLoadout))
                 Global.config.Configs[Global.config.CurrentGame].CurrentLoadout = "Default";
             if (Global.config.Configs[Global.config.CurrentGame].Loadouts == null)
@@ -153,6 +157,10 @@ namespace DivaModManager
             LoadoutBox.ItemsSource = Global.LoadoutItems;
             LoadoutBox.SelectedItem = Global.config.Configs[Global.config.CurrentGame].CurrentLoadout;
 
+            // --- FileSystemWatcher と Timer の初期化 ---
+            InitializeFileSystemWatcherAndTimer(); // 初期化処理をメソッドに分離
+            // ----------------------------------------
+
             if (String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].ModsFolder)
                 || !Directory.Exists(Global.config.Configs[Global.config.CurrentGame].ModsFolder))
             {
@@ -161,13 +169,9 @@ namespace DivaModManager
             }
             else
             {
-                // Watch mods folder to detect
-                ModsWatcher = new FileSystemWatcher(Global.config.Configs[Global.config.CurrentGame].ModsFolder);
-                ModsWatcher.Created += OnModified;
-                ModsWatcher.Deleted += OnModified;
-                ModsWatcher.Renamed += OnModified;
-                Refresh();
-                ModsWatcher.EnableRaisingEvents = true;
+                // Refresh は InitializeFileSystemWatcherAndTimer 内で必要に応じて行うか、別途呼び出す
+                // Refresh(); // ここでは呼ばず、初期化後に明示的に呼ぶか、起動時のチェックに任せる
+                StartWatching(); // イベント監視を開始
             }
 
             CategoryComboInit(0);
@@ -177,476 +181,706 @@ namespace DivaModManager
             var bitmap = new BitmapImage(new Uri("pack://application:,,,/DivaModManager;component/Assets/preview_enomoto.png"));
             ImageBehavior.SetAnimatedSource(Preview, bitmap);
             ImageBehavior.SetAnimatedSource(PreviewBG, null);
-
             App.Current.Dispatcher.Invoke(async () =>
             {
                 IsEnabledControls(false);
                 Global.logger.WriteLine("Checking for mod updates...", LoggerType.Info);
                 //await ModUpdater.CheckForUpdates(Global.config.Configs[Global.config.CurrentGame].ModsFolder, this);
                 await ModUpdater.CheckForUpdatesInit(this);
+
                 Global.logger.WriteLine("Checking for Diva Mod Manager update...", LoggerType.Info);
                 if (await AutoUpdater.CheckForDMMUpdate(new CancellationTokenSource()))
                     Close();
                 // Check for DML update only if its already setup
                 if (!String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].ModLoaderVersion))
+
                 {
                     Global.logger.WriteLine("Checking for DivaModLoader update...", LoggerType.Info);
                     await Setup.CheckForDMLUpdate(new CancellationTokenSource());
                 }
                 IsEnabledControls(true);
+
+                // 初期表示のために RefreshAsync を呼ぶ
+                if (await DirectoryExistsAsync(Global.config.Configs[Global.config.CurrentGame].ModsFolder)) // 非同期チェック
+                {
+                    await RefreshAsync(); // ★非同期版を呼び出す
+                }
             });
         }
+
+        // --- FileSystemWatcher と Timer の初期化・監視開始/停止メソッド ---
+        private void InitializeFileSystemWatcherAndTimer()
+        {
+            DisposeWatcherAndTimer(); // 既存があれば破棄
+
+            string modsFolder = Global.config.Configs[Global.config.CurrentGame].ModsFolder;
+            if (!string.IsNullOrEmpty(modsFolder) && Directory.Exists(modsFolder))
+            {
+                ModsWatcher = new FileSystemWatcher(modsFolder)
+                {
+                    NotifyFilter = NotifyFilters.DirectoryName | NotifyFilters.FileName | NotifyFilters.LastWrite, // 必要に応じて調整
+                    IncludeSubdirectories = false // サブディレクトリは監視しない（必要なら true）
+                };
+
+                ModsWatcher.Created += OnFileSystemChanged;
+                ModsWatcher.Deleted += OnFileSystemChanged;
+                ModsWatcher.Renamed += OnFileSystemChanged;
+                // 必要なら Changed イベントも監視する
+                // ModsWatcher.Changed += OnFileSystemChanged;
+
+                // Debounceタイマーの初期化
+                _debounceTimer = new Timer(DebounceTimerCallback, null, Timeout.Infinite, Timeout.Infinite);
+
+                Global.logger.WriteLine($"Initialized watcher for: {modsFolder}", LoggerType.Debug); // デバッグ用ログ
+            }
+            else
+            {
+                Global.logger.WriteLine($"Mods folder not set or does not exist. Watcher not initialized.", LoggerType.Warning);
+            }
+        }
+
+        private void StartWatching()
+        {
+            if (ModsWatcher != null)
+            {
+                try
+                {
+                    ModsWatcher.EnableRaisingEvents = true;
+                    Global.logger.WriteLine($"Started watching: {ModsWatcher.Path}", LoggerType.Debug); // デバッグ用ログ
+                }
+                catch (Exception ex)
+                {
+                    Global.logger.WriteLine($"Error starting FileSystemWatcher: {ex.Message}", LoggerType.Error);
+                    // 必要であればユーザーに通知
+                }
+            }
+        }
+
+        private void StopWatching()
+        {
+            if (ModsWatcher != null)
+            {
+                try
+                {
+                    ModsWatcher.EnableRaisingEvents = false;
+                    Global.logger.WriteLine($"Stopped watching: {ModsWatcher.Path}", LoggerType.Debug); // デバッグ用ログ
+                }
+                catch (Exception ex)
+                {
+                    Global.logger.WriteLine($"Error stopping FileSystemWatcher: {ex.Message}", LoggerType.Error);
+                }
+            }
+            // タイマーもリセット（変更中に監視を停止する場合）
+            _debounceTimer?.Change(Timeout.Infinite, Timeout.Infinite);
+        }
+
+        private void DisposeWatcherAndTimer()
+        {
+            StopWatching(); // まず監視を停止
+
+            _debounceTimer?.Dispose();
+            _debounceTimer = null;
+
+            ModsWatcher?.Dispose();
+            ModsWatcher = null;
+            Global.logger.WriteLine($"Disposed watcher and timer.", LoggerType.Debug); // デバッグ用ログ
+        }
+
         private async void WindowLoaded(object sender, RoutedEventArgs e)
         {
             await Task.Run(() => OnFirstOpen());
-
             LauncherOptionsBox.IsEnabled = true;
             LauncherOptionsBox.ItemsSource = LauncherOptions;
             LauncherOptionsBox.SelectedIndex = Global.config.Configs[Global.config.CurrentGame].LauncherOptionIndex;
         }
-        private void OnModified(object sender, FileSystemEventArgs e)
+
+        // --- OnModified を OnFileSystemChanged にリネームし、Debounce処理を追加 ---
+        private void OnFileSystemChanged(object sender, FileSystemEventArgs e)
         {
-            // Bring window to front after download is done
-            App.Current.Dispatcher.Invoke((Action)delegate
-            {
-                InitSearchMod();
-                Refresh();
-                Activate();
-            });
+            // 特定のファイル（例：一時ファイル）を除外したい場合はここでフィルタリング
+            // if (e.Name.EndsWith(".tmp")) return;
+
+            Global.logger.WriteLine($"File system change detected: {e.ChangeType} - {e.FullPath}", LoggerType.Debug); // デバッグ用ログ
+
+            // タイマーが破棄されていないか確認
+            if (_debounceTimer == null) return;
+
+            // タイマーをリセットして待機時間を再開/延長
+            _debounceTimer.Change(DebounceTimeoutMs, Timeout.Infinite);
         }
 
-        private async void Refresh()
+        // --- Debounceタイマーのコールバックメソッド ---
+        private async void DebounceTimerCallback(object state)
         {
-            if (String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].ModsFolder)
-                || !Directory.Exists(Global.config.Configs[Global.config.CurrentGame].ModsFolder))
+            // タイマーが無効（Dispose済みなど）なら何もしない
+            if (_debounceTimer == null) return;
+
+            Global.logger.WriteLine($"Debounce timer triggered. Refreshing mods...", LoggerType.Debug); // デバッグ用ログ
+
+            // UIスレッドで RefreshAsync() を実行
+            // Application.Currentがnullになる可能性も考慮（シャットダウン時など）
+            try
             {
-                if (Global.config.Configs[Global.config.CurrentGame].FirstOpen)
+                await Application.Current?.Dispatcher.InvokeAsync(async () =>
+                {
+                    // Activate() や InitSearchMod() は Refresh の前後どちらで行うか検討
+                    InitSearchMod(); // Mod検索状態をリセット
+                    await RefreshAsync(); // ★非同期版を呼び出す
+                    // Activate(); // 必要であればウィンドウを前面に表示
+                });
+            }
+            catch (TaskCanceledException)
+            {
+                // アプリケーション終了時などに発生する可能性
+                Global.logger.WriteLine($"RefreshAsync was canceled, likely due to application shutdown.", LoggerType.Debug);
+            }
+            catch (Exception ex)
+            {
+                // RefreshAsync 内で捕捉されなかった予期せぬ例外
+                Global.logger.WriteLine($"Error during DebounceTimerCallback: {ex}", LoggerType.Critical);
+                // 必要に応じてユーザーに通知
+                // MessageBox.Show($"An unexpected error occurred during refresh: {ex.Message}", "Critical Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private async Task RefreshAsync()
+        {
+            // --- UIスレッドでの事前チェック ---
+            string currentModDirectory = Global.config.Configs[Global.config.CurrentGame].ModsFolder;
+            if (String.IsNullOrEmpty(currentModDirectory) || !(await DirectoryExistsAsync(currentModDirectory))) // 非同期存在チェック
+            {
+                if (Global.config.Configs[Global.config.CurrentGame].FirstOpen) // FirstOpen フラグのチェックはUIスレッドで
                     Global.logger.WriteLine("Please click Setup before installing mods!", LoggerType.Warning);
                 return;
             }
-            var currentModDirectory = Global.config.Configs[Global.config.CurrentGame].ModsFolder;
+            // ---------------------------------
 
-            foreach (var mod in Directory.GetDirectories(currentModDirectory))
+            // --- 処理中はUIを無効化 (任意) ---
+            // IsEnabledControls(false);
+            // ---------------------------------
+
+            try // 全体をtry-catchで囲み、予期せぬエラーを捕捉
             {
-                var configPath = $"{mod}{Global.s}config.toml";
+                // --- 実際のディレクトリ内のModパスを取得 (非同期) ---
+                var modPaths = await GetDirectoriesAsync(currentModDirectory);
+                var existingModNamesInDirectory = new HashSet<string>(modPaths.Select(Path.GetFileName));
+                // ---------------------------------------------
 
-                bool executeFlg = false;
-                // Add new folders found in Mods to the ModList
-                if (!Global.ModList.ToList().Where(x => x.name == Path.GetFileName(mod)).Any())
+                // --- 各Modディレクトリを処理 (並列化も可能だが、まずは逐次処理で) ---
+                foreach (var modPath in modPaths)
                 {
-                    Mod m = new Mod();
-                    m.name = Path.GetFileName(mod);
-                    if (File.Exists(configPath))
-                    {
-                        executeFlg = true;
-                        var configString = String.Empty;
-                        while (String.IsNullOrEmpty(configString))
-                        {
-                            configString = File.ReadAllText(configPath);
-                            try
-                            {
-                                if (string.IsNullOrEmpty(configString))
-                                {
-                                    string message = $"Config.toml's content is empty! Path : {configPath}";
-                                    throw new Exception(message);
-                                }
-                            }
-                            catch (Exception e)
-                            {
-                                // Check if the exception is related to an IO error.
-                                if (e.GetType() != typeof(IOException))
-                                {
-                                    Global.logger.WriteLine($"Couldn't access {configPath} ({e.Message})", LoggerType.Error);
-                                    MessageBox.Show(e.Message, "Attention.", MessageBoxButton.OK, MessageBoxImage.Error);
-                                    break;
-                                }
-                                else
-                                {
-                                    Global.logger.WriteLine($"Other exception {configPath} ({e.Message})", LoggerType.Error);
-                                    MessageBox.Show(e.Message, "Attention.", MessageBoxButton.OK, MessageBoxImage.Error);
-                                    break;
-                                }
-                            }
-                        }
-                        if (Toml.TryToModel(configString, out TomlTable config, out var diagnostics))
-                        {
-                            if (config.ContainsKey("enabled"))
-                                m.enabled = (bool)config["enabled"];
-                            else
-                            {
-                                // Add enabled field to be true if it doesn't exist
-                                m.enabled = true;
-                                config.Add("enabled", true);
-                                AddInclude(config);
-                                var isReady = false;
-                                while (!isReady)
-                                {
-                                    try
-                                    {
-                                        File.WriteAllText(configPath, Toml.FromModel(config));
-                                        isReady = true;
-                                    }
-                                    catch (Exception e)
-                                    {
-                                        // Check if the exception is related to an IO error.
-                                        if (e.GetType() != typeof(IOException))
-                                        {
-                                            Global.logger.WriteLine($"Couldn't access {configPath} ({e.Message})", LoggerType.Error);
-                                            break;
-                                        }
-                                        else
-                                        {
-                                            Global.logger.WriteLine($"Other exception {configPath} ({e.Message})", LoggerType.Error);
-                                            MessageBox.Show(e.Message, "Attention.", MessageBoxButton.OK, MessageBoxImage.Error);
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        else
-                        {
-                            Global.logger.WriteLine($"{diagnostics[0].Message} for {m.name}. Rewriting {configPath} with only enabled field", LoggerType.Warning);
-                            // Create config.toml with enabled field to be true if failed to parse
-                            m.enabled = true;
-                            config = new();
-                            config.Add("enabled", true);
-                            AddInclude(config);
-                            var isReady = false;
-                            while (!isReady)
-                            {
-                                try
-                                {
-                                    File.WriteAllText(configPath, Toml.FromModel(config));
-                                    isReady = true;
-                                }
-                                catch (Exception e)
-                                {
-                                    // Check if the exception is related to an IO error.
-                                    if (e.GetType() != typeof(IOException))
-                                    {
-                                        Global.logger.WriteLine($"Couldn't access {configPath} ({e.Message})", LoggerType.Error);
-                                        break;
-                                    }
-                                    else
-                                    {
-                                        Global.logger.WriteLine($"Other exception {configPath} ({e.Message})", LoggerType.Error);
-                                        MessageBox.Show(e.Message, "Attention.", MessageBoxButton.OK, MessageBoxImage.Error);
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    else
-                    {
-                        App.Current.Dispatcher.Invoke((Action)delegate
-                        {
-                            // Create config.toml with enabled field to be true and include set, if the user desires
-                            if (!IsWindowOpen<ChoiceWindow>())
-                            {
-                                ConfirmConfigCreation(configPath, m, true);
-                            }
-                            else
-                            {
-                                Global.logger.WriteLine("No config.toml file window triggered but it was already open.", LoggerType.Info);
-                            }
-                        });
-                    }
-                    App.Current.Dispatcher.Invoke((Action)delegate
-                    {
-                        if (Global.config.AddModToTop)
-                        {
-                            Global.ModList.Insert(0, m);
-                        }
-                        else
-                        {
-                            Global.ModList.Add(m);
-                        }
-                    });
-                    Global.logger.WriteLine($"Added {Path.GetFileName(mod)}", LoggerType.Info);
+                    await ProcessModDirectoryAsync(modPath); // 分割されたメソッドを呼び出す
                 }
-                // Check if enabled field is changed in existing mods (different loadouts or copy loadouts)
+                // ----------------------------------------------------------
+
+                // --- 削除されたModをリストから除去 ---
+                await RemoveDeletedModsAsync(existingModNamesInDirectory); // 分割されたメソッドを呼び出す
+                // ----------------------------------
+
+                // --- UI更新とModLoaderビルド ---
+                await UpdateUIElementsAndBuildAsync(); // 分割されたメソッドを呼び出す
+                // -------------------------------
+
+                Global.logger.WriteLine("Refreshed!", LoggerType.Info);
+            }
+            catch (Exception ex)
+            {
+                Global.logger.WriteLine($"An error occurred during RefreshAsync: {ex}", LoggerType.Error);
+                // 必要に応じてユーザーに通知
+                // MessageBox.Show($"An error occurred during refresh: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                // --- UIを再度有効化 (任意) ---
+                // IsEnabledControls(true);
+                // ---------------------------
+            }
+        }
+
+        #region RefreshAsync の分割メソッド群
+
+        /// <summary>
+        /// 指定されたModディレクトリを処理（新規追加または既存更新）
+        /// </summary>
+        private async Task ProcessModDirectoryAsync(string modPath)
+        {
+            var modName = Path.GetFileName(modPath);
+            var configPath = Path.Combine(modPath, "config.toml");
+            var configEPath = Path.Combine(modPath, "config_e.toml");
+            var modJsonPath = Path.Combine(modPath, "mod.json");
+
+            // Global.ModList は UI スレッドでアクセスする必要がある場合があるため注意
+            // FindIndex などは読み取りなので大丈夫かもしれないが、安全のためコピーを使うかUIスレッドで行う
+            Mod modEntry = null;
+            await Application.Current.Dispatcher.InvokeAsync(() => {
+                // FindIndex は ObservableCollection では低速な可能性があるため FirstOrDefault を検討
+                // var index = Global.ModList.ToList().FindIndex(x => x.name == modName); // ToList()は重い可能性
+                modEntry = Global.ModList.FirstOrDefault(x => x.name == modName);
+            });
+
+
+            if (modEntry == null) // 新規Mod
+            {
+                modEntry = new Mod { name = modName };
+                bool configExists = await FileExistsAsync(configPath);
+
+                if (configExists)
+                {
+                    // config.toml からMod情報を更新/設定
+                    await TryUpdateModFromConfigAsync(modEntry, configPath, isNewMod: true);
+                }
                 else
                 {
-                    executeFlg = true;
-                    var index = Global.ModList.ToList().FindIndex(x => x.name == Path.GetFileName(mod));
-                    TomlTable config;
-                    if (File.Exists(configPath))
+                    // config.toml がない場合の処理 (ユーザー確認含む)
+                    bool createConfig = false;
+                    await Application.Current.Dispatcher.InvokeAsync(() =>
                     {
-                        var configString = String.Empty;
-                        try
+                        // IsWindowOpen や ChoiceWindow の表示は UI スレッドで行う
+                        if (!IsWindowOpen<ChoiceWindow>())
                         {
-                            configString = File.ReadAllText(configPath);
-                            if (String.IsNullOrEmpty(configString))
-                            {
-                                throw new Exception($"config.toml is Empty!\nPath : {configPath}");
-                            }
-                        }
-                        catch (Exception e)
-                        {
-                            // Check if the exception is related to an IO error.
-                            if (e.GetType() != typeof(IOException))
-                            {
-                                Global.logger.WriteLine($"Couldn't access {configPath} ({e.Message})", LoggerType.Error);
-                                //break;
-                                continue;
-                            }
-                            else
-                            {
-                                Global.logger.WriteLine($"Couldn't access {configPath} ({e.Message})", LoggerType.Error);
-                                //break;
-                                continue;
-                            }
-                        }
-                        if (!Toml.TryToModel(configString, out config, out var diagnostics))
-                        {
-                            Global.logger.WriteLine($"{diagnostics[0].Message} for {Global.ModList[index].name}. Rewriting {configPath} with only enabled field", LoggerType.Warning);
-                            config = new();
+                            createConfig = ConfirmConfigCreation(configPath, modEntry, true); // ConfirmConfigCreationの結果を bool で返すように変更想定
                         }
                         else
                         {
-                            // Overwrite the file to have the value of enable.
-                            Mod m = new Mod();
-                            m.name = Path.GetFileName(mod);
-                            var mod_list_m = Global.ModList.ToList().Where(x => x.name == m.name);
-                            if (mod_list_m != null && mod_list_m.Count() == 1)
-                            {
-                                m.enabled = mod_list_m.ToList()[0].enabled;
-                                try
-                                {
-                                    if ((bool)config["enabled"] != m.enabled)
-                                    {
-                                        config["enabled"] = m.enabled;
-                                        try
-                                        {
-                                            File.WriteAllText(configPath, Toml.FromModel(config));
-                                        }
-                                        catch (Exception e)
-                                        {
-                                            // Check if the exception is related to an IO error.
-                                            if (e.GetType() != typeof(IOException))
-                                            {
-                                                Global.logger.WriteLine($"Couldn't access {configPath} ({e.Message})", LoggerType.Error);
-                                                //break;
-                                                continue;
-                                            }
-                                            else
-                                            {
-                                                Global.logger.WriteLine($"Other exception {configPath} ({e.Message})", LoggerType.Error);
-                                                MessageBox.Show(e.Message, "Attention.", MessageBoxButton.OK, MessageBoxImage.Error);
-                                                //break;
-                                                continue;
-                                            }
-                                        }
-                                    }
-                                }
-                                catch (Exception e)
-                                {
-                                    Global.logger.WriteLine($"Other exception {m.name}\"\nThe value of config[enable] could not be read.", LoggerType.Error);
-                                    MessageBox.Show(e.Message, "Attention.", MessageBoxButton.OK, MessageBoxImage.Error);
-                                    continue;
-                                }
-                            }
-                            else
-                            {
-                                continue;
-                            }
+                            Global.logger.WriteLine("No config.toml file window triggered but it was already open.", LoggerType.Info);
                         }
+                    });
+                    // 結果に基づいて config.toml を作成
+                    if (createConfig)
+                    {
+                        // modEntry.enabled = true; // ConfirmConfigCreation内で設定されるか？
+                        TomlTable config = new TomlTable { { "enabled", modEntry.enabled } }; // enabled は ConfirmConfigCreation の結果に依存させるべき
+                        AddInclude(config); // AddInclude は同期のまま
+                        await TryWriteTomlAsync(configPath, config);
+                        Global.logger.WriteLine($"Created default config.toml for {modName}.", LoggerType.Info);
                     }
                     else
                     {
-                        App.Current.Dispatcher.Invoke((Action)delegate
-                        {
-                            if (!IsWindowOpen<ChoiceWindow>())
-                            {
-                                Mod m = new Mod();
-                                m.name = Path.GetFileName(mod);
-                                ConfirmConfigCreation(configPath, m, true);
-                            }
-                            else
-                            {
-                                Global.logger.WriteLine("No config.toml file window triggered but it was already open.", LoggerType.Info);
-                            }
-                        });
-                    }
-
-                    // Loading Priority and Note
-                    var configPath_e = $"{mod}{Global.s}config_e.toml";
-                    var mod_g_list = Global.ModList.ToList().Where(x => x.name == Path.GetFileName(mod));
-                    foreach (var mod_g in mod_g_list)
-                    {
-                        if (File.Exists(configPath_e))
-                        {
-                            var configString_e = String.Empty;
-                            while (String.IsNullOrEmpty(configString_e))
-                            {
-                                configString_e = File.ReadAllText(configPath_e);
-                                try
-                                {
-                                    if (string.IsNullOrEmpty(configPath_e))
-                                    {
-                                        string message = $"Config_e.toml's content is empty! Path : {configPath_e}";
-                                        throw new Exception(message);
-                                    }
-                                }
-                                catch (Exception e)
-                                {
-                                    // Check if the exception is related to an IO error.
-                                    if (e.GetType() != typeof(IOException))
-                                    {
-                                        Global.logger.WriteLine($"Couldn't access {configPath_e} ({e.Message})", LoggerType.Error);
-                                        MessageBox.Show(e.Message, "Attention.", MessageBoxButton.OK, MessageBoxImage.Error);
-                                        break;
-                                    }
-                                    else
-                                    {
-                                        Global.logger.WriteLine($"Other exception {configPath_e} ({e.Message})", LoggerType.Error);
-                                        MessageBox.Show(e.Message, "Attention.", MessageBoxButton.OK, MessageBoxImage.Error);
-                                        break;
-                                    }
-                                }
-                            }
-                            if (Toml.TryToModel(configString_e, out TomlTable config_e, out var diagnostics))
-                            {
-                                if (config_e.ContainsKey("priority"))
-                                {
-                                    mod_g.priority = config_e["priority"].ToString();
-                                }
-                                if (config_e.ContainsKey("category"))
-                                {
-                                    mod_g.category = config_e["category"].ToString();
-                                    mod_g.IsCategoryHighlighted = true;
-                                }
-                                if (config_e.ContainsKey("note"))
-                                {
-                                    mod_g.note = config_e["note"].ToString();
-                                }
-                            }
-                            else
-                            {
-                                // Add enabled field to be true if it doesn't exist
-                                mod_g.priority = "";
-                                mod_g.category = "";
-                                mod_g.note = "";
-                                config_e.Add("priority", true);
-                                config_e.Add("category", true);
-                                config_e.Add("note", true);
-                                var isReady = false;
-                                while (!isReady)
-                                {
-                                    try
-                                    {
-                                        File.WriteAllText(configPath_e, Toml.FromModel(config_e));
-                                        isReady = true;
-                                    }
-                                    catch (Exception e)
-                                    {
-                                        // Check if the exception is related to an IO error.
-                                        if (e.GetType() != typeof(IOException))
-                                        {
-                                            Global.logger.WriteLine($"Couldn't access {configPath_e} ({e.Message})", LoggerType.Error);
-                                            break;
-                                        }
-                                        else
-                                        {
-                                            Global.logger.WriteLine($"Other exception {configPath_e} ({e.Message})", LoggerType.Error);
-                                            MessageBox.Show(e.Message, "Attention.", MessageBoxButton.OK, MessageBoxImage.Error);
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                        // 作成しない場合、modEntry.enabled はどうなる？ デフォルトは true?
+                        modEntry.enabled = true; // デフォルト値
+                        Global.logger.WriteLine($"User chose not to create config.toml for {modName}.", LoggerType.Info);
                     }
                 }
-                if (executeFlg)
-                {
-                    // Loading Category
-                    var modPath = $"{mod}{Global.s}mod.json";
-                    var mod_g_list = Global.ModList.ToList().Where(x => x.name == Path.GetFileName(mod));
-                    foreach (var mod_g in mod_g_list)
-                    {
-                        if (File.Exists(modPath))
-                        {
-                            var modJsonString = String.Empty;
-                            while (String.IsNullOrEmpty(modJsonString))
-                            {
-                                modJsonString = File.ReadAllText(modPath);
-                                try
-                                {
-                                    if (string.IsNullOrEmpty(modPath))
-                                    {
-                                        string message = $"mod.json's content is empty! Path : {modPath}";
-                                        throw new Exception(message);
-                                    }
-                                }
-                                catch (Exception e)
-                                {
-                                    // Check if the exception is related to an IO error.
-                                    if (e.GetType() != typeof(IOException))
-                                    {
-                                        Global.logger.WriteLine($"Couldn't access {modPath} ({e.Message})", LoggerType.Error);
-                                        MessageBox.Show(e.Message, "Attention.", MessageBoxButton.OK, MessageBoxImage.Error);
-                                        break;
-                                    }
-                                    else
-                                    {
-                                        Global.logger.WriteLine($"Other exception {modPath} ({e.Message})", LoggerType.Error);
-                                        MessageBox.Show(e.Message, "Attention.", MessageBoxButton.OK, MessageBoxImage.Error);
-                                        break;
-                                    }
-                                }
-                                Metadata metadata = JsonSerializer.Deserialize<Metadata>(modJsonString);
 
-                                // Prioritize the category in config_e.toml
-                                if (string.IsNullOrEmpty(mod_g.category))
-                                {
-                                    mod_g.category = metadata.cat;
-                                }
-                                if (mod_g.category == metadata.cat)
-                                {
-                                    mod_g.IsCategoryHighlighted = false;
-                                }
-                            }
-                        }
-                    }
-                    executeFlg = false;
-                }
-            }
-            // Remove deleted folders that are still in the ModList
-            foreach (var mod in Global.ModList.ToList())
-            {
-                if (!Directory.GetDirectories(currentModDirectory).ToList().Select(x => Path.GetFileName(x)).Contains(mod.name))
-                {
-                    App.Current.Dispatcher.Invoke((Action)delegate
-                    {
-                        Global.ModList.Remove(mod);
-                    });
-                    Global.logger.WriteLine($"Deleted {mod.name}", LoggerType.Info);
-                    continue;
-                }
-            }
+                // config_e.toml, mod.json の読み込み (新規Modでも読み込む)
+                await TryLoadExtendedConfigAsync(modEntry, configEPath);
+                await TryLoadModJsonAsync(modEntry, modJsonPath);
 
-            await Task.Run(() =>
-            {
-                App.Current.Dispatcher.Invoke((Action)delegate
+                // ModListへの追加 (UIスレッドで実行)
+                await Application.Current.Dispatcher.InvokeAsync(() =>
                 {
-                    ModGrid.ItemsSource = Global.ModList;
-                    ModGrid.Items.Refresh();
-                    CategoryComboInit(0);
-                    var stats = $"{Global.ModList.ToList().Where(x => x.enabled).ToList().Count}/{Global.ModList.Count} mods • {Directory.GetFiles(currentModDirectory, "*", SearchOption.AllDirectories).Length.ToString("N0")} files • " +
-                    $"{StringConverters.FormatSize(new DirectoryInfo(currentModDirectory).GetDirectorySize())}";
-                    if (!String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].ModLoaderVersion))
-                        stats += $" • DML v{Global.config.Configs[Global.config.CurrentGame].ModLoaderVersion}";
-                    stats += $" • DMM v{version}";
-                    Stats.Text = stats;
+                    if (Global.config.AddModToTop)
+                        Global.ModList.Insert(0, modEntry);
+                    else
+                        Global.ModList.Add(modEntry);
+                    Global.logger.WriteLine($"Added {modName}", LoggerType.Info);
                 });
-            });
-            Global.UpdateConfig();
-            await Task.Run(() => ModLoader.Build());
-            Global.logger.WriteLine("Refreshed!", LoggerType.Info);
+            }
+            else // 既存Mod
+            {
+                bool configExists = await FileExistsAsync(configPath);
+                if (configExists)
+                {
+                    // config.toml からMod情報を更新
+                    await TryUpdateModFromConfigAsync(modEntry, configPath, isNewMod: false);
+                }
+                else
+                {
+                    // config.toml がない場合の処理 (ユーザー確認含む)
+                    bool createConfig = false;
+                    await Application.Current.Dispatcher.InvokeAsync(() =>
+                    {
+                        if (!IsWindowOpen<ChoiceWindow>())
+                        {
+                            // 既存Modの場合、enabledのデフォルト値は現在のmodEntry.enabledを使う
+                            createConfig = ConfirmConfigCreation(configPath, modEntry, modEntry.enabled);
+                        }
+                        else
+                        {
+                            Global.logger.WriteLine("No config.toml file window triggered but it was already open.", LoggerType.Info);
+                        }
+                    });
+                    if (createConfig)
+                    {
+                        TomlTable config = new TomlTable { { "enabled", modEntry.enabled } };
+                        AddInclude(config);
+                        await TryWriteTomlAsync(configPath, config);
+                        Global.logger.WriteLine($"Created missing config.toml for existing mod {modName}.", LoggerType.Info);
+                    }
+                }
+
+                // config_e.toml, mod.json の読み込み (既存Modでも毎回読み込む)
+                await TryLoadExtendedConfigAsync(modEntry, configEPath);
+                await TryLoadModJsonAsync(modEntry, modJsonPath);
+            }
         }
+
+        /// <summary>
+        /// config.toml ファイルから Mod オブジェクトを更新する（ファイルがない/読めない場合はデフォルト値やログ出力）
+        /// </summary>
+        private async Task TryUpdateModFromConfigAsync(Mod mod, string configPath, bool isNewMod)
+        {
+            TomlTable config = await TryReadTomlAsync(configPath); // 非同期ヘルパーを使用
+
+            if (config == null)
+            {
+                // 読み取り失敗 or 不正なファイル
+                Global.logger.WriteLine($"Couldn't read or parse {configPath}. Using defaults/current state for {mod.name}.", LoggerType.Warning);
+                // isNewMod の場合、enabled は true に設定しておくのが安全か？
+                if (isNewMod) mod.enabled = true;
+                // 既存Modの場合は現在の mod.enabled を維持
+                return; // これ以上処理しない
+            }
+
+            bool needsWriteBack = false;
+
+            // Enabled プロパティの処理
+            if (config.ContainsKey("enabled"))
+            {
+                try
+                {
+                    bool enabledFromFile = (bool)config["enabled"];
+                    if (isNewMod)
+                    {
+                        mod.enabled = enabledFromFile;
+                    }
+                    else // 既存Modの場合、DMM内の状態 (mod.enabled) をファイルに反映
+                    {
+                        if (enabledFromFile != mod.enabled)
+                        {
+                            config["enabled"] = mod.enabled;
+                            needsWriteBack = true;
+                            Global.logger.WriteLine($"Updating enabled state in {configPath} for {mod.name} to {mod.enabled}.", LoggerType.Debug);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Global.logger.WriteLine($"Error reading 'enabled' field from {configPath} for {mod.name}: {ex.Message}. Using default.", LoggerType.Warning);
+                    if (isNewMod) mod.enabled = true; // デフォルト
+                    // enabled フィールドを正しい型で上書きするか、ファイルを修正する必要があるかも
+                    config["enabled"] = mod.enabled; // とりあえず現在の値で上書き試行
+                    needsWriteBack = true;
+                }
+            }
+            else // enabled フィールドが存在しない場合
+            {
+                if (isNewMod) mod.enabled = true; // 新規ならデフォルト true
+                // 既存、新規どちらの場合も enabled フィールドを追加
+                config.Add("enabled", mod.enabled);
+                needsWriteBack = true;
+                Global.logger.WriteLine($"Adding missing 'enabled' field to {configPath} for {mod.name}.", LoggerType.Debug);
+            }
+
+            // Include プロパティの処理 (常に確認・追加)
+            if (!config.ContainsKey("include"))
+            {
+                AddInclude(config); // AddInclude は同期のまま？ 中で await してないならOK
+                needsWriteBack = true;
+                Global.logger.WriteLine($"Adding missing 'include' field to {configPath} for {mod.name}.", LoggerType.Debug);
+            }
+
+            // ファイルに書き戻す必要がある場合
+            if (needsWriteBack)
+            {
+                await TryWriteTomlAsync(configPath, config); // 非同期ヘルパーを使用
+            }
+        }
+
+
+        /// <summary>
+        /// config_e.toml から拡張設定を読み込む
+        /// </summary>
+        private async Task TryLoadExtendedConfigAsync(Mod mod, string configEPath)
+        {
+            TomlTable configE = await TryReadTomlAsync(configEPath);
+            if (configE != null)
+            {
+                // 各キーが存在するか確認してから読み込む
+                mod.priority = configE.TryGetValue("priority", out var prio) ? prio?.ToString() ?? "" : "";
+                mod.category = configE.TryGetValue("category", out var cat) ? cat?.ToString() ?? "" : "";
+                mod.note = configE.TryGetValue("note", out var n) ? n?.ToString() ?? "" : "";
+                // config_e.toml に category があれば IsCategoryHighlighted を true にする？
+                mod.IsCategoryHighlighted = !string.IsNullOrEmpty(mod.category);
+            }
+            else
+            {
+                // ファイルが存在しないか読めない場合、デフォルト値を設定
+                // mod.priority = ""; // デフォルトは空のはず
+                // mod.category = "";
+                // mod.note = "";
+                mod.IsCategoryHighlighted = false; // ハイライトしない
+            }
+        }
+
+        /// <summary>
+        /// mod.json からメタデータを読み込む
+        /// </summary>
+        private async Task TryLoadModJsonAsync(Mod mod, string modJsonPath)
+        {
+            bool modJsonExists = await FileExistsAsync(modJsonPath);
+            if (!modJsonExists) return; // ファイルがなければ何もしない
+
+            string jsonContent = await TryReadAllTextAsync(modJsonPath);
+            if (string.IsNullOrWhiteSpace(jsonContent))
+            {
+                Global.logger.WriteLine($"mod.json content is empty or whitespace: {modJsonPath}", LoggerType.Warning);
+                return; // 空なら何もしない
+            }
+
+            try
+            {
+                // 非同期Deserialize (System.Text.Json は Stream からの非同期Deserializeを提供)
+                using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(jsonContent));
+                Metadata metadata = await JsonSerializer.DeserializeAsync<Metadata>(stream);
+
+                if (metadata != null)
+                {
+                    // config_e.toml の category を優先
+                    if (string.IsNullOrEmpty(mod.category)) // config_e で設定されていなければ
+                    {
+                        mod.category = metadata.cat;
+                        mod.IsCategoryHighlighted = false; // mod.json 由来ならハイライトしない
+                    }
+                    else if (mod.category == metadata.cat) // config_e と同じならハイライト解除
+                    {
+                        mod.IsCategoryHighlighted = false;
+                    }
+                    // 他のメタデータも必要ならここで mod オブジェクトに設定 (例: mod.Author = metadata.submitter など)
+                }
+            }
+            catch (JsonException ex)
+            {
+                Global.logger.WriteLine($"Failed to parse {modJsonPath}: {ex.Message}", LoggerType.Error);
+            }
+            catch (Exception ex) // その他の予期せぬエラー
+            {
+                Global.logger.WriteLine($"Unexpected error processing {modJsonPath}: {ex.Message}", LoggerType.Error);
+            }
+        }
+
+
+        /// <summary>
+        /// ディレクトリに存在しないModをGlobal.ModListから削除する
+        /// </summary>
+        private async Task RemoveDeletedModsAsync(HashSet<string> existingModNamesInDirectory)
+        {
+            // UIスレッドで実行する必要がある
+            await Application.Current.Dispatcher.InvokeAsync(() =>
+            {
+                // ToList() でコピーを作成してから反復処理
+                var modsToRemove = Global.ModList.Where(mod => !existingModNamesInDirectory.Contains(mod.name)).ToList();
+                foreach (var modToRemove in modsToRemove)
+                {
+                    Global.ModList.Remove(modToRemove); // ObservableCollectionからの削除はUIスレッドで
+                    Global.logger.WriteLine($"Deleted {modToRemove.name}", LoggerType.Info);
+                }
+            });
+        }
+
+        /// <summary>
+        /// UI要素（統計情報、ModGrid）の更新とModLoader.Buildの実行
+        /// </summary>
+        private async Task UpdateUIElementsAndBuildAsync()
+        {
+            // UI 更新 (UI スレッドで)
+            await Application.Current.Dispatcher.InvokeAsync(async () => // await をつける
+            {
+                ModGrid.ItemsSource = Global.ModList; // 再設定で変更を反映
+                ModGrid.Items.Refresh(); // またはこちら、ItemsSource再設定の方が確実な場合も
+                CategoryComboInit(0); // カテゴリコンボ更新
+
+                var currentModDirectory = Global.config.Configs[Global.config.CurrentGame].ModsFolder;
+                long totalFiles = 0;
+                long totalSize = 0;
+
+                if (await DirectoryExistsAsync(currentModDirectory)) // 非同期チェック
+                {
+                    // これらの情報取得も重い場合は Task.Run でラップ
+                    try
+                    {
+                        totalFiles = await Task.Run(() => Directory.GetFiles(currentModDirectory, "*", SearchOption.AllDirectories).Length);
+                        // GetDirectorySize が拡張メソッドで非同期でない場合
+                        totalSize = await Task.Run(() => new DirectoryInfo(currentModDirectory).GetDirectorySize());
+                        // もし GetDirectorySize が非同期版を提供しているならそれを使う
+                        // totalSize = await new DirectoryInfo(currentModDirectory).GetDirectorySizeAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        Global.logger.WriteLine($"Error calculating directory stats for {currentModDirectory}: {ex.Message}", LoggerType.Warning);
+                    }
+                }
+
+                var enabledCount = Global.ModList.Count(x => x.enabled); // これは高速
+                var totalCount = Global.ModList.Count; // これも高速
+
+                var stats = $"{enabledCount}/{totalCount} mods • {totalFiles:N0} files • {StringConverters.FormatSize(totalSize)}";
+                if (!String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].ModLoaderVersion))
+                    stats += $" • DML v{Global.config.Configs[Global.config.CurrentGame].ModLoaderVersion}";
+                stats += $" • DMM v{version}";
+                Stats.Text = stats; // UI要素の更新
+            });
+
+            // 設定保存 (同期のまま？ UpdateConfigが軽ければOK)
+            Global.UpdateConfig();
+
+            // ModLoader.Build (重い場合は Task.Run で非同期実行)
+            try
+            {
+                await Task.Run(() => ModLoader.Build());
+                // もし ModLoader.BuildAsync() があれば await ModLoader.BuildAsync();
+            }
+            catch (Exception ex)
+            {
+                Global.logger.WriteLine($"Error during ModLoader.Build: {ex}", LoggerType.Error);
+                // 必要に応じてユーザーに通知
+            }
+        }
+
+        #endregion
+
+        #region 非同期ファイル・ディレクトリ操作ヘルパー
+
+        private async Task<bool> FileExistsAsync(string path)
+        {
+            return await Task.Run(() => File.Exists(path));
+        }
+
+        private async Task<bool> DirectoryExistsAsync(string path)
+        {
+            return await Task.Run(() => Directory.Exists(path));
+        }
+
+        private async Task<string[]> GetDirectoriesAsync(string path)
+        {
+            try
+            {
+                return await Task.Run(() => Directory.GetDirectories(path));
+            }
+            catch (Exception ex)
+            {
+                Global.logger.WriteLine($"Error getting directories in {path}: {ex.Message}", LoggerType.Error);
+                return Array.Empty<string>(); // 空配列を返す
+            }
+        }
+
+        private async Task<string> TryReadAllTextAsync(string path, int retries = 3, int delayMs = 100)
+        {
+            for (int i = 0; i < retries; i++)
+            {
+                try
+                {
+                    if (!await FileExistsAsync(path)) return null; // 非同期存在チェック
+                    // BOMハンドリングなどが必要なら ReadAllTextAsync のオーバーロードを検討
+                    return await File.ReadAllTextAsync(path);
+                }
+                catch (IOException ex) when (i < retries - 1) // 最後のリトライ以外はWarning
+                {
+                    Global.logger.WriteLine($"IOException reading {path} (Attempt {i + 1}/{retries}): {ex.Message}. Retrying...", LoggerType.Warning);
+                    await Task.Delay(delayMs);
+                }
+                catch (IOException ex) // 最後のリトライ
+                {
+                    Global.logger.WriteLine($"Failed IOException reading {path} after {retries} attempts: {ex.Message}", LoggerType.Error);
+                    // UI スレッドで MessageBox 表示が必要なら Dispatcher.InvokeAsync
+                    return null;
+                }
+                catch (Exception ex) // その他の予期せぬ例外
+                {
+                    Global.logger.WriteLine($"Unexpected error reading {path}: {ex.Message}", LoggerType.Error);
+                    return null;
+                }
+            }
+            return null; // リトライ失敗
+        }
+
+        private async Task<bool> TryWriteAllTextAsync(string path, string content, int retries = 3, int delayMs = 100)
+        {
+            for (int i = 0; i < retries; i++)
+            {
+                try
+                {
+                    // ディレクトリが存在しない可能性があれば作成
+                    // string dir = Path.GetDirectoryName(path);
+                    // if (!await DirectoryExistsAsync(dir)) await Task.Run(() => Directory.CreateDirectory(dir));
+                    await File.WriteAllTextAsync(path, content);
+                    return true; // 成功
+                }
+                catch (IOException ex) when (i < retries - 1)
+                {
+                    Global.logger.WriteLine($"IOException writing to {path} (Attempt {i + 1}/{retries}): {ex.Message}. Retrying...", LoggerType.Warning);
+                    await Task.Delay(delayMs);
+                }
+                catch (IOException ex) // 最後のリトライ
+                {
+                    Global.logger.WriteLine($"Failed IOException writing to {path} after {retries} attempts: {ex.Message}", LoggerType.Error);
+                    return false; // 失敗
+                }
+                catch (Exception ex)
+                {
+                    Global.logger.WriteLine($"Unexpected error writing to {path}: {ex.Message}", LoggerType.Error);
+                    return false; // 失敗
+                }
+            }
+            return false; // リトライ失敗
+        }
+
+        private async Task<TomlTable> TryReadTomlAsync(string path)
+        {
+            string content = await TryReadAllTextAsync(path);
+            if (string.IsNullOrWhiteSpace(content)) // null または空/空白
+            {
+                // ファイルが存在しないのはエラーではない場合もある
+                // if (content == null && !await FileExistsAsync(path)) return null;
+                // 読み取り失敗や空ファイルはログしておく
+                if (content != null) Global.logger.WriteLine($"Toml file content is empty or whitespace: {path}", LoggerType.Warning);
+                return null;
+            }
+
+            try
+            {
+                // Tomlyn のパースは同期的だが、CPU負荷が高ければ Task.Run でラップ
+                return await Task.Run(() =>
+                {
+                    if (Toml.TryToModel(content, out TomlTable model, out var diagnostics))
+                    {
+                        return model;
+                    }
+                    else
+                    {
+                        // diagnostics をログに出力 (最初の１つ)
+                        if (diagnostics != null && diagnostics.Count > 0)
+                            Global.logger.WriteLine($"Failed to parse Toml file {path}: {diagnostics[0].Message}", LoggerType.Warning);
+                        else
+                            Global.logger.WriteLine($"Failed to parse Toml file {path} with unknown error.", LoggerType.Warning);
+                        return null; // パース失敗
+                    }
+                });
+            }
+            catch (Exception ex) // Tomlyn が予期せぬ例外を投げる場合
+            {
+                Global.logger.WriteLine($"Error parsing Toml file {path}: {ex.Message}", LoggerType.Error);
+                return null;
+            }
+        }
+
+        private async Task<bool> TryWriteTomlAsync(string path, TomlTable model)
+        {
+            try
+            {
+                // Tomlyn のモデルからの変換は同期的
+                string content = await Task.Run(() => Toml.FromModel(model));
+                return await TryWriteAllTextAsync(path, content);
+            }
+            catch (Exception ex) // Toml.FromModelが例外を投げる場合
+            {
+                Global.logger.WriteLine($"Error generating Toml content for {path}: {ex.Message}", LoggerType.Error);
+                return false;
+            }
+        }
+
+
+        #endregion
 
         private void ModGrid_SelectedCellsChanged(object sender, SelectedCellsChangedEventArgs e)
         {
@@ -698,7 +932,8 @@ namespace DivaModManager
                             if (m.selected)
                             {
                                 m.enabled = setEnabled;
-                                UpdateModConfigToml(checkMod, setEnabled);
+                                //UpdateModConfigToml(checkMod, setEnabled);
+                                RefreshAsync();
                             }
                         }
                     }
@@ -719,6 +954,8 @@ namespace DivaModManager
             }
         }
 
+        // UpdateModConfigToml は RefreshAsync 内のロジックに統合されたため不要になる可能性
+        /*
         private void UpdateModConfigToml(Mod m, bool value)
         {
             var configPath = $"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}{m.name}{Global.s}config.toml";
@@ -761,69 +998,59 @@ namespace DivaModManager
                 });
             }
         }
+        */
 
-        private void UpdateModConfigToml_e(Mod m, string column, object value)
+        private async Task UpdateModConfigToml_e(Mod m, string column, object value)
         {
             var configPath_e = $"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}{m.name}{Global.s}config_e.toml";
+            TomlTable config_e = await TryReadTomlAsync(configPath_e);
 
-            if (!File.Exists(configPath_e))
+            bool needsWrite = false;
+            if (config_e == null) // ファイルがないか読めない場合、新規作成
             {
-                TomlTable config_dmme = new();
-                config_dmme.Add("priority", "");
-                config_dmme.Add("category", "");
-                config_dmme.Add("note", "");
-                var isReady = false;
-                while (!isReady)
-                {
-                    try
-                    {
-                        File.WriteAllText(configPath_e, Toml.FromModel(config_dmme));
-                        isReady = true;
-                    }
-                    catch (Exception e)
-                    {
-                        // Check if the exception is related to an IO error.
-                        if (e.GetType() != typeof(IOException))
-                        {
-                            Global.logger.WriteLine($"Couldn't access {configPath_e} ({e.Message})", LoggerType.Error);
-                            break;
-                        }
-                    }
-                }
+                config_e = new TomlTable();
+                // デフォルト値を追加（空文字列）
+                config_e.Add("priority", "");
+                config_e.Add("category", "");
+                config_e.Add("note", "");
+                Global.logger.WriteLine($"Creating new config_e.toml for {m.name}.", LoggerType.Debug);
+                needsWrite = true; // 新規作成なので書き込み必要
             }
-            if (File.Exists(configPath_e))
+
+            // 要求されたカラムの値を更新
+            string valueStr = value?.ToString() ?? ""; // nullを空文字列に
+            switch (column)
             {
-                var configString_e = File.ReadAllText(configPath_e);
-                if (Toml.TryToModel(configString_e, out TomlTable config_e, out var diagnostics))
-                {
-                    switch (column)
+                case "Priority":
+                    if (!config_e.ContainsKey("priority") || config_e["priority"]?.ToString() != valueStr)
                     {
-                        case "Priority":
-                            config_e["priority"] = value;
-                            break;
-                        case "Category":
-                            config_e["category"] = value;
-                            break;
-                        case "Note":
-                            config_e["note"] = value;
-                            break;
+                        config_e["priority"] = valueStr;
+                        needsWrite = true;
                     }
-                    File.WriteAllText(configPath_e, Toml.FromModel(config_e));
-                }
-                else
-                {
-                    Global.logger.WriteLine($"{diagnostics[0].Message} for {m.name}. Rewriting {configPath_e} with only enabled field", LoggerType.Warning);
-                    // Create config_e.toml with enabled field to be true if failed to parse
-                    config_e = new();
-                    config_e.Add("priority", "");
-                    config_e.Add("category", "");
-                    config_e.Add("note", "");
-                    File.WriteAllText(configPath_e, Toml.FromModel(config_e));
-                }
+                    break;
+                case "Category":
+                    if (!config_e.ContainsKey("category") || config_e["category"]?.ToString() != valueStr)
+                    {
+                        config_e["category"] = valueStr;
+                        needsWrite = true;
+                    }
+                    break;
+                case "Note":
+                    if (!config_e.ContainsKey("note") || config_e["note"]?.ToString() != valueStr)
+                    {
+                        config_e["note"] = valueStr;
+                        needsWrite = true;
+                    }
+                    break;
+                default:
+                    Global.logger.WriteLine($"Unknown column '{column}' for config_e.toml update.", LoggerType.Warning);
+                    return; // 不明なカラムなら何もしない
             }
-            else
+
+            if (needsWrite)
             {
-                Global.logger.WriteLine("No config_e.toml file window triggered but it was already open.", LoggerType.Info);
+                await TryWriteTomlAsync(configPath_e, config_e);
+                Global.logger.WriteLine($"Updated '{column}' in config_e.toml for {m.name}.", LoggerType.Debug);
             }
         }
 
@@ -849,7 +1076,8 @@ namespace DivaModManager
                : Application.Current.Windows.OfType<T>().Any(w => w.Name.Equals(name));
         }
 
-        private void ConfirmConfigCreation(string configPath, Mod m, bool enabled)
+        // このメソッドはUIスレッドから呼び出される想定
+        private bool ConfirmConfigCreation(string configPath, Mod m, bool enabled)
         {
             var choices = new List<Choice>();
             choices.Add(new Choice()
@@ -864,43 +1092,26 @@ namespace DivaModManager
                 OptionSubText = $"Do not create a new config.toml file in mod: {m.name}. (Recommended if you are still installing this mod)",
                 Index = 1
             });
-            Dispatcher.Invoke(() =>
+            var choiceWindow = new ChoiceWindow(choices, $"No config.toml file found, create one?");
+            choiceWindow.ShowDialog(); // 同期的にダイアログを表示
+
+            switch (choiceWindow.choice) // choice は nullable int?
             {
-                var choice = new ChoiceWindow(choices, $"No config.toml file found, create one?");
-                choice.ShowDialog();
-                switch (choice.choice)
-                {
-                    case 0:
-                        m.enabled = true;
-                        TomlTable config = new();
-                        config.Add("enabled", enabled);
-                        AddInclude(config);
-                        var isReady = false;
-                        while (!isReady)
-                        {
-                            try
-                            {
-                                File.WriteAllText(configPath, Toml.FromModel(config));
-                                isReady = true;
-                            }
-                            catch (Exception e)
-                            {
-                                // Check if the exception is related to an IO error.
-                                if (e.GetType() != typeof(IOException))
-                                {
-                                    Global.logger.WriteLine($"Couldn't access {configPath} ({e.Message})", LoggerType.Error);
-                                    break;
-                                }
-                            }
-                        }
-                        break;
-                    case 1:
-                        Global.logger.WriteLine($"User chose to not create a config.toml file for the aforementioned mod.", LoggerType.Info);
-                        break;
-                    default:
-                        break;
-                }
-            });
+                case 0: // Yes
+                    m.enabled = enabled; // 引数で渡された enabled 状態を反映
+                    // ファイル書き込みはこのメソッドの外 (呼び出し元) で非同期に行う
+                    return true; // 作成を選択したことを示す
+                case 1: // No
+                    Global.logger.WriteLine($"User chose to not create a config.toml file for the aforementioned mod.", LoggerType.Info);
+                    return false; // 作成しないことを示す
+                default: // Close button or unexpected value
+                    Global.logger.WriteLine($"Config creation dialog closed without selection for {m.name}.", LoggerType.Info);
+                    return false; // 作成しないことを示す
+            }
+            // --- 注意 ---
+            // 元のコードでは case 0 の中で同期的に File.WriteAllText を呼んでいたが、
+            // このメソッドを bool を返すだけにして、ファイル書き込みは呼び出し元の非同期メソッド (ProcessModDirectoryAsync)
+            // で await TryWriteTomlAsync を使って行う方が良い。
         }
 
         private bool SetupGame()
@@ -928,6 +1139,7 @@ namespace DivaModManager
             return false;
         }
 
+        // Setup_Click などで ModsWatcher を再設定する際の処理を変更
         private async void Setup_Click(object sender, RoutedEventArgs e)
         {
             if (Global.SearchModListFlg)
@@ -958,21 +1170,18 @@ namespace DivaModManager
                 }
                 if (SetupGame())
                 {
-                    Dispatcher.Invoke(() =>
+                    Dispatcher.Invoke(async () => // async を追加
                     {
-                        // Watch mods folder to detect
-                        ModsWatcher = new FileSystemWatcher(Global.config.Configs[Global.config.CurrentGame].ModsFolder);
-                        ModsWatcher.Created += OnModified;
-                        ModsWatcher.Deleted += OnModified;
-                        ModsWatcher.Renamed += OnModified;
-                        Refresh();
-                        ModsWatcher.EnableRaisingEvents = true;
+                        InitializeFileSystemWatcherAndTimer();
+                        StartWatching();
+                        await RefreshAsync(); // ★非同期版を呼び出す
                         LaunchButton.IsEnabled = true;
                     });
                 }
             });
             GameBox.IsEnabled = true;
         }
+
         private void Launch_Click(object sender, RoutedEventArgs e)
         {
             if (Global.config.Configs[Global.config.CurrentGame].Launcher != null && File.Exists(Global.config.Configs[Global.config.CurrentGame].Launcher))
@@ -1181,8 +1390,13 @@ namespace DivaModManager
             }
         }
 
+        // Window_Closing でリソースを破棄
         private void Window_Closing(object sender, CancelEventArgs e)
         {
+            // --- Watcher と Timer を破棄 ---
+            DisposeWatcherAndTimer();
+            // ------------------------------
+
             if (WindowState == WindowState.Maximized)
             {
                 Global.config.Height = RestoreBounds.Height;
@@ -1202,7 +1416,7 @@ namespace DivaModManager
             InitSearchMod();
             SetColumnDisplayIndex();
             SetColumnVisible();
-            Global.UpdateConfig();
+            Global.UpdateConfig(); // この前に破棄処理を入れるべきか？終了処理内なので問題ないか。
             System.Windows.Application.Current.Shutdown();
         }
 
@@ -1231,28 +1445,37 @@ namespace DivaModManager
                 }
             }
         }
+        // RenameMod_Click での一時停止処理を変更
         private async void RenameMod_Click(object sender, RoutedEventArgs e)
         {
             var selectedMods = ModGrid.SelectedItems;
             var temp = new Mod[selectedMods.Count];
             selectedMods.CopyTo(temp, 0);
 
-            // Stop refreshing while renaming folders
-            ModsWatcher.EnableRaisingEvents = false;
+            // --- 監視を一時停止 ---
+            StopWatching();
+            // ---------------------
+
             foreach (var row in temp)
             {
                 if (row != null)
                 {
                     EditWindow ew = new EditWindow(row.name, true);
                     ew.ShowDialog();
+                    // EditWindow内で実際にリネームが行われたかどうかの結果を受け取るのが望ましい
                 }
             }
-            ModsWatcher.EnableRaisingEvents = true;
-            Global.UpdateConfig();
-            ModGrid.Items.Refresh();
 
-            await Task.Run(() => ModLoader.Build());
+            // --- 監視を再開 ---
+            StartWatching();
+            // -----------------
+
+            Global.UpdateConfig();
+            ModGrid.Items.Refresh(); // ViewModelを使えば不要になる可能性
+
+            await Task.Run(() => ModLoader.Build()); // 非同期化推奨
         }
+
 
         private void ConfigureModItem_Click(object sender, RoutedEventArgs e)
         {
@@ -2620,10 +2843,11 @@ namespace DivaModManager
                     {
                         // Watch mods folder to detect
                         ModsWatcher = new FileSystemWatcher(Global.config.Configs[Global.config.CurrentGame].ModsFolder);
-                        ModsWatcher.Created += OnModified;
-                        ModsWatcher.Deleted += OnModified;
-                        ModsWatcher.Renamed += OnModified;
-                        Refresh();
+                        ModsWatcher.Created += OnFileSystemChanged;
+                        ModsWatcher.Deleted += OnFileSystemChanged;
+                        ModsWatcher.Renamed += OnFileSystemChanged;
+                        //Refresh();
+                        RefreshAsync(); // ★非同期版を呼び出す
                         ModsWatcher.EnableRaisingEvents = true;
                     });
                 }
@@ -2676,12 +2900,9 @@ namespace DivaModManager
         }
         private async void LoadoutsBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (!IsLoaded)
-            {
-                return;
-            }
-            // Change the loadout
-            else if (LoadoutBox.SelectedItem != null)
+            if (!IsLoaded) return;
+
+            if (LoadoutBox.SelectedItem != null)
             {
                 InitSearchMod();
                 Global.config.Configs[Global.config.CurrentGame].CurrentLoadout = LoadoutBox.SelectedItem.ToString();
@@ -2694,17 +2915,18 @@ namespace DivaModManager
 
                 Global.ModList = Global.config.Configs[Global.config.CurrentGame].Loadouts[Global.config.Configs[Global.config.CurrentGame].CurrentLoadout];
                 UpdateSearchMod();
-                Refresh();
+                await RefreshAsync(); // ★非同期版を呼び出す
                 Global.logger.WriteLine($"Loadout changed to {LoadoutBox.SelectedItem}", LoggerType.Info);
-                await Task.Run(() => ModLoader.Build());
+                // ModLoader.Build は RefreshAsync 内で実行されるように変更済み
             }
         }
+        // EditLoadouts_Click で Refresh を呼び出す箇所を変更
         private void EditLoadouts_Click(object sender, RoutedEventArgs e)
         {
             if (Global.SearchModListFlg)
             {
                 MessageBox.Show($"Please do it with the mod search cleared.\nSorry.", "Attention.", MessageBoxButton.OK, MessageBoxImage.Information);
-                e.Handled = true;
+                e.Handled = true; // イベント処理済みフラグ
                 return;
             }
 
@@ -2733,13 +2955,19 @@ namespace DivaModManager
                 OptionSubText = $"Copy Current loadout",
                 Index = 3
             });
-            Dispatcher.Invoke(() =>
+
+            // Dispatcher.InvokeAsync を使用してUIスレッドで非同期ラムダを実行
+            Dispatcher.InvokeAsync(async () =>
             {
-                var choice = new ChoiceWindow(choices, $"Loadout Options for {Global.config.CurrentGame}");
-                choice.ShowDialog();
-                if (choice.choice != null)
+                var choiceWindow = new ChoiceWindow(choices, $"Loadout Options for {Global.config.CurrentGame}");
+                // ShowDialog は UI スレッドで同期的に実行され、完了を待つ
+                choiceWindow.ShowDialog();
+
+                if (choiceWindow.choice != null)
                 {
-                    switch ((int)choice.choice)
+                    bool refreshNeeded = false; // Refreshが必要かどうかのフラグ（状況による）
+
+                    switch ((int)choiceWindow.choice)
                     {
                         // Add new loadout
                         case 0:
@@ -2747,8 +2975,12 @@ namespace DivaModManager
                             newLoadoutWindow.ShowDialog();
                             if (!String.IsNullOrEmpty(newLoadoutWindow.loadout))
                             {
+                                // ObservableCollection への追加は UI スレッドでOK
                                 Global.LoadoutItems.Add(newLoadoutWindow.loadout);
+                                // LoadoutBox.SelectedItem の変更により SelectionChanged イベントが発生し、
+                                // そのハンドラ内で RefreshAsync が呼ばれることを期待する
                                 LoadoutBox.SelectedItem = newLoadoutWindow.loadout;
+                                // refreshNeeded = true; // SelectionChangedで呼ばれない場合に備えるならフラグを立てる
                             }
                             break;
                         // Rename current loadout
@@ -2757,50 +2989,59 @@ namespace DivaModManager
                             renameLoadoutWindow.ShowDialog();
                             if (!String.IsNullOrEmpty(renameLoadoutWindow.loadout))
                             {
-                                // Insert new name at index of original loadout
-                                Global.LoadoutItems.Insert(Global.LoadoutItems.IndexOf(Global.config.Configs[Global.config.CurrentGame].CurrentLoadout), renameLoadoutWindow.loadout);
-                                // Copy over current loadout
-                                Global.config.Configs[Global.config.CurrentGame].Loadouts.Add(renameLoadoutWindow.loadout, Global.ModList);
-                                // Delete current loadout
-                                Global.LoadoutItems.Remove(Global.config.Configs[Global.config.CurrentGame].CurrentLoadout);
-                                Global.config.Configs[Global.config.CurrentGame].Loadouts.Remove(Global.config.Configs[Global.config.CurrentGame].CurrentLoadout);
-                                // Trigger selection changed event
+                                var originalLoadout = Global.config.Configs[Global.config.CurrentGame].CurrentLoadout;
+                                var originalIndex = Global.LoadoutItems.IndexOf(originalLoadout);
+
+                                // 新しいロードアウト名とModリスト（ディープコピーが必要か確認）を追加
+                                // Modリストのコピー処理（元の case 3 を参考に Clone() を使うべきか検討）
+                                ObservableCollection<Mod> ModList_Copy = new ObservableCollection<Mod>(Global.ModList.Select(m => m.Clone())); // Cloneメソッドがあると仮定
+                                Global.config.Configs[Global.config.CurrentGame].Loadouts.Add(renameLoadoutWindow.loadout, ModList_Copy);
+
+                                // UI上のリストを更新
+                                if (originalIndex >= 0)
+                                {
+                                    Global.LoadoutItems.Insert(originalIndex, renameLoadoutWindow.loadout);
+                                    Global.LoadoutItems.Remove(originalLoadout); // Insert後にRemove
+                                }
+                                else
+                                {
+                                    // 元の要素が見つからない場合 (エラーケース？)
+                                    Global.LoadoutItems.Add(renameLoadoutWindow.loadout);
+                                }
+
+                                // 古い設定を削除
+                                Global.config.Configs[Global.config.CurrentGame].Loadouts.Remove(originalLoadout);
+
+                                // 選択を新しい名前に変更 (SelectionChanged発生を期待)
                                 LoadoutBox.SelectedItem = renameLoadoutWindow.loadout;
+                                // refreshNeeded = true;
                             }
                             break;
                         // Delete current loadout
                         case 2:
-                            var yesno_choice = new List<Choice>();
-                            yesno_choice.Add(new Choice()
+                            if (Global.config.Configs[Global.config.CurrentGame].Loadouts.Count <= 1)
                             {
-                                OptionText = "Yes",
-                                OptionSubText = $"This action cannot be undone.",
-                                Index = 0
-                            });
-                            var yesno = new ChoiceWindow(yesno_choice, $"Delete Current Loadout");
+                                Global.logger.WriteLine("Unable to delete current loadout since there is only one", LoggerType.Error);
+                                MessageBox.Show("Cannot delete the only loadout.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning); // ユーザー通知
+                                break;
+                            }
+
+                            var yesno_choice = new List<Choice>();
+                            yesno_choice.Add(new Choice() { OptionText = "Yes", OptionSubText = $"This action cannot be undone.", Index = 0 });
+                            yesno_choice.Add(new Choice() { OptionText = "No", OptionSubText = $"", Index = 1 });
+
+                            var yesno = new ChoiceWindow(yesno_choice, $"Delete Current Loadout: {Global.config.Configs[Global.config.CurrentGame].CurrentLoadout}?");
                             yesno.ShowDialog();
 
-                            if (yesno.choice != null)
+                            if (yesno.choice == 0) // Yes
                             {
-                                switch ((int)yesno.choice)
-                                {
-                                    case 0:
-                                        if (Global.config.Configs[Global.config.CurrentGame].Loadouts.Count == 1)
-                                        {
-                                            Global.logger.WriteLine("Unable to delete current loadout since there is only one", LoggerType.Error);
-                                            return;
-                                        }
-                                        else
-                                        {
-                                            Global.LoadoutItems.Remove(Global.config.Configs[Global.config.CurrentGame].CurrentLoadout);
-                                            Global.config.Configs[Global.config.CurrentGame].Loadouts.Remove(Global.config.Configs[Global.config.CurrentGame].CurrentLoadout);
-                                            // Triggers selection changed event
-                                            LoadoutBox.SelectedIndex = 0;
-                                        }
-                                        break;
-                                    case 1:
-                                        break;
-                                }
+                                var loadoutToDelete = Global.config.Configs[Global.config.CurrentGame].CurrentLoadout;
+                                Global.LoadoutItems.Remove(loadoutToDelete);
+                                Global.config.Configs[Global.config.CurrentGame].Loadouts.Remove(loadoutToDelete);
+
+                                // 削除後、最初のロードアウトを選択 (SelectionChanged発生を期待)
+                                LoadoutBox.SelectedIndex = 0;
+                                // refreshNeeded = true;
                             }
                             break;
                         // Copy current loadout
@@ -2809,27 +3050,31 @@ namespace DivaModManager
                             copyLoadoutWindow.ShowDialog();
                             if (!String.IsNullOrEmpty(copyLoadoutWindow.loadout))
                             {
-                                // Insert new name at index of original loadout
+                                // Deep Copy over current loadout (Mod.Clone() を使用)
+                                ObservableCollection<Mod> ModList_Copy = new ObservableCollection<Mod>(Global.ModList.Select(m => m.Clone()));
+
                                 Global.LoadoutItems.Add(copyLoadoutWindow.loadout);
-                                // Deep Copy over current loadout
-                                ObservableCollection<Mod> ModList_Copy = new ObservableCollection<Mod>();
-                                foreach (Mod m in Global.ModList)
-                                {
-                                    ModList_Copy.Add(m.Clone());
-                                }
                                 Global.config.Configs[Global.config.CurrentGame].Loadouts.Add(copyLoadoutWindow.loadout, ModList_Copy);
+
                                 // Trigger selection changed event
                                 LoadoutBox.SelectedItem = copyLoadoutWindow.loadout;
+                                // refreshNeeded = true;
                             }
                             break;
                     }
-                    Refresh();
                 }
+
+                // 必要であれば、ここで refreshNeeded フラグをチェックして RefreshAsync を呼び出す
+                // if (refreshNeeded && LoadoutBox.SelectedItem == null) // SelectionChangedが発生しなかった場合など
+                // {
+                //    await RefreshAsync();
+                // }
+                // 通常は LoadoutBox.SelectedItem の変更による LoadoutsBox_SelectionChanged 内で RefreshAsync が呼ばれるはず
             });
         }
         private async void GameBox_DropDownClosed(object sender, EventArgs e)
         {
-            if (handle)
+            if (handle) // handle フラグの意図を確認する必要あり
             {
                 if (GameBox.SelectedIndex == 5)
                     DiscordButton.Visibility = Visibility.Collapsed;
@@ -2850,8 +3095,13 @@ namespace DivaModManager
                 var currentModDirectory = Global.config.Configs[Global.config.CurrentGame].ModsFolder;
                 Directory.CreateDirectory(currentModDirectory);
                 ModsWatcher.Path = currentModDirectory;
+                // --- 新しいゲームの Mods Folder を監視するように再初期化 ---
+                InitializeFileSystemWatcherAndTimer();
+                StartWatching();
+                // -------------------------------------------------------
+
                 Global.logger.WriteLine($"Game switched to {Global.config.CurrentGame}", LoggerType.Info);
-                Refresh();
+                await RefreshAsync(); // ★非同期版を呼び出す
                 if (String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].ModsFolder)
                     || String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].Launcher) || !File.Exists(Global.config.Configs[Global.config.CurrentGame].Launcher))
                 {
@@ -2873,17 +3123,29 @@ namespace DivaModManager
                 var bitmap = new BitmapImage(new Uri("pack://application:,,,/DivaModManager;component/Assets/preview_enomoto.png"));
                 ImageBehavior.SetAnimatedSource(Preview, bitmap);
                 ImageBehavior.SetAnimatedSource(PreviewBG, null);
-                
-                await App.Current.Dispatcher.Invoke(async () =>
+
+                // OnFirstOpen も非同期化が必要な場合がある
+                // await OnFirstOpenAsync(); // OnFirstOpen が async Task になっていると仮定
+
+                // Updateチェックも非同期なので await する
+                await App.Current.Dispatcher.InvokeAsync(async () =>
                 {
                     IsEnabledControls(false);
                     Global.logger.WriteLine("Checking for mod updates...", LoggerType.Info);
-                    await ModUpdater.CheckForUpdates(Global.config.Configs[Global.config.CurrentGame].ModsFolder, this, true);
+                    // CheckForUpdates が非同期なら await
+                    // await ModUpdater.CheckForUpdates(Global.config.Configs[Global.config.CurrentGame].ModsFolder, this, true);
+                    await ModUpdater.CheckForUpdatesInit(this); // こちらを呼んでいる場合
+
                     Global.logger.WriteLine("Checking for Diva Mod Manager update...", LoggerType.Info);
                     if (await AutoUpdater.CheckForDMMUpdate(new CancellationTokenSource()))
-                        Close();
+                    {
+                        Close(); // DMMアップデートが見つかったら閉じる
+                        return; // 以降の処理は不要
+                    }
                     IsEnabledControls(true);
                 });
+
+
                 handle = false;
             }
         }
@@ -3319,42 +3581,66 @@ namespace DivaModManager
             }
         }
 
-        private void ModGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
+        // ModGrid_CellEditEnding を非同期化
+        private async void ModGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
         {
-            if (e.Column is not DataGridTextColumn textCol) return;
+            if (e.EditAction == DataGridEditAction.Cancel) return; // キャンセル時は何もしない
+            if (e.Column is not DataGridBoundColumn boundCol) return; // テキスト以外のカラムは対象外？
             if (e.Row.DataContext is not Mod mod) return;
             if (e.EditingElement is not TextBox textBox) return;
 
             string newText = textBox.Text;
-            string columnHeader = e.Column.Header.ToString();
+            // Header を直接使うのではなく、Binding Path を使う方がより堅牢
+            string bindingPath = (boundCol.Binding as System.Windows.Data.Binding)?.Path.Path;
+            string columnHeader = e.Column.Header.ToString(); // Header も fallback として使う
 
-            switch (columnHeader)
+            // 変更があった場合のみ処理 (UI上は編集完了しているように見えるが、実際の値と比較)
+            bool changed = false;
+            switch (bindingPath ?? columnHeader) // Binding Path があれば優先
             {
-                case "Priority":
-                    mod.priority = newText;
+                case "priority": // Binding Path
+                case "Priority": // Header
+                    if (mod.priority != newText)
+                    {
+                        mod.priority = newText; // ViewModel があれば setter で処理
+                        changed = true;
+                        columnHeader = "Priority"; // UpdateModConfigToml_e 用に Header 名を確定
+                    }
                     break;
-
+                case "category":
                 case "Category":
-                    mod.category = newText;
-
-                    if (Global.ModList.Count > 1)
+                    if (mod.category != newText)
                     {
-                        // If the number of categories increases, reload the category combo box.
-                        CategoryComboInit();
-                    }
-                    else
-                    {
-                        // If the number of categories decreases, please set the category combobox to ALL.
-                        CategoryComboInit(0);
+                        mod.category = newText;
+                        changed = true;
+                        columnHeader = "Category";
+                        // カテゴリコンボの更新 (UI スレッドで)
+                        await Application.Current.Dispatcher.InvokeAsync(() => CategoryComboInit());
                     }
                     break;
-
+                case "note":
                 case "Note":
-                    mod.note = newText;
+                    if (mod.note != newText)
+                    {
+                        mod.note = newText;
+                        changed = true;
+                        columnHeader = "Note";
+                    }
                     break;
+                default:
+                    return; // 対象外のカラム
             }
 
-            UpdateModConfigToml_e(mod, columnHeader, newText);
+            if (changed)
+            {
+                // config_e.toml の更新 (非同期)
+                await UpdateModConfigToml_e(mod, columnHeader, newText);
+                // 必要であれば Global.UpdateConfig() や ModLoader.Build() も呼ぶが、
+                // RefreshAsync 内で実行されるため、ここでは不要かもしれない。
+                // ただし、即時反映が必要な場合は検討。
+                // Global.UpdateConfig();
+                // await Task.Run(() => ModLoader.Build());
+            }
         }
 
         private void SearchCategoryComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
