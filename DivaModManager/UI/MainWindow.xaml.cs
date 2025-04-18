@@ -1,18 +1,19 @@
 ﻿using DivaModManager.UI;
 using GongSolutions.Wpf.DragDrop.Utilities;
-using SharpCompress.Archives.SevenZip;
+using SharpCompress.Archives;
+using SharpCompress.Archives.SevenZip; // SharpCompress 例外用
 using SharpCompress.Common;
 using SharpCompress.Readers;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
+using System.ComponentModel; // Win32Exception 用
 using System.Diagnostics;
-using System.IO;
+using System.IO; // IOException, UnauthorizedAccessException など
 using System.Linq;
-using System.Net.Http;
+using System.Net.Http; // HttpRequestException 用
 using System.Reflection;
-using System.Text.Json;
+using System.Text.Json; // JsonException 用
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,8 +23,10 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
-using Tomlyn;
+using System.Windows.Shapes;
+using Tomlyn; // Tomlyn 例外用 (具体的な例外クラスがあれば指定)
 using Tomlyn.Model;
+using Tomlyn.Syntax; // Tomlyn SyntaxErrorException 用 (もし使うなら)
 using WpfAnimatedGif;
 
 namespace DivaModManager
@@ -49,163 +52,214 @@ namespace DivaModManager
         public MainWindow()
         {
             InitializeComponent();
-            Global.logger = new Logger(ConsoleWindow);
-            Global.config = new();
-
-            // Get Version Number
-            var DMMVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
-            version = DMMVersion;
-            //version = DMMVersion.Substring(0, DMMVersion.LastIndexOf('.'));
-
-            Global.logger.WriteLine($"Launched Diva Mod Manager v{version}!", LoggerType.Info);
-            // Get Global.config if it exists
-            if (File.Exists($@"{Global.assemblyLocation}{Global.s}Config.json"))
+            // Global logger/config 初期化は try の外でも良い場合がある
+            try
             {
-                try
-                {
-                    var configString = File.ReadAllText($@"{Global.assemblyLocation}{Global.s}Config.json");
-                    Global.config = JsonSerializer.Deserialize<Config>(configString);
-                    foreach (var game in Global.config.Configs.Keys)
-                    {
-                        if (Global.config.Configs[game].FirstOpen && !Global.config.Configs[game].LauncherOptionConverted)
-                        {
+                Global.logger = new Logger(ConsoleWindow);
+                Global.config = new();
 
-                            Global.config.Configs[game].LauncherOptionIndex = Convert.ToInt32(Global.config.Configs[game].LauncherOption);
-                            Global.config.Configs[game].LauncherOptionConverted = true;
-                            Global.UpdateConfig();
+                // Get Version Number
+                var DMMVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+                version = DMMVersion;
+                //version = DMMVersion.Substring(0, DMMVersion.LastIndexOf('.'));
+
+                Global.logger.WriteLine($"Launched Diva Mod Manager v{version}!", LoggerType.Info);
+
+                // --- Config.json 読み込みのエラーハンドリング改善 ---
+                string configFilePath = $@"{Global.assemblyLocation}{Global.s}Config.json";
+                if (File.Exists(configFilePath)) // 同期チェックで良いか？
+                {
+                    try
+                    {
+                        var configString = File.ReadAllText(configFilePath); // 同期読み込み
+                        if (!string.IsNullOrWhiteSpace(configString))
+                        {
+                            // LauncherOption の移行処理などは Deserialize 後に行う
+                            var loadedConfig = JsonSerializer.Deserialize<Config>(configString);
+                            if (loadedConfig != null)
+                            {
+                                Global.config = loadedConfig;
+                                // LauncherOption 移行処理
+                                foreach (var game in Global.config.Configs.Keys)
+                                {
+                                    if (Global.config.Configs[game].FirstOpen && !Global.config.Configs[game].LauncherOptionConverted)
+                                    {
+
+                                        Global.config.Configs[game].LauncherOptionIndex = Convert.ToInt32(Global.config.Configs[game].LauncherOption);
+                                        Global.config.Configs[game].LauncherOptionConverted = true;
+                                        Global.UpdateConfig();
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                Global.logger.WriteLine($"Failed to deserialize Config.json (result was null). Using default config.", LoggerType.Warning);
+                            }
+                        }
+                        else
+                        {
+                            Global.logger.WriteLine($"Config.json is empty or whitespace. Using default config.", LoggerType.Warning);
                         }
                     }
+                    catch (JsonException ex)
+                        {
+                        Global.logger.WriteLine($"Error parsing Config.json: {ex.Message}. Using default config.", LoggerType.Error);
+                        // 破損したファイルをリネームするなどの措置も検討可能
+                        // MessageBox.Show($"Configuration file (Config.json) is corrupted:\n{ex.Message}\n\nDiva Mod Manager will start with default settings.", "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    }
+                    catch (IOException ex)
+                    {
+                        Global.logger.WriteLine($"Error reading Config.json: {ex.Message}. Using default config.", LoggerType.Error);
+                        // MessageBox.Show($"Could not read configuration file (Config.json):\n{ex.Message}\n\nDiva Mod Manager will start with default settings.", "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    }
+                    catch (UnauthorizedAccessException ex)
+                    {
+                        Global.logger.WriteLine($"Permission error reading Config.json: {ex.Message}. Using default config.", LoggerType.Error);
+                        // MessageBox.Show($"Permission denied while reading configuration file (Config.json):\n{ex.Message}\n\nDiva Mod Manager will start with default settings.", "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    }
+                    catch (Exception ex) // 予期せぬエラー
+                    {
+                        Global.logger.WriteLine($"Unexpected error loading Config.json: {ex}. Using default config.", LoggerType.Critical);
+                        // MessageBox.Show($"An unexpected error occurred while loading configuration:\n{ex.Message}\n\nDiva Mod Manager will start with default settings.", "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
                 }
-                catch (Exception e)
+                else
                 {
-                    Global.logger.WriteLine(e.Message, LoggerType.Error);
+                     Global.logger.WriteLine($"Config.json not found. Creating default config.", LoggerType.Info);
                 }
-            }
+                // ----------------------------------------------------
 
-            // Last saved windows settings
-            if (Global.config.Height != null && Global.config.Height >= MinHeight)
-                Height = (double)Global.config.Height;
-            if (Global.config.Width != null && Global.config.Width >= MinWidth)
-                Width = (double)Global.config.Width;
-            if (Global.config.Maximized)
-                WindowState = WindowState.Maximized;
-            if (Global.config.TopGridHeight != null)
-                MainGrid.RowDefinitions[2].Height = new GridLength((double)Global.config.TopGridHeight, GridUnitType.Star);
-            if (Global.config.BottomGridHeight != null)
-                MainGrid.RowDefinitions[4].Height = new GridLength((double)Global.config.BottomGridHeight, GridUnitType.Star);
-            if (Global.config.LeftGridWidth != null)
-                MiddleGrid.ColumnDefinitions[0].Width = new GridLength((double)Global.config.LeftGridWidth, GridUnitType.Star);
-            if (Global.config.RightGridWidth != null)
-                MiddleGrid.ColumnDefinitions[2].Width = new GridLength((double)Global.config.RightGridWidth, GridUnitType.Star);
+                // Last saved windows settings
+                if (Global.config.Height != null && Global.config.Height >= MinHeight)
+                    Height = (double)Global.config.Height;
+                if (Global.config.Width != null && Global.config.Width >= MinWidth)
+                    Width = (double)Global.config.Width;
+                if (Global.config.Maximized)
+                    WindowState = WindowState.Maximized;
+                if (Global.config.TopGridHeight != null)
+                    MainGrid.RowDefinitions[2].Height = new GridLength((double)Global.config.TopGridHeight, GridUnitType.Star);
+                if (Global.config.BottomGridHeight != null)
+                    MainGrid.RowDefinitions[4].Height = new GridLength((double)Global.config.BottomGridHeight, GridUnitType.Star);
+                if (Global.config.LeftGridWidth != null)
+                    MiddleGrid.ColumnDefinitions[0].Width = new GridLength((double)Global.config.LeftGridWidth, GridUnitType.Star);
+                if (Global.config.RightGridWidth != null)
+                    MiddleGrid.ColumnDefinitions[2].Width = new GridLength((double)Global.config.RightGridWidth, GridUnitType.Star);
 
-            if (Global.config.EnabledColumnIndex != null)
-                ModGrid.Columns[(int)Global.Col.Enabled].DisplayIndex = (int)Global.config.EnabledColumnIndex;
-            if (Global.config.PriorityColumnIndex != null)
-                ModGrid.Columns[(int)Global.Col.Priority].DisplayIndex = (int)Global.config.PriorityColumnIndex;
-            if (Global.config.NameColumnIndex != null)
-                ModGrid.Columns[(int)Global.Col.Name].DisplayIndex = (int)Global.config.NameColumnIndex;
-            if (Global.config.CategoryColumnIndex != null)
-                ModGrid.Columns[(int)Global.Col.Category].DisplayIndex = (int)Global.config.CategoryColumnIndex;
-            if (Global.config.NoteColumnIndex != null)
-                ModGrid.Columns[(int)Global.Col.Note].DisplayIndex = (int)Global.config.NoteColumnIndex;
+                if (Global.config.EnabledColumnIndex != null)
+                    ModGrid.Columns[(int)Global.Col.Enabled].DisplayIndex = (int)Global.config.EnabledColumnIndex;
+                if (Global.config.PriorityColumnIndex != null)
+                    ModGrid.Columns[(int)Global.Col.Priority].DisplayIndex = (int)Global.config.PriorityColumnIndex;
+                if (Global.config.NameColumnIndex != null)
+                    ModGrid.Columns[(int)Global.Col.Name].DisplayIndex = (int)Global.config.NameColumnIndex;
+                if (Global.config.CategoryColumnIndex != null)
+                    ModGrid.Columns[(int)Global.Col.Category].DisplayIndex = (int)Global.config.CategoryColumnIndex;
+                if (Global.config.NoteColumnIndex != null)
+                    ModGrid.Columns[(int)Global.Col.Note].DisplayIndex = (int)Global.config.NoteColumnIndex;
 
-            if (Global.config.EnabledColumnWidth != null)
-                ModGrid.Columns[(int)Global.Col.Enabled].Width = (double)Global.config.EnabledColumnWidth;
-            if (Global.config.PriorityColumnWidth != null)
-                ModGrid.Columns[(int)Global.Col.Priority].Width = (double)Global.config.PriorityColumnWidth;
-            if (Global.config.NameColumnWidth != null)
-                ModGrid.Columns[(int)Global.Col.Name].Width = (double)Global.config.NameColumnWidth;
-            if (Global.config.CategoryColumnWidth != null)
-                ModGrid.Columns[(int)Global.Col.Category].Width = (double)Global.config.CategoryColumnWidth;
-            if (Global.config.NoteColumnWidth != null)
-                ModGrid.Columns[(int)Global.Col.Note].Width = (double)Global.config.NoteColumnWidth;
+                if (Global.config.EnabledColumnWidth != null)
+                    ModGrid.Columns[(int)Global.Col.Enabled].Width = (double)Global.config.EnabledColumnWidth;
+                if (Global.config.PriorityColumnWidth != null)
+                    ModGrid.Columns[(int)Global.Col.Priority].Width = (double)Global.config.PriorityColumnWidth;
+                if (Global.config.NameColumnWidth != null)
+                    ModGrid.Columns[(int)Global.Col.Name].Width = (double)Global.config.NameColumnWidth;
+                if (Global.config.CategoryColumnWidth != null)
+                    ModGrid.Columns[(int)Global.Col.Category].Width = (double)Global.config.CategoryColumnWidth;
+                if (Global.config.NoteColumnWidth != null)
+                    ModGrid.Columns[(int)Global.Col.Note].Width = (double)Global.config.NoteColumnWidth;
 
-            ModGrid.Columns[(int)Global.Col.Enabled].Visibility = (Visibility)Global.config.EnabledColumnVisible;
-            ModGrid.Columns[(int)Global.Col.Priority].Visibility = (Visibility)Global.config.PriorityColumnVisible;
-            ModGrid.Columns[(int)Global.Col.Name].Visibility = (Visibility)Global.config.NameColumnVisible;
-            ModGrid.Columns[(int)Global.Col.Category].Visibility = (Visibility)Global.config.CategoryColumnVisible;
-            ModGrid.Columns[(int)Global.Col.Note].Visibility = (Visibility)Global.config.NoteColumnVisible;
+                ModGrid.Columns[(int)Global.Col.Enabled].Visibility = (Visibility)Global.config.EnabledColumnVisible;
+                ModGrid.Columns[(int)Global.Col.Priority].Visibility = (Visibility)Global.config.PriorityColumnVisible;
+                ModGrid.Columns[(int)Global.Col.Name].Visibility = (Visibility)Global.config.NameColumnVisible;
+                ModGrid.Columns[(int)Global.Col.Category].Visibility = (Visibility)Global.config.CategoryColumnVisible;
+                ModGrid.Columns[(int)Global.Col.Note].Visibility = (Visibility)Global.config.NoteColumnVisible;
 
-            Global.games = new List<string>();
-            foreach (var item in GameBox.Items)
-            {
-                var game = (((item as ComboBoxItem).Content as StackPanel).Children[1] as TextBlock).Text.Trim().Replace(":", String.Empty);
-                Global.games.Add(game);
-            }
-
-            if (Global.config.Configs == null)
-            {
-                Global.config.CurrentGame = (((GameBox.SelectedValue as ComboBoxItem).Content as StackPanel).Children[1] as TextBlock).Text.Trim().Replace(":", String.Empty);
-                Global.config.Configs = new();
-                Global.config.Configs.Add(Global.config.CurrentGame, new());
-            }
-            else
-                GameBox.SelectedIndex = Global.games.IndexOf(Global.config.CurrentGame);
-            if (String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].CurrentLoadout))
-                Global.config.Configs[Global.config.CurrentGame].CurrentLoadout = "Default";
-            if (Global.config.Configs[Global.config.CurrentGame].Loadouts == null)
-                Global.config.Configs[Global.config.CurrentGame].Loadouts = new();
-            if (!Global.config.Configs[Global.config.CurrentGame].Loadouts.ContainsKey(Global.config.Configs[Global.config.CurrentGame].CurrentLoadout))
-                Global.config.Configs[Global.config.CurrentGame].Loadouts.Add(Global.config.Configs[Global.config.CurrentGame].CurrentLoadout, new());
-            else if (Global.config.Configs[Global.config.CurrentGame].Loadouts[Global.config.Configs[Global.config.CurrentGame].CurrentLoadout] == null)
-                Global.config.Configs[Global.config.CurrentGame].Loadouts[Global.config.Configs[Global.config.CurrentGame].CurrentLoadout] = new();
-            Global.ModList = Global.config.Configs[Global.config.CurrentGame].Loadouts[Global.config.Configs[Global.config.CurrentGame].CurrentLoadout];
-            Global.ModList_All = Global.ModList;
-
-            Global.LoadoutItems = new ObservableCollection<String>(Global.config.Configs[Global.config.CurrentGame].Loadouts.Keys);
-
-            LoadoutBox.ItemsSource = Global.LoadoutItems;
-            LoadoutBox.SelectedItem = Global.config.Configs[Global.config.CurrentGame].CurrentLoadout;
-
-            // --- FileSystemWatcher と Timer の初期化 ---
-            InitializeFileSystemWatcherAndTimer(); // 初期化処理をメソッドに分離
-            // ----------------------------------------
-
-            if (String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].ModsFolder)
-                || !Directory.Exists(Global.config.Configs[Global.config.CurrentGame].ModsFolder))
-            {
-                if (Global.config.Configs[Global.config.CurrentGame].FirstOpen)
-                    Global.logger.WriteLine("Please click Setup before installing mods!", LoggerType.Warning);
-            }
-            else
-            {
-                // Refresh は InitializeFileSystemWatcherAndTimer 内で必要に応じて行うか、別途呼び出す
-                // Refresh(); // ここでは呼ばず、初期化後に明示的に呼ぶか、起動時のチェックに任せる
-                StartWatching(); // イベント監視を開始
-            }
-
-            CategoryComboInit(0);
-
-            defaultFlow.Blocks.Add(ConvertToFlowParagraph(defaultText));
-            DescriptionWindow.Document = defaultFlow;
-            var bitmap = new BitmapImage(new Uri("pack://application:,,,/DivaModManager;component/Assets/preview_enomoto.png"));
-            ImageBehavior.SetAnimatedSource(Preview, bitmap);
-            ImageBehavior.SetAnimatedSource(PreviewBG, null);
-            App.Current.Dispatcher.Invoke(async () =>
-            {
-                IsEnabledControls(false);
-                Global.logger.WriteLine("Checking for mod updates...", LoggerType.Info);
-                //await ModUpdater.CheckForUpdates(Global.config.Configs[Global.config.CurrentGame].ModsFolder, this);
-                await ModUpdater.CheckForUpdatesInit(this);
-
-                Global.logger.WriteLine("Checking for Diva Mod Manager update...", LoggerType.Info);
-                if (await AutoUpdater.CheckForDMMUpdate(new CancellationTokenSource()))
-                    Close();
-                // Check for DML update only if its already setup
-                if (!String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].ModLoaderVersion))
-
+                Global.games = new List<string>();
+                foreach (var item in GameBox.Items)
                 {
-                    Global.logger.WriteLine("Checking for DivaModLoader update...", LoggerType.Info);
-                    await Setup.CheckForDMLUpdate(new CancellationTokenSource());
+                    var game = (((item as ComboBoxItem).Content as StackPanel).Children[1] as TextBlock).Text.Trim().Replace(":", String.Empty);
+                    Global.games.Add(game);
                 }
-                IsEnabledControls(true);
 
-                // 初期表示のために RefreshAsync を呼ぶ
-                if (await DirectoryExistsAsync(Global.config.Configs[Global.config.CurrentGame].ModsFolder)) // 非同期チェック
+                if (Global.config.Configs == null)
                 {
-                    await RefreshAsync(); // ★非同期版を呼び出す
+                    Global.config.CurrentGame = (((GameBox.SelectedValue as ComboBoxItem).Content as StackPanel).Children[1] as TextBlock).Text.Trim().Replace(":", String.Empty);
+                    Global.config.Configs = new();
+                    Global.config.Configs.Add(Global.config.CurrentGame, new());
                 }
-            });
+                else
+                    GameBox.SelectedIndex = Global.games.IndexOf(Global.config.CurrentGame);
+                if (String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].CurrentLoadout))
+                    Global.config.Configs[Global.config.CurrentGame].CurrentLoadout = "Default";
+                if (Global.config.Configs[Global.config.CurrentGame].Loadouts == null)
+                    Global.config.Configs[Global.config.CurrentGame].Loadouts = new();
+                if (!Global.config.Configs[Global.config.CurrentGame].Loadouts.ContainsKey(Global.config.Configs[Global.config.CurrentGame].CurrentLoadout))
+                    Global.config.Configs[Global.config.CurrentGame].Loadouts.Add(Global.config.Configs[Global.config.CurrentGame].CurrentLoadout, new());
+                else if (Global.config.Configs[Global.config.CurrentGame].Loadouts[Global.config.Configs[Global.config.CurrentGame].CurrentLoadout] == null)
+                    Global.config.Configs[Global.config.CurrentGame].Loadouts[Global.config.Configs[Global.config.CurrentGame].CurrentLoadout] = new();
+                Global.ModList = Global.config.Configs[Global.config.CurrentGame].Loadouts[Global.config.Configs[Global.config.CurrentGame].CurrentLoadout];
+                Global.ModList_All = Global.ModList;
+
+                Global.LoadoutItems = new ObservableCollection<String>(Global.config.Configs[Global.config.CurrentGame].Loadouts.Keys);
+
+                LoadoutBox.ItemsSource = Global.LoadoutItems;
+                LoadoutBox.SelectedItem = Global.config.Configs[Global.config.CurrentGame].CurrentLoadout;
+
+                // --- FileSystemWatcher と Timer の初期化 ---
+                InitializeFileSystemWatcherAndTimer(); // 初期化処理をメソッドに分離
+                // ----------------------------------------
+
+                if (String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].ModsFolder)
+                    || !Directory.Exists(Global.config.Configs[Global.config.CurrentGame].ModsFolder))
+                {
+                    if (Global.config.Configs[Global.config.CurrentGame].FirstOpen)
+                        Global.logger.WriteLine("Please click Setup before installing mods!", LoggerType.Warning);
+                }
+                else
+                {
+                    // Refresh は InitializeFileSystemWatcherAndTimer 内で必要に応じて行うか、別途呼び出す
+                    // Refresh(); // ここでは呼ばず、初期化後に明示的に呼ぶか、起動時のチェックに任せる
+                    StartWatching(); // イベント監視を開始
+                }
+
+                CategoryComboInit(0);
+
+                defaultFlow.Blocks.Add(ConvertToFlowParagraph(defaultText));
+                DescriptionWindow.Document = defaultFlow;
+                var bitmap = new BitmapImage(new Uri("pack://application:,,,/DivaModManager;component/Assets/preview_enomoto.png"));
+                ImageBehavior.SetAnimatedSource(Preview, bitmap);
+                ImageBehavior.SetAnimatedSource(PreviewBG, null);
+                App.Current.Dispatcher.Invoke(async () =>
+                {
+                    IsEnabledControls(false);
+                    Global.logger.WriteLine("Checking for mod updates...", LoggerType.Info);
+                    //await ModUpdater.CheckForUpdates(Global.config.Configs[Global.config.CurrentGame].ModsFolder, this);
+                    await ModUpdater.CheckForUpdatesInit(this);
+
+                    Global.logger.WriteLine("Checking for Diva Mod Manager update...", LoggerType.Info);
+                    if (await AutoUpdater.CheckForDMMUpdate(new CancellationTokenSource()))
+                        Close();
+                    // Check for DML update only if its already setup
+                    if (!String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].ModLoaderVersion))
+
+                    {
+                        Global.logger.WriteLine("Checking for DivaModLoader update...", LoggerType.Info);
+                        await Setup.CheckForDMLUpdate(new CancellationTokenSource());
+                    }
+                    IsEnabledControls(true);
+
+                    // 初期表示のために RefreshAsync を呼ぶ
+                    if (await DirectoryExistsAsync(Global.config.Configs[Global.config.CurrentGame].ModsFolder)) // 非同期チェック
+                    {
+                        await RefreshAsync(); // ★非同期版を呼び出す
+                    }
+                });
+            }
+            catch (Exception ex) // ロガー初期化前のエラーなど、致命的な場合
+            {
+                MessageBox.Show($"A critical error occurred during application startup:\n{ex.Message}", "Startup Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                // アプリケーションを終了させるべきか？
+                // Environment.Exit(1); // または Application.Current.Shutdown();
+            }
         }
 
         // --- FileSystemWatcher と Timer の初期化・監視開始/停止メソッド ---
@@ -359,41 +413,45 @@ namespace DivaModManager
             // IsEnabledControls(false);
             // ---------------------------------
 
-            try // 全体をtry-catchで囲み、予期せぬエラーを捕捉
+            try // RefreshAsync 全体のエラーを捕捉
             {
-                // --- 実際のディレクトリ内のModパスを取得 (非同期) ---
                 var modPaths = await GetDirectoriesAsync(currentModDirectory);
-                var existingModNamesInDirectory = new HashSet<string>(modPaths.Select(Path.GetFileName));
-                // ---------------------------------------------
+                var existingModNamesInDirectory = new HashSet<string>(modPaths.Select(System.IO.Path.GetFileName));
 
-                // --- 各Modディレクトリを処理 (並列化も可能だが、まずは逐次処理で) ---
+                // --- Mod ディレクトリ処理の並列化（オプション）とエラーハンドリング ---
+                var processingTasks = new List<Task>();
                 foreach (var modPath in modPaths)
                 {
-                    await ProcessModDirectoryAsync(modPath); // 分割されたメソッドを呼び出す
+                    // Task.Run でラップするか、ProcessModDirectoryAsync をそのまま await する
+                    // 並列化する場合: tasks.Add(ProcessModDirectoryAsync(modPath));
+                    // 逐次処理の場合: await ProcessModDirectoryAsync(modPath);
+                    try
+                    {
+                        await ProcessModDirectoryAsync(modPath);
+                    }
+                    catch (Exception ex) // 個々のMod処理での予期せぬエラー
+                    {
+                        Global.logger.WriteLine($"Error processing mod directory {System.IO.Path.GetFileName(modPath)}: {ex}", LoggerType.Error);
+                        // このModの処理は失敗したが、他のModの処理は続ける
+                    }
                 }
-                // ----------------------------------------------------------
+                // 並列化した場合: await Task.WhenAll(processingTasks);
+                // -------------------------------------------------------
 
-                // --- 削除されたModをリストから除去 ---
-                await RemoveDeletedModsAsync(existingModNamesInDirectory); // 分割されたメソッドを呼び出す
-                // ----------------------------------
-
-                // --- UI更新とModLoaderビルド ---
-                await UpdateUIElementsAndBuildAsync(); // 分割されたメソッドを呼び出す
-                // -------------------------------
+                await RemoveDeletedModsAsync(existingModNamesInDirectory);
+                await UpdateUIElementsAndBuildAsync();
 
                 Global.logger.WriteLine("Refreshed!", LoggerType.Info);
             }
-            catch (Exception ex)
+            catch (Exception ex) // RefreshAsync 中の予期せぬ重大なエラー
             {
-                Global.logger.WriteLine($"An error occurred during RefreshAsync: {ex}", LoggerType.Error);
-                // 必要に応じてユーザーに通知
-                // MessageBox.Show($"An error occurred during refresh: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                Global.logger.WriteLine($"A critical error occurred during RefreshAsync: {ex}", LoggerType.Critical);
+                // UI スレッドでユーザーに通知（オプション）
+                // await Dispatcher.InvokeAsync(() => MessageBox.Show($"An unexpected error occurred while refreshing the mod list:\n{ex.Message}", "Refresh Error", MessageBoxButton.OK, MessageBoxImage.Error));
             }
             finally
             {
-                // --- UIを再度有効化 (任意) ---
-                // IsEnabledControls(true);
-                // ---------------------------
+                // IsEnabledControls(true); // UI 再有効化
             }
         }
 
@@ -404,10 +462,10 @@ namespace DivaModManager
         /// </summary>
         private async Task ProcessModDirectoryAsync(string modPath)
         {
-            var modName = Path.GetFileName(modPath);
-            var configPath = Path.Combine(modPath, "config.toml");
-            var configEPath = Path.Combine(modPath, "config_e.toml");
-            var modJsonPath = Path.Combine(modPath, "mod.json");
+            var modName = System.IO.Path.GetFileName(modPath);
+            var configPath = System.IO.Path.Combine(modPath, "config.toml");
+            var configEPath = System.IO.Path.Combine(modPath, "config_e.toml");
+            var modJsonPath = System.IO.Path.Combine(modPath, "mod.json");
 
             // Global.ModList は UI スレッドでアクセスする必要がある場合があるため注意
             // FindIndex などは読み取りなので大丈夫かもしれないが、安全のためコピーを使うかUIスレッドで行う
@@ -422,7 +480,8 @@ namespace DivaModManager
             if (modEntry == null) // 新規Mod
             {
                 modEntry = new Mod { name = modName };
-                bool configExists = await FileExistsAsync(configPath);
+                //bool configExists = await FileExistsAsync(configPath);
+                bool configExists = await Task.Run(() => FileExistsAsync(configPath));
 
                 if (configExists)
                 {
@@ -478,7 +537,8 @@ namespace DivaModManager
             }
             else // 既存Mod
             {
-                bool configExists = await FileExistsAsync(configPath);
+                //bool configExists = await FileExistsAsync(configPath);
+                bool configExists = await Task.Run(() => FileExistsAsync(configPath));
                 if (configExists)
                 {
                     // config.toml からMod情報を更新
@@ -618,7 +678,8 @@ namespace DivaModManager
         /// </summary>
         private async Task TryLoadModJsonAsync(Mod mod, string modJsonPath)
         {
-            bool modJsonExists = await FileExistsAsync(modJsonPath);
+            //bool modJsonExists = await FileExistsAsync(modJsonPath);
+            bool modJsonExists = await Task.Run(() => FileExistsAsync(modJsonPath));
             if (!modJsonExists) return; // ファイルがなければ何もしない
 
             string jsonContent = await TryReadAllTextAsync(modJsonPath);
@@ -743,12 +804,28 @@ namespace DivaModManager
 
         private async Task<bool> FileExistsAsync(string path)
         {
-            return await Task.Run(() => File.Exists(path));
+            try
+            {
+                return await Task.Run(() => File.Exists(path));
+            }
+            catch (Exception ex)
+            { // PathTooLongException など File.Exists が投げる可能性のある例外
+                Global.logger.WriteLine($"Error checking file existence for '{path}': {ex.Message}", LoggerType.Warning);
+                return false;
+            }
         }
 
         private async Task<bool> DirectoryExistsAsync(string path)
         {
-            return await Task.Run(() => Directory.Exists(path));
+            try
+            {
+                return await Task.Run(() => Directory.Exists(path));
+            }
+            catch (Exception ex)
+            {
+                Global.logger.WriteLine($"Error checking directory existence for '{path}': {ex.Message}", LoggerType.Warning);
+                return false;
+            }
         }
 
         private async Task<string[]> GetDirectoriesAsync(string path)
@@ -757,10 +834,20 @@ namespace DivaModManager
             {
                 return await Task.Run(() => Directory.GetDirectories(path));
             }
-            catch (Exception ex)
+            catch (UnauthorizedAccessException ex)
             {
-                Global.logger.WriteLine($"Error getting directories in {path}: {ex.Message}", LoggerType.Error);
-                return Array.Empty<string>(); // 空配列を返す
+                Global.logger.WriteLine($"Permission error getting directories in '{path}': {ex.Message}", LoggerType.Error);
+                return Array.Empty<string>();
+            }
+            catch (IOException ex)
+            {
+                Global.logger.WriteLine($"IO error getting directories in '{path}': {ex.Message}", LoggerType.Error);
+                return Array.Empty<string>();
+            }
+            catch (Exception ex) // その他の予期せぬエラー
+            {
+                Global.logger.WriteLine($"Unexpected error getting directories in '{path}': {ex.Message}", LoggerType.Error);
+                return Array.Empty<string>();
             }
         }
 
@@ -770,25 +857,41 @@ namespace DivaModManager
             {
                 try
                 {
-                    if (!await FileExistsAsync(path)) return null; // 非同期存在チェック
-                    // BOMハンドリングなどが必要なら ReadAllTextAsync のオーバーロードを検討
+                    // File.Exists は時間がかかる場合があるので非同期化
+                    //if (!await FileExistsAsync(path))
+                    if (!await Task.Run(() => FileExistsAsync(path)))
+                    {
+                        string fileName = System.IO.Path.GetFileName(path);
+                        if (fileName != "config_e.toml")
+                        {
+                            Global.logger.WriteLine($"File not found (async check): '{path}'", LoggerType.Debug); // ファイルがないのはエラーではない場合が多いのでDebugレベル   
+                        }
+                        return null;
+                    }
                     return await File.ReadAllTextAsync(path);
                 }
-                catch (IOException ex) when (i < retries - 1) // 最後のリトライ以外はWarning
+                catch (IOException ex) // IO エラー (ファイルが使用中など)
                 {
-                    Global.logger.WriteLine($"IOException reading {path} (Attempt {i + 1}/{retries}): {ex.Message}. Retrying...", LoggerType.Warning);
-                    await Task.Delay(delayMs);
+                    if (i < retries - 1)
+                    {
+                        Global.logger.WriteLine($"IOException reading '{path}' (Attempt {i + 1}/{retries}): {ex.Message}. Retrying...", LoggerType.Warning);
+                        await Task.Delay(delayMs);
+                    }
+                    else
+                    {
+                        Global.logger.WriteLine($"Failed IOException reading '{path}' after {retries} attempts: {ex.Message}", LoggerType.Error);
+                        return null;
+                    }
                 }
-                catch (IOException ex) // 最後のリトライ
+                catch (UnauthorizedAccessException ex) // アクセス許可エラー
                 {
-                    Global.logger.WriteLine($"Failed IOException reading {path} after {retries} attempts: {ex.Message}", LoggerType.Error);
-                    // UI スレッドで MessageBox 表示が必要なら Dispatcher.InvokeAsync
-                    return null;
+                    Global.logger.WriteLine($"Permission error reading '{path}': {ex.Message}", LoggerType.Error);
+                    return null; // リトライしても無駄なことが多い
                 }
-                catch (Exception ex) // その他の予期せぬ例外
+                catch (Exception ex) // その他の予期せぬエラー
                 {
-                    Global.logger.WriteLine($"Unexpected error reading {path}: {ex.Message}", LoggerType.Error);
-                    return null;
+                    Global.logger.WriteLine($"Unexpected error reading '{path}': {ex.Message}", LoggerType.Error);
+                    return null; // リトライしても無駄なことが多い
                 }
             }
             return null; // リトライ失敗
@@ -796,30 +899,51 @@ namespace DivaModManager
 
         private async Task<bool> TryWriteAllTextAsync(string path, string content, int retries = 3, int delayMs = 100)
         {
+            string dir = System.IO.Path.GetDirectoryName(path);
+            try
+            {
+                // ディレクトリ存在チェックと作成
+                if (!await DirectoryExistsAsync(dir))
+                {
+                    await Task.Run(() => Directory.CreateDirectory(dir));
+                    Global.logger.WriteLine($"Created directory '{dir}'", LoggerType.Info);
+                }
+            }
+            catch (Exception ex)
+            {
+                Global.logger.WriteLine($"Failed to create directory '{dir} for '{path}': {ex.Message}", LoggerType.Error);
+                return false; // ディレクトリ作成失敗なら書き込みも不可
+            }
+
             for (int i = 0; i < retries; i++)
             {
                 try
                 {
-                    // ディレクトリが存在しない可能性があれば作成
-                    // string dir = Path.GetDirectoryName(path);
-                    // if (!await DirectoryExistsAsync(dir)) await Task.Run(() => Directory.CreateDirectory(dir));
                     await File.WriteAllTextAsync(path, content);
                     return true; // 成功
                 }
-                catch (IOException ex) when (i < retries - 1)
+                catch (IOException ex) // IO エラー
                 {
-                    Global.logger.WriteLine($"IOException writing to {path} (Attempt {i + 1}/{retries}): {ex.Message}. Retrying...", LoggerType.Warning);
-                    await Task.Delay(delayMs);
+                    if (i < retries - 1)
+                    {
+                        Global.logger.WriteLine($"IOException writing to '{path}' (Attempt {i + 1}/{retries}): {ex.Message}. Retrying...", LoggerType.Warning);
+                        await Task.Delay(delayMs);
+                    }
+                    else
+                    {
+                        Global.logger.WriteLine($"Failed IOException writing to '{path}' after {retries} attempts: {ex.Message}", LoggerType.Error);
+                        return false;
+                    }
                 }
-                catch (IOException ex) // 最後のリトライ
+                catch (UnauthorizedAccessException ex) // アクセス許可エラー
                 {
-                    Global.logger.WriteLine($"Failed IOException writing to {path} after {retries} attempts: {ex.Message}", LoggerType.Error);
-                    return false; // 失敗
+                    Global.logger.WriteLine($"Permission error writing to '{path}': {ex.Message}", LoggerType.Error);
+                    return false;
                 }
-                catch (Exception ex)
+                catch (Exception ex) // その他の予期せぬエラー
                 {
-                    Global.logger.WriteLine($"Unexpected error writing to {path}: {ex.Message}", LoggerType.Error);
-                    return false; // 失敗
+                    Global.logger.WriteLine($"Unexpected error writing to '{path}': {ex.Message}", LoggerType.Error);
+                    return false;
                 }
             }
             return false; // リトライ失敗
@@ -1208,7 +1332,7 @@ namespace DivaModManager
                     Global.logger.WriteLine($"Launching {path}", LoggerType.Info);
                     var ps = new ProcessStartInfo(path)
                     {
-                        WorkingDirectory = Path.GetDirectoryName(Global.config.Configs[Global.config.CurrentGame].Launcher),
+                        WorkingDirectory = System.IO.Path.GetDirectoryName(Global.config.Configs[Global.config.CurrentGame].Launcher),
                         UseShellExecute = true,
                         Verb = "open"
                     };
@@ -1363,32 +1487,56 @@ namespace DivaModManager
             }
         }
 
+        #region その他のメソッドのエラーハンドリング改善例
+
         private async void DeleteItem_Click(object sender, RoutedEventArgs e)
         {
-            var selectedMods = ModGrid.SelectedItems;
-            var temp = new Mod[selectedMods.Count];
-            selectedMods.CopyTo(temp, 0);
-            foreach (var row in temp)
+            var selectedMods = ModGrid.SelectedItems.OfType<Mod>().ToList(); // 型安全なコピー
+            if (!selectedMods.Any()) return;
+
+            foreach (var row in selectedMods)
             {
-                if (row != null)
+                // 確認ダイアログ (これはUIスレッドで)
+                var dialogResult = MessageBox.Show($@"Are you sure you want to delete {row.name}?" + Environment.NewLine + "This cannot be undone.", $@"Deleting {row.name}: Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+
+                if (dialogResult == MessageBoxResult.Yes)
                 {
-                    var dialogResult = MessageBox.Show($@"Are you sure you want to delete {row.name}?" + Environment.NewLine + "This cannot be undone.", $@"Deleting {row.name}: Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Warning);
-                    if (dialogResult == MessageBoxResult.Yes)
+                    string modPath = System.IO.Path.Combine(Global.config.Configs[Global.config.CurrentGame].ModsFolder, row.name);
+                    Global.logger.WriteLine($@"Attempting to delete {row.name} at '{modPath}'.", LoggerType.Info);
+                    try
                     {
-                        try
-                        {
-                            Global.logger.WriteLine($@"Deleting {row.name}.", LoggerType.Info);
-                            await Task.Run(() => Directory.Delete($@"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}{row.name}", true));
-                            ShowMetadata(null);
-                        }
-                        catch (Exception ex)
-                        {
-                            Global.logger.WriteLine($@"Couldn't delete {row.name} ({ex.Message})", LoggerType.Error);
-                        }
+                        // Directory.Delete は時間がかかる可能性があるので Task.Run
+                        await Task.Run(() => Directory.Delete(modPath, true));
+                        Global.logger.WriteLine($"Successfully deleted '{modPath}'.", LoggerType.Info);
+                        // メタデータ表示をクリア (UI スレッドで)
+                        await Dispatcher.InvokeAsync(() => ShowMetadata(null));
+                        // ★注意: ModListからの削除はRefreshAsyncで行われるのを待つか、ここで手動で削除する必要がある
+                        // 手動削除: await Application.Current.Dispatcher.InvokeAsync(() => Global.ModList.Remove(row));
                     }
-                }
-            }
+                    catch (IOException ex)
+                    {
+                        Global.logger.WriteLine($@"IO error deleting '{modPath}': {ex.Message}", LoggerType.Error);
+                        await Dispatcher.InvokeAsync(() => MessageBox.Show($"Could not delete '{row.name}':\n{ex.Message}", "Delete Error", MessageBoxButton.OK, MessageBoxImage.Error));
+                    }
+                    catch (UnauthorizedAccessException ex)
+                    {
+                        Global.logger.WriteLine($@"Permission error deleting '{modPath}': {ex.Message}", LoggerType.Error);
+                        await Dispatcher.InvokeAsync(() => MessageBox.Show($"Permission denied while deleting '{row.name}':\n{ex.Message}", "Delete Error", MessageBoxButton.OK, MessageBoxImage.Error));
+                    }
+                    catch (Exception ex) // その他のエラー
+                    {
+                        Global.logger.WriteLine($@"Unexpected error deleting '{modPath}': {ex}", LoggerType.Error);
+                        await Dispatcher.InvokeAsync(() => MessageBox.Show($"An unexpected error occurred while deleting '{row.name}':\n{ex.Message}", "Delete Error", MessageBoxButton.OK, MessageBoxImage.Error));
+                    }
+                } // end if Yes
+            } // end foreach
+
+            // 削除操作後にリストをリフレッシュ（推奨）
+            // Debounce 処理があるので、少し待てば RefreshAsync が呼ばれるはず
+            // 必要なら手動でタイマーをトリガー: _debounceTimer?.Change(0, Timeout.Infinite);
         }
+
+        #endregion
 
         // Window_Closing でリソースを破棄
         private void Window_Closing(object sender, CancelEventArgs e)
@@ -1572,97 +1720,137 @@ namespace DivaModManager
             }
             DropBox.Visibility = Visibility.Collapsed;
         }
-        private void ExtractPackages(string[] fileList)
+        private async void ExtractPackages(string[] fileList)
         {
-            var temp = $"{Global.assemblyLocation}{Global.s}temp";
-            foreach (var file in fileList)
+            var tempDir = System.IO.Path.Combine(Global.assemblyLocation, "temp"); // Path.Combine を使用
+            IsEnabledControls(false); // 展開中はUI無効化
+
+            try
             {
-                Directory.CreateDirectory(temp);
-                if (Directory.Exists(file))
+                await Task.Run(() => // 全体を別スレッドで実行
                 {
-                    Global.logger.WriteLine($@"Moving {file} into {Global.config.Configs[Global.config.CurrentGame].ModsFolder}", LoggerType.Info);
-                    string path = $@"{temp}{Global.s}{Path.GetFileName(file)}";
-                    int index = 2;
-                    while (Directory.Exists(path))
+                    foreach (var fileOrDir in fileList)
                     {
-                        path = $@"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}{Path.GetFileName(file)} ({index})";
-                        index += 1;
-                    }
-                    MoveDirectory(file, path);
-                }
-                else if (Path.GetExtension(file).ToLower() == ".7z" || Path.GetExtension(file).ToLower() == ".rar" || Path.GetExtension(file).ToLower() == ".zip")
-                {
-                    string _ArchiveSource = file;
-                    string _ArchiveType = Path.GetExtension(file);
-                    if (File.Exists(_ArchiveSource))
-                    {
-                        try
+                        Directory.CreateDirectory(tempDir);
+                        if (Directory.Exists(fileOrDir))
                         {
-                            if (Path.GetExtension(_ArchiveSource).Equals(".7z", StringComparison.InvariantCultureIgnoreCase))
+                            Global.logger.WriteLine($@"Moving {fileOrDir} into {Global.config.Configs[Global.config.CurrentGame].ModsFolder}", LoggerType.Info);
+                            string destPath = System.IO.Path.Combine(Global.config.Configs[Global.config.CurrentGame].ModsFolder, System.IO.Path.GetFileName(fileOrDir));
+                            //string path = $@"{tempDir}{Global.s}{System.IO.Path.GetFileName(fileOrDir)}";
+                            int index = 2;
+                            while (Directory.Exists(destPath))
                             {
-                                using (var archive = SevenZipArchive.Open(_ArchiveSource))
+                                destPath = $@"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}{System.IO.Path.GetFileName(fileOrDir)} ({index})";
+                                index += 1;
+                            }
+                            // 必要なら重複チェックとリネーム
+                            // MoveDirectory(fileOrDir, destPath); // MoveDirectory内のエラーハンドリングも確認
+                        }
+                        else if (File.Exists(fileOrDir)) // ファイルの場合
+                        {
+                            string extension = System.IO.Path.GetExtension(fileOrDir).ToLowerInvariant();
+                            if (extension == ".7z" || extension == ".rar" || extension == ".zip")
+                            {
+                                Global.logger.WriteLine($"Extracting '{System.IO.Path.GetFileName(fileOrDir)}'...", LoggerType.Info);
+                                try
                                 {
-                                    var reader = archive.ExtractAllEntries();
-                                    while (reader.MoveToNextEntry())
+                                    // --- SharpCompress のエラーハンドリング ---
+                                    using (var archive = ArchiveFactory.Open(fileOrDir))
                                     {
-                                        if (!reader.Entry.IsDirectory)
-                                            reader.WriteEntryToDirectory(temp, new ExtractionOptions()
+                                        var reader = archive.ExtractAllEntries(); // これで良いか、または OpenReader を使うか
+                                        while (reader.MoveToNextEntry())
+                                        {
+                                            if (!reader.Entry.IsDirectory)
                                             {
-                                                ExtractFullPath = true,
-                                                Overwrite = true
-                                            });
+                                                // WriteEntryToDirectory も例外を投げる可能性
+                                                reader.WriteEntryToDirectory(tempDir, new ExtractionOptions()
+                                                {
+                                                    ExtractFullPath = true,
+                                                    Overwrite = true
+                                                });
+                                            }
+                                        }
                                     }
+                                    // 展開成功後、元のアーカイブを削除 (オプション)
+                                    // File.Delete(fileOrDir);
+                                    // --------------------------------------
+                                }
+                                catch (InvalidFormatException ex)
+                                {
+                                    Global.logger.WriteLine($"Format error extracting '{fileOrDir}': {ex.Message}", LoggerType.Error);
+                                    // UI スレッドで通知？
+                                    // Dispatcher.InvokeAsync(() => MessageBox.Show($"Could not extract '{Path.GetFileName(fileOrDir)}':\nInvalid archive format.", "Extraction Error", MessageBoxButton.OK, MessageBoxImage.Warning));
+                                }
+                                catch (IOException ex)
+                                {
+                                    Global.logger.WriteLine($"IO error extracting '{fileOrDir}': {ex.Message}", LoggerType.Error);
+                                }
+                                catch (Exception ex) // SharpCompress の他の例外
+                                {
+                                    Global.logger.WriteLine($"Error extracting '{fileOrDir}': {ex}", LoggerType.Error);
                                 }
                             }
                             else
                             {
-                                using (Stream stream = File.OpenRead(_ArchiveSource))
-                                using (var reader = ReaderFactory.Open(stream))
-                                {
-                                    while (reader.MoveToNextEntry())
-                                    {
-                                        if (!reader.Entry.IsDirectory)
-                                        {
-                                            reader.WriteEntryToDirectory(temp, new ExtractionOptions()
-                                            {
-                                                ExtractFullPath = true,
-                                                Overwrite = true
-                                            });
-                                        }
-                                    }
-                                }
+                                Global.logger.WriteLine($"Skipping unsupported file type: '{fileOrDir}'", LoggerType.Warning);
                             }
                         }
-                        catch (Exception e)
+                        // --- temp ディレクトリからの移動処理 ---
+                        // GetDirectories も try-catch で囲む
+                        var extractedFolders = Directory.GetDirectories(tempDir, "*", SearchOption.AllDirectories)
+                                                        .Where(x => File.Exists(System.IO.Path.Combine(x, "config.toml"))); // File.Exists もエラー可能性あり
+
+                        foreach (var folder in extractedFolders)
                         {
-                            MessageBox.Show($"Couldn't extract {file}: {e.Message}", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                            string path = $@"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}{System.IO.Path.GetFileName(folder)}";
+                            int index = 2;
+                            while (Directory.Exists(path))
+                            {
+                                path = $@"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}{System.IO.Path.GetFileName(folder)} ({index})";
+                                index += 1;
+                            }
+                            MoveDirectory(folder, path);
                         }
-                        File.Delete(_ArchiveSource);
+                        if (Directory.Exists(tempDir))
+                            Directory.Delete(tempDir, true);
                     }
-                }
-                foreach (var folder in Directory.GetDirectories(temp, "*", SearchOption.AllDirectories).Where(x => File.Exists($@"{x}{Global.s}config.toml")))
-                {
-                    string path = $@"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}{Path.GetFileName(folder)}";
-                    int index = 2;
-                    while (Directory.Exists(path))
-                    {
-                        path = $@"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}{Path.GetFileName(folder)} ({index})";
-                        index += 1;
-                    }
-                    MoveDirectory(folder, path);
-                }
-                if (Directory.Exists(temp))
-                    Directory.Delete(temp, true);
+                }); // end Task.Run
+            }
+            finally
+            {
+                IsEnabledControls(true); // 展開完了またはエラー後、UI有効化
+                                         // 展開後は Refresh が必要 (Debounce により自動で呼ばれるはず)
             }
         }
+        // MoveDirectory も内部で try-catch を追加すべき
         private static void MoveDirectory(string sourcePath, string targetPath)
         {
-            //Copy all the files & Replaces any files with the same name
-            foreach (var path in Directory.GetFiles(sourcePath, "*.*", SearchOption.AllDirectories))
+            try
             {
-                var newPath = path.Replace(sourcePath, targetPath);
-                Directory.CreateDirectory(Path.GetDirectoryName(newPath));
-                File.Copy(path, newPath, true);
+                // File.Copy も IOException, UnauthorizedAccessException などを投げる可能性
+                foreach (var path in Directory.GetFiles(sourcePath, "*.*", SearchOption.AllDirectories))
+                {
+                    string newPath = path.Replace(sourcePath, targetPath); // Path.Combine を使う方が安全
+                    try
+                    {
+                        Directory.CreateDirectory(System.IO.Path.GetDirectoryName(newPath));
+                        File.Copy(path, newPath, true);
+                    }
+                    catch (Exception ex)
+                    {
+                        // 個々のファイルコピーエラーログ
+                        Global.logger?.WriteLine($"Error copying file '{path}' to '{newPath}': {ex.Message}", LoggerType.Error); // Global.logger が null の可能性？ static method なので注意
+                                                                                                                                 // エラーがあっても続行するか、中断するか？
+                    }
+                }
+                // コピー成功後、元のディレクトリを削除？ (Move なので削除が必要)
+                // Directory.Delete(sourcePath, true); // これも try-catch
+            }
+            catch (Exception ex) // GetFiles などでのエラー
+            {
+                Global.logger?.WriteLine($"Error moving directory from '{sourcePath}' to '{targetPath}': {ex.Message}", LoggerType.Error);
+                // エラーを再スローするか？
+                // throw;
             }
         }
         private void CreateMod_Click(object sender, RoutedEventArgs e)
@@ -2237,138 +2425,177 @@ namespace DivaModManager
         }.ToList();
         private async void InitializeBrowser()
         {
+            // --- UI 要素の操作は Dispatcher を介して行う ---
+            await Dispatcher.InvokeAsync(() => {
+                LoadingBar.Visibility = Visibility.Visible; // 開始時に表示
+                ErrorPanel.Visibility = Visibility.Collapsed;
+                BrowserRefreshButton.Visibility = Visibility.Collapsed; // リフレッシュボタンはエラー時に表示
+            });
+            // -------------------------------------------
+
             using (var httpClient = new HttpClient())
             {
-                ErrorPanel.Visibility = Visibility.Collapsed;
-                // Initialize categories and games
+                // タイムアウト設定 (任意)
+                // httpClient.Timeout = TimeSpan.FromSeconds(30);
+
                 var gameIDS = new string[] { "16522" };
                 var types = new string[] { "Mod", "Wip", "Sound" };
                 var gameCounter = 0;
-                foreach (var gameID in gameIDS)
-                {
-                    var counter = 0;
-                    double totalPages = 0;
-                    foreach (var type in types)
-                    {
-                        var requestUrl = $"https://gamebanana.com/apiv4/{type}Category/ByGame?_aGameRowIds[]={gameID}&_sRecordSchema=Custom" +
-                            "&_csvProperties=_idRow,_sName,_sProfileUrl,_sIconUrl,_idParentCategoryRow&_nPerpage=50";
-                        string responseString = "";
-                        try
-                        {
-                            var responseMessage = await httpClient.GetAsync(requestUrl);
-                            responseString = await responseMessage.Content.ReadAsStringAsync();
-                            responseString = Regex.Replace(responseString, @"""(\d+)""", @"$1");
-                            var numRecords = responseMessage.GetHeader("X-GbApi-Metadata_nRecordCount");
-                            if (numRecords != -1)
-                            {
-                                totalPages = Math.Ceiling(numRecords / 50);
-                            }
-                        }
-                        catch (HttpRequestException ex)
-                        {
-                            LoadingBar.Visibility = Visibility.Collapsed;
-                            ErrorPanel.Visibility = Visibility.Visible;
-                            BrowserRefreshButton.Visibility = Visibility.Visible;
-                            switch (Regex.Match(ex.Message, @"\d+").Value)
-                            {
-                                case "443":
-                                    BrowserMessage.Text = "Your internet connection is down.";
-                                    break;
-                                case "500":
-                                case "503":
-                                case "504":
-                                    BrowserMessage.Text = "GameBanana's servers are down.";
-                                    break;
-                                default:
-                                    BrowserMessage.Text = ex.Message;
-                                    break;
-                            }
-                            return;
-                        }
-                        catch (Exception ex)
-                        {
-                            LoadingBar.Visibility = Visibility.Collapsed;
-                            ErrorPanel.Visibility = Visibility.Visible;
-                            BrowserRefreshButton.Visibility = Visibility.Visible;
-                            BrowserMessage.Text = ex.Message;
-                            return;
-                        }
-                        List<GameBananaCategory> response = new();
-                        try
-                        {
-                            response = JsonSerializer.Deserialize<List<GameBananaCategory>>(responseString);
-                        }
-                        catch (Exception)
-                        {
-                            LoadingBar.Visibility = Visibility.Collapsed;
-                            ErrorPanel.Visibility = Visibility.Visible;
-                            BrowserRefreshButton.Visibility = Visibility.Visible;
-                            BrowserMessage.Text = "Uh oh! Something went wrong while deserializing the categories...";
-                            return;
-                        }
-                        if (!cats.ContainsKey((GameFilter)gameCounter))
-                            cats.Add((GameFilter)gameCounter, new Dictionary<TypeFilter, List<GameBananaCategory>>());
-                        if (!cats[(GameFilter)gameCounter].ContainsKey((TypeFilter)counter))
-                            cats[(GameFilter)gameCounter].Add((TypeFilter)counter, response);
 
-                        // Make more requests if needed
-                        if (totalPages > 1)
+                try // カテゴリ取得処理全体を try で囲む
+                {
+                    foreach (var gameID in gameIDS)
+                    {
+                        var counter = 0;
+                        double totalPages = 0;
+                        foreach (var type in types)
                         {
-                            for (double i = 2; i <= totalPages; i++)
+                            var requestUrl = $"https://gamebanana.com/apiv4/{type}Category/ByGame?_aGameRowIds[]={gameID}&_sRecordSchema=Custom" +
+                                "&_csvProperties=_idRow,_sName,_sProfileUrl,_sIconUrl,_idParentCategoryRow&_nPerpage=50";
+                            string responseString = "";
+                            HttpResponseMessage responseMessage = null;
+                            try
                             {
-                                var requestUrlPage = $"{requestUrl}&_nPage={i}";
-                                try
+                                responseMessage = await httpClient.GetAsync(requestUrl);
+                                responseMessage.EnsureSuccessStatusCode(); // これで 2xx 以外は HttpRequestException をスロー
+                                responseString = await responseMessage.Content.ReadAsStringAsync();
+                                responseString = Regex.Replace(responseString, @"""(\d+)""", @"$1");
+                                var numRecords = responseMessage.GetHeader("X-GbApi-Metadata_nRecordCount");
+                                if (numRecords != -1)
                                 {
-                                    responseString = await httpClient.GetStringAsync(requestUrlPage);
-                                    responseString = Regex.Replace(responseString, @"""(\d+)""", @"$1");
+                                    totalPages = Math.Ceiling(numRecords / 50);
                                 }
-                                catch (HttpRequestException ex)
-                                {
-                                    LoadingBar.Visibility = Visibility.Collapsed;
-                                    ErrorPanel.Visibility = Visibility.Visible;
-                                    BrowserRefreshButton.Visibility = Visibility.Visible;
-                                    switch (Regex.Match(ex.Message, @"\d+").Value)
-                                    {
-                                        case "443":
-                                            BrowserMessage.Text = "Your internet connection is down.";
-                                            break;
-                                        case "500":
-                                        case "503":
-                                        case "504":
-                                            BrowserMessage.Text = "GameBanana's servers are down.";
-                                            break;
-                                        default:
-                                            BrowserMessage.Text = ex.Message;
-                                            break;
-                                    }
-                                    return;
-                                }
-                                catch (Exception ex)
-                                {
-                                    LoadingBar.Visibility = Visibility.Collapsed;
-                                    ErrorPanel.Visibility = Visibility.Visible;
-                                    BrowserRefreshButton.Visibility = Visibility.Visible;
-                                    BrowserMessage.Text = ex.Message;
-                                    return;
-                                }
-                                try
-                                {
-                                    response = JsonSerializer.Deserialize<List<GameBananaCategory>>(responseString);
-                                }
-                                catch (Exception)
-                                {
-                                    LoadingBar.Visibility = Visibility.Collapsed;
-                                    ErrorPanel.Visibility = Visibility.Visible;
-                                    BrowserRefreshButton.Visibility = Visibility.Visible;
-                                    BrowserMessage.Text = "Uh oh! Something went wrong while deserializing the categories...";
-                                    return;
-                                }
-                                cats[(GameFilter)gameCounter][(TypeFilter)counter] = cats[(GameFilter)gameCounter][(TypeFilter)counter].Concat(response).ToList();
                             }
+                            catch (HttpRequestException ex)
+                            {
+                                string errorMsg = $"Failed to fetch category data ({type} for game {gameID}).";
+                                HandleHttpRequestError(ex, responseMessage, errorMsg); // エラー処理を共通化
+                                return; // エラー発生時は初期化中断
+                            }
+                            catch (TaskCanceledException ex) // タイムアウトなど
+                            {
+                                Global.logger.WriteLine($"Category fetch cancelled or timed out ({type} for game {gameID}): {ex.Message}", LoggerType.Warning);
+                                ShowBrowserError("The request timed out or was canceled.");
+                                return;
+                            }
+                            catch (Exception ex) // その他の通信エラー
+                            {
+                                Global.logger.WriteLine($"Unexpected error fetching category data ({type} for game {gameID}): {ex}", LoggerType.Error);
+                                ShowBrowserError($"An unexpected error occurred: {ex.Message}");
+                                return;
+                            }
+
+                            List<GameBananaCategory> response = null;
+                            try
+                            {
+                                response = JsonSerializer.Deserialize<List<GameBananaCategory>>(responseString);
+                                if (response == null) throw new JsonException("Deserialization resulted in null.");
+                            }
+                            catch (JsonException ex)
+                            {
+                                Global.logger.WriteLine($"Error parsing category JSON ({type} for game {gameID}): {ex.Message}", LoggerType.Error);
+                                ShowBrowserError("Failed to parse category data from GameBanana.");
+                                return;
+                            }
+                            catch (Exception ex) // Regex.Replace など他の箇所の例外
+                            {
+                                Global.logger.WriteLine($"Error processing category data ({type} for game {gameID}): {ex}", LoggerType.Error);
+                                ShowBrowserError($"An unexpected error occurred while processing category data: {ex.Message}");
+                                return;
+                            }
+                            if (!cats.ContainsKey((GameFilter)gameCounter))
+                                cats.Add((GameFilter)gameCounter, new Dictionary<TypeFilter, List<GameBananaCategory>>());
+                            if (!cats[(GameFilter)gameCounter].ContainsKey((TypeFilter)counter))
+                                cats[(GameFilter)gameCounter].Add((TypeFilter)counter, response);
+
+                            // Make more requests if needed
+                            if (totalPages > 1)
+                            {
+                                for (double i = 2; i <= totalPages; i++)
+                                {
+                                    var requestUrlPage = $"{requestUrl}&_nPage={i}";
+                                    try
+                                    {
+                                        responseString = await httpClient.GetStringAsync(requestUrlPage);
+                                        responseString = Regex.Replace(responseString, @"""(\d+)""", @"$1");
+                                    }
+                                    catch (HttpRequestException ex)
+                                    {
+                                        LoadingBar.Visibility = Visibility.Collapsed;
+                                        ErrorPanel.Visibility = Visibility.Visible;
+                                        BrowserRefreshButton.Visibility = Visibility.Visible;
+                                        switch (Regex.Match(ex.Message, @"\d+").Value)
+                                        {
+                                            case "443":
+                                                BrowserMessage.Text = "Your internet connection is down.";
+                                                break;
+                                            case "500":
+                                            case "503":
+                                            case "504":
+                                                BrowserMessage.Text = "GameBanana's servers are down.";
+                                                break;
+                                            default:
+                                                BrowserMessage.Text = ex.Message;
+                                                break;
+                                        }
+                                        return;
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        LoadingBar.Visibility = Visibility.Collapsed;
+                                        ErrorPanel.Visibility = Visibility.Visible;
+                                        BrowserRefreshButton.Visibility = Visibility.Visible;
+                                        BrowserMessage.Text = ex.Message;
+                                        return;
+                                    }
+                                    try
+                                    {
+                                        response = JsonSerializer.Deserialize<List<GameBananaCategory>>(responseString);
+                                    }
+                                    catch (Exception)
+                                    {
+                                        LoadingBar.Visibility = Visibility.Collapsed;
+                                        ErrorPanel.Visibility = Visibility.Visible;
+                                        BrowserRefreshButton.Visibility = Visibility.Visible;
+                                        BrowserMessage.Text = "Uh oh! Something went wrong while deserializing the categories...";
+                                        return;
+                                    }
+                                    cats[(GameFilter)gameCounter][(TypeFilter)counter] = cats[(GameFilter)gameCounter][(TypeFilter)counter].Concat(response).ToList();
+                                }
+                            }
+                            counter++;
                         }
-                        counter++;
+                        gameCounter++;
                     }
-                    gameCounter++;
+
+
+                    // --- 成功時のUI更新 ---
+                    await Dispatcher.InvokeAsync(() => {
+                        filterSelect = true;
+                        GameFilterBox.SelectedIndex = GameBox.SelectedIndex;
+                        FilterBox.ItemsSource = FilterBoxList;
+                        CatBox.ItemsSource = All.Concat(cats[(GameFilter)GameFilterBox.SelectedIndex][(TypeFilter)TypeBox.SelectedIndex].Where(x => x.RootID == 0).OrderBy(y => y.ID));
+                        SubCatBox.ItemsSource = None;
+                        CatBox.SelectedIndex = 0;
+                        SubCatBox.SelectedIndex = 0;
+                        FilterBox.SelectedIndex = 1;
+                        filterSelect = false;
+                        LoadingBar.Visibility = Visibility.Collapsed; // 成功したら非表示
+                        selected = true;
+                        RefreshFilter(); // カテゴリ取得後に最初のフィードを取得
+                    });
+                }
+                catch (Exception ex) // カテゴリ取得ループ全体での予期せぬエラー
+                {
+                    Global.logger.WriteLine($"Unexpected critical error during browser initialization: {ex}", LoggerType.Critical);
+                    ShowBrowserError($"A critical error occurred during initialization: {ex.Message}");
+                }
+                finally
+                {
+                    // finally でも LoadingBar を非表示にする（エラー時など）
+                    await Dispatcher.InvokeAsync(() => {
+                        if (LoadingBar.Visibility == Visibility.Visible) LoadingBar.Visibility = Visibility.Collapsed;
+                    });
                 }
             }
             filterSelect = true;
@@ -2383,6 +2610,73 @@ namespace DivaModManager
             RefreshFilter();
             selected = true;
         }
+
+        // --- HttpRequestException の共通エラーハンドリング ---
+        private void HandleHttpRequestError(HttpRequestException ex, HttpResponseMessage response, string contextMessage)
+        {
+            Global.logger.WriteLine($"{contextMessage} Status: {response?.StatusCode}, Error: {ex.Message}", LoggerType.Error);
+            string userMessage;
+            if (ex.InnerException is System.Net.Sockets.SocketException sockEx)
+            {
+                userMessage = $"Network error: {sockEx.Message}";
+                Global.logger.WriteLine($"Socket Error Code: {sockEx.SocketErrorCode}", LoggerType.Error);
+            }
+            else if (response?.StatusCode != null)
+            {
+                switch (response.StatusCode)
+                {
+                    case System.Net.HttpStatusCode.NotFound: // 404
+                        userMessage = "The requested resource was not found on the server.";
+                        break;
+                    case System.Net.HttpStatusCode.ServiceUnavailable: // 503
+                    case System.Net.HttpStatusCode.InternalServerError: // 500
+                    case System.Net.HttpStatusCode.BadGateway: // 502
+                    case System.Net.HttpStatusCode.GatewayTimeout: // 504
+                        userMessage = "The server is currently unavailable or experiencing issues.";
+                        break;
+                    case System.Net.HttpStatusCode.Unauthorized: // 401
+                    case System.Net.HttpStatusCode.Forbidden: // 403
+                        userMessage = "Access denied by the server.";
+                        break;
+                    default:
+                        userMessage = $"Server returned an error: {(int)response.StatusCode} {response.ReasonPhrase}";
+                        break;
+                }
+            }
+            else // ステータスコードがない場合 (DNS解決失敗、接続拒否など)
+            {
+                userMessage = $"Could not connect to the server: {ex.Message}";
+            }
+            ShowBrowserError(userMessage);
+        }
+        // --------------------------------------------------
+
+        // --- ブラウザのエラー表示共通化 ---
+        private void ShowBrowserError(string message)
+        {
+            // UI スレッドで実行
+            Dispatcher.InvokeAsync(() => {
+                LoadingBar.Visibility = Visibility.Collapsed;
+                ErrorPanel.Visibility = Visibility.Visible;
+                BrowserRefreshButton.Visibility = Visibility.Visible; // 再試行できるように
+                BrowserMessage.Text = message;
+                FeedBox.ItemsSource = null; // エラー時はリストをクリア
+                FeedBox.Visibility = Visibility.Collapsed;
+            });
+        }
+        private void ShowDMAError(string message)
+        {
+            Dispatcher.InvokeAsync(() => {
+                DMALoadingBar.Visibility = Visibility.Collapsed;
+                DMAErrorPanel.Visibility = Visibility.Visible;
+                DMABrowserRefreshButton.Visibility = Visibility.Visible;
+                DMABrowserMessage.Text = message;
+                DMAFeedBox.ItemsSource = null;
+                DMAFeedBox.Visibility = Visibility.Collapsed;
+            });
+        }
+        // --------------------------------
+
         private void OnBrowserTabSelected(object sender, RoutedEventArgs e)
         {
             if (!selected)
@@ -2444,26 +2738,31 @@ namespace DivaModManager
         private static bool searched = false;
         private async void RefreshFilter()
         {
-            NSFWCheckbox.IsEnabled = false;
-            SearchBar.IsEnabled = false;
-            SearchButton.IsEnabled = false;
-            GameFilterBox.IsEnabled = false;
-            FilterBox.IsEnabled = false;
-            TypeBox.IsEnabled = false;
-            CatBox.IsEnabled = false;
-            SubCatBox.IsEnabled = false;
-            PageLeft.IsEnabled = false;
-            PageRight.IsEnabled = false;
-            PageBox.IsEnabled = false;
-            PerPageBox.IsEnabled = false;
-            ClearCacheButton.IsEnabled = false;
-            ErrorPanel.Visibility = Visibility.Collapsed;
-            filterSelect = true;
-            PageBox.SelectedValue = page;
-            filterSelect = false;
-            Page.Text = $"Page {page}";
-            LoadingBar.Visibility = Visibility.Visible;
-            FeedBox.Visibility = Visibility.Collapsed;
+            // --- UI 無効化 ---
+            await Dispatcher.InvokeAsync(() => {
+                NSFWCheckbox.IsEnabled = false;
+                SearchBar.IsEnabled = false;
+                SearchButton.IsEnabled = false;
+                GameFilterBox.IsEnabled = false;
+                FilterBox.IsEnabled = false;
+                TypeBox.IsEnabled = false;
+                CatBox.IsEnabled = false;
+                SubCatBox.IsEnabled = false;
+                PageLeft.IsEnabled = false;
+                PageRight.IsEnabled = false;
+                PageBox.IsEnabled = false;
+                PerPageBox.IsEnabled = false;
+                ClearCacheButton.IsEnabled = false;
+                ErrorPanel.Visibility = Visibility.Collapsed;
+                filterSelect = true;
+                PageBox.SelectedValue = page;
+                filterSelect = false;
+                ErrorPanel.Visibility = Visibility.Collapsed;
+                LoadingBar.Visibility = Visibility.Visible;
+                FeedBox.Visibility = Visibility.Collapsed; // 開始時に隠す
+                Page.Text = $"Page {page}";
+            });
+            // ----------------
 
             try
             {
@@ -2472,8 +2771,36 @@ namespace DivaModManager
                 {
                     search = search.Replace("'", "\\'");
                 }
-                await FeedGenerator.GetFeed(page, (GameFilter)GameFilterBox.SelectedIndex, (TypeFilter)TypeBox.SelectedIndex, (FeedFilter)FilterBox.SelectedIndex, (GameBananaCategory)CatBox.SelectedItem,
-                    (GameBananaCategory)SubCatBox.SelectedItem, (PerPageBox.SelectedIndex + 1) * 10, (bool)NSFWCheckbox.IsChecked, search);
+                // FeedGenerator の GetFeed が内部で例外を投げる可能性がある
+                // GetFeed 内で try-catch するのが理想だが、ここで受けることも可能
+                try
+                {
+                    await FeedGenerator.GetFeed(page, (GameFilter)GameFilterBox.SelectedIndex, (TypeFilter)TypeBox.SelectedIndex, (FeedFilter)FilterBox.SelectedIndex, (GameBananaCategory)CatBox.SelectedItem,
+                         (GameBananaCategory)SubCatBox.SelectedItem, (PerPageBox.SelectedIndex + 1) * 10, (bool)NSFWCheckbox.IsChecked, search);
+                }
+                catch (HttpRequestException ex) // FeedGenerator 内で捕捉されなかった場合
+                {
+                    HandleHttpRequestError(ex, null, "Failed to get GameBanana feed.");
+                    return;
+                }
+                catch (JsonException ex)
+                {
+                    Global.logger.WriteLine($"Error parsing GameBanana feed JSON: {ex.Message}", LoggerType.Error);
+                    ShowBrowserError("Failed to parse feed data from GameBanana.");
+                    return;
+                }
+                catch (TaskCanceledException ex)
+                {
+                    Global.logger.WriteLine($"GameBanana feed request cancelled or timed out: {ex.Message}", LoggerType.Warning);
+                    ShowBrowserError("The request timed out or was canceled.");
+                    return;
+                }
+                catch (Exception ex) // FeedGenerator 内の予期せぬエラー
+                {
+                    Global.logger.WriteLine($"Unexpected error in FeedGenerator.GetFeed: {ex}", LoggerType.Error);
+                    ShowBrowserError($"An unexpected error occurred while fetching the feed: {ex.Message}");
+                    return;
+                }
                 FeedBox.ItemsSource = FeedGenerator.CurrentFeed.Records;
                 if (FeedGenerator.error)
                 {
@@ -2518,90 +2845,171 @@ namespace DivaModManager
                     BrowserMessage.Text = "Diva Mod Manager couldn't find any mods.";
                 }
                 PageBox.ItemsSource = Enumerable.Range(1, (int)(FeedGenerator.CurrentFeed.TotalPages));
+                // --- UI 更新 (UI スレッド) ---
+                await Dispatcher.InvokeAsync(() => {
+                    FeedBox.ItemsSource = FeedGenerator.CurrentFeed?.Records; // Nullチェック
+
+                    if (FeedGenerator.CurrentFeed?.Records != null && FeedGenerator.CurrentFeed.Records.Any())
+                    {
+                        FeedBox.Visibility = Visibility.Visible;
+                        FeedBox.ScrollIntoView(FeedBox.Items[0]);
+                        // ページネーションボタンの有効/無効設定
+                        PageRight.IsEnabled = page < FeedGenerator.CurrentFeed.TotalPages;
+                        PageLeft.IsEnabled = page > 1;
+                        PageBox.ItemsSource = Enumerable.Range(1, (int)(FeedGenerator.CurrentFeed.TotalPages));
+                        filterSelect = true; //ItemsSource変更後にSelectedIndexを設定するため
+                        PageBox.SelectedValue = page;
+                        filterSelect = false;
+
+                    }
+                    else // レコードがない場合
+                    {
+                        FeedBox.Visibility = Visibility.Collapsed;
+                        ShowBrowserError("Diva Mod Manager couldn't find any mods matching the criteria.");
+                        // ページネーションボタンを無効化
+                        PageRight.IsEnabled = false;
+                        PageLeft.IsEnabled = false;
+                        PageBox.ItemsSource = null;
+                    }
+                    LoadingBar.Visibility = Visibility.Collapsed; // 完了時に非表示
+                });
+                // -----------------------
+
+            }
+            catch (Exception ex) // RefreshFilter 自体の予期せぬエラー
+            {
+                Global.logger.WriteLine($"Unexpected error in RefreshFilter: {ex}", LoggerType.Critical);
+                ShowBrowserError($"An unexpected error occurred: {ex.Message}"); // UIにエラー表示
             }
             finally
             {
-                LoadingBar.Visibility = Visibility.Collapsed;
-                CatBox.IsEnabled = true;
-                SubCatBox.IsEnabled = true;
-                TypeBox.IsEnabled = true;
-                FilterBox.IsEnabled = true;
-                PageBox.IsEnabled = true;
-                PerPageBox.IsEnabled = true;
-                GameFilterBox.IsEnabled = true;
-                SearchBar.IsEnabled = true;
-                SearchButton.IsEnabled = true;
-                NSFWCheckbox.IsEnabled = true;
-                ClearCacheButton.IsEnabled = true;
+                // --- UI 有効化 ---
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    LoadingBar.Visibility = Visibility.Collapsed;
+                    CatBox.IsEnabled = true;
+                    SubCatBox.IsEnabled = true;
+                    TypeBox.IsEnabled = true;
+                    FilterBox.IsEnabled = true;
+                    PageBox.IsEnabled = true;
+                    PerPageBox.IsEnabled = true;
+                    GameFilterBox.IsEnabled = true;
+                    SearchBar.IsEnabled = true;
+                    SearchButton.IsEnabled = true;
+                    NSFWCheckbox.IsEnabled = true;
+                    ClearCacheButton.IsEnabled = true;
+                    // LoadingBarがまだ表示されていたら隠す
+                    if (LoadingBar.Visibility == Visibility.Visible) LoadingBar.Visibility = Visibility.Collapsed;
+                });
             }
         }
         private static bool DMAselected = false;
         private async void DMARefreshFilter()
         {
-            DMASearchBar.IsEnabled = false;
-            DMASearchButton.IsEnabled = false;
-            DMASortBox.IsEnabled = false;
-            DMAFilterBox.IsEnabled = false;
-            DMAClearCacheButton.IsEnabled = false;
-            DMAPageLeft.IsEnabled = false;
-            DMAPageRight.IsEnabled = false;
-            DMAPageBox.IsEnabled = false;
-            DMAFilterSelect = true;
-            DMAPageBox.SelectedValue = DMApage;
-            DMAPerPageBox.IsEnabled = false;
-            DMAFilterSelect = false;
-            DMAPage.Text = $"Page {DMApage}";
-            DMAErrorPanel.Visibility = Visibility.Collapsed;
-            DMALoadingBar.Visibility = Visibility.Visible;
-            DMAFeedBox.Visibility = Visibility.Collapsed;
-            var search = DMASearchBar.Text;
+            // --- UI 無効化 ---
+            await Dispatcher.InvokeAsync(() =>
+            {
+                DMASearchBar.IsEnabled = false;
+                DMASearchButton.IsEnabled = false;
+                DMASortBox.IsEnabled = false;
+                DMAFilterBox.IsEnabled = false;
+                DMAClearCacheButton.IsEnabled = false;
+                DMAPageLeft.IsEnabled = false;
+                DMAPageRight.IsEnabled = false;
+                DMAPageBox.IsEnabled = false;
+                DMAFilterSelect = true;
+                DMAPageBox.SelectedValue = DMApage;
+                DMAPerPageBox.IsEnabled = false;
+                DMAFilterSelect = false;
+                DMAPage.Text = $"Page {DMApage}";
+                DMAErrorPanel.Visibility = Visibility.Collapsed;
+                DMALoadingBar.Visibility = Visibility.Visible;
+                DMAFeedBox.Visibility = Visibility.Collapsed;
+            });
+
+            var search = searched ? SearchBar.Text : null;
             try
             {
-                await DMAFeedGenerator.GetFeed(DMApage, (DMAFeedSort)DMASortBox.SelectedIndex, (DMAFeedFilter)DMAFilterBox.SelectedIndex, search, (DMAPerPageBox.SelectedIndex + 1) * 10);
-                DMAFeedBox.ItemsSource = DMAFeedGenerator.CurrentFeed.Posts;
-                if (DMAFeedGenerator.error)
+                try
                 {
-                    DMALoadingBar.Visibility = Visibility.Collapsed;
-                    DMAErrorPanel.Visibility = Visibility.Visible;
-                    DMABrowserRefreshButton.Visibility = Visibility.Visible;
-                    if (DMAFeedGenerator.exception.Message.Contains("JSON tokens"))
-                    {
-                        DMABrowserMessage.Text = "Uh oh! Diva Mod Manager failed to deserialize the DivaModArchive feed.";
-                        return;
-                    }
-                    switch (Regex.Match(DMAFeedGenerator.exception.Message, @"\d+").Value)
-                    {
-                        case "443":
-                            DMABrowserMessage.Text = "Your internet connection is down.";
-                            break;
-                        case "500":
-                        case "503":
-                        case "504":
-                            DMABrowserMessage.Text = "DivaModArchive's servers are down.";
-                            break;
-                        default:
-                            DMABrowserMessage.Text = DMAFeedGenerator.exception.Message;
-                            break;
-                    }
+                    await DMAFeedGenerator.GetFeed(DMApage, (DMAFeedSort)DMASortBox.SelectedIndex, (DMAFeedFilter)DMAFilterBox.SelectedIndex, search, (DMAPerPageBox.SelectedIndex + 1) * 10);
+                }
+                catch (HttpRequestException ex) // FeedGenerator 内で捕捉されなかった場合
+                {
+                    HandleHttpRequestError(ex, null, "Failed to get GameBanana feed.");
                     return;
                 }
-                if (DMApage < DMAFeedGenerator.CurrentFeed.TotalPages)
-                    DMAPageRight.IsEnabled = true;
-                if (DMApage != 1)
-                    DMAPageLeft.IsEnabled = true;
-                if (DMAFeedBox.Items.Count > 0)
+                catch (JsonException ex)
                 {
-                    DMAFeedBox.ScrollIntoView(DMAFeedBox.Items[0]);
-                    DMAFeedBox.Visibility = Visibility.Visible;
+                    Global.logger.WriteLine($"Error parsing GameBanana feed JSON: {ex.Message}", LoggerType.Error);
+                    ShowBrowserError("Failed to parse feed data from GameBanana.");
+                    return;
                 }
-                else
+                catch (TaskCanceledException ex)
                 {
-                    DMAErrorPanel.Visibility = Visibility.Visible;
-                    DMABrowserRefreshButton.Visibility = Visibility.Collapsed;
-                    DMABrowserMessage.Visibility = Visibility.Visible;
-                    DMABrowserMessage.Text = "Diva Mod Manager couldn't find any mods.";
+                    Global.logger.WriteLine($"GameBanana feed request cancelled or timed out: {ex.Message}", LoggerType.Warning);
+                    ShowBrowserError("The request timed out or was canceled.");
+                    return;
                 }
-                DMAPageBox.ItemsSource = Enumerable.Range(1, (int)(DMAFeedGenerator.CurrentFeed.TotalPages));
+                catch (Exception ex) // FeedGenerator 内の予期せぬエラー
+                {
+                    Global.logger.WriteLine($"Unexpected error in FeedGenerator.GetFeed: {ex}", LoggerType.Error);
+                    ShowBrowserError($"An unexpected error occurred while fetching the feed: {ex.Message}");
+                    return;
+                }
+
+                // --- UI 更新 (UI スレッド) ---
+                await Dispatcher.InvokeAsync(() => {
+                    DMAFeedBox.ItemsSource = DMAFeedGenerator.CurrentFeed.Posts;
+                    if (DMAFeedGenerator.error)
+                    {
+                        DMALoadingBar.Visibility = Visibility.Collapsed;
+                        DMAErrorPanel.Visibility = Visibility.Visible;
+                        DMABrowserRefreshButton.Visibility = Visibility.Visible;
+                        if (DMAFeedGenerator.exception.Message.Contains("JSON tokens"))
+                        {
+                            DMABrowserMessage.Text = "Uh oh! Diva Mod Manager failed to deserialize the DivaModArchive feed.";
+                            return;
+                        }
+                        switch (Regex.Match(DMAFeedGenerator.exception.Message, @"\d+").Value)
+                        {
+                            case "443":
+                                DMABrowserMessage.Text = "Your internet connection is down.";
+                                break;
+                            case "500":
+                            case "503":
+                            case "504":
+                                DMABrowserMessage.Text = "DivaModArchive's servers are down.";
+                                break;
+                            default:
+                                DMABrowserMessage.Text = DMAFeedGenerator.exception.Message;
+                                break;
+                        }
+                        return;
+                    }
+                    if (DMApage < DMAFeedGenerator.CurrentFeed.TotalPages)
+                        DMAPageRight.IsEnabled = true;
+                    if (DMApage != 1)
+                        DMAPageLeft.IsEnabled = true;
+                    if (DMAFeedBox.Items.Count > 0)
+                    {
+                        DMAFeedBox.ScrollIntoView(DMAFeedBox.Items[0]);
+                        DMAFeedBox.Visibility = Visibility.Visible;
+                    }
+                    else
+                    {
+                        DMAErrorPanel.Visibility = Visibility.Visible;
+                        DMABrowserRefreshButton.Visibility = Visibility.Collapsed;
+                        DMABrowserMessage.Visibility = Visibility.Visible;
+                        DMABrowserMessage.Text = "Diva Mod Manager couldn't find any mods.";
+                    }
+                    DMAPageBox.ItemsSource = Enumerable.Range(1, (int)(DMAFeedGenerator.CurrentFeed.TotalPages));
+                });
+            }
+            catch (Exception ex) // DMARefreshFilter 自体の予期せぬエラー
+            {
+                Global.logger.WriteLine($"Unexpected error in DMARefreshFilter: {ex}", LoggerType.Critical);
+                ShowBrowserError($"An unexpected error occurred: {ex.Message}"); // UIにエラー表示
             }
             finally
             {
