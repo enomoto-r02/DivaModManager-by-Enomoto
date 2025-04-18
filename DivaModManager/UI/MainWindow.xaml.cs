@@ -431,8 +431,9 @@ namespace DivaModManager
 
                 if (configExists)
                 {
-                    // config.toml からMod情報を更新/設定
+                    // config.toml からMod情報を更新/設定、ディレクトリサイズの読み込み
                     await TryUpdateModFromConfigAsync(modEntry, configPath, isNewMod: true);
+                    await TryLoadDirectorySizeAsync(modEntry, modPath);
                 }
                 else
                 {
@@ -467,9 +468,10 @@ namespace DivaModManager
                     }
                 }
 
-                // config_e.toml, mod.json の読み込み (新規Modでも読み込む)
+                // config_e.toml, mod.json ディレクトリサイズの読み込み (新規Modでも読み込む)
                 await TryLoadExtendedConfigAsync(modEntry, configEPath);
                 await TryLoadModJsonAsync(modEntry, modJsonPath);
+                await TryLoadDirectorySizeAsync(modEntry, modPath);
 
                 // ModListへの追加 (UIスレッドで実行)
                 await Application.Current.Dispatcher.InvokeAsync(() =>
@@ -514,10 +516,9 @@ namespace DivaModManager
                     }
                 }
 
-                // config_e.toml, mod.json の読み込み (既存Modでも毎回読み込む)
+                // config_e.toml, mod.json ディレクトリサイズの読み込み (既存Modでも毎回読み込む)
                 await TryLoadExtendedConfigAsync(modEntry, configEPath);
                 await TryLoadModJsonAsync(modEntry, modJsonPath);
-                // ディレクトリのサイズ読み込み
                 await TryLoadDirectorySizeAsync(modEntry, modPath);
             }
         }
