@@ -3707,7 +3707,7 @@ namespace DivaModManager
             if (changed)
             {
                 // config_e.toml の更新 (非同期)
-                await UpdateModConfigToml_e(mod, columnHeader, newText);
+                UpdateModConfigToml_e(mod, columnHeader, newText);
                 // 必要であれば Global.UpdateConfig() や ModLoader.Build() も呼ぶが、
                 // RefreshAsync 内で実行されるため、ここでは不要かもしれない。
                 // ただし、即時反映が必要な場合は検討。
