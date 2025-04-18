@@ -69,6 +69,7 @@ namespace DivaModManager
                     {
                         if (Global.config.Configs[game].FirstOpen && !Global.config.Configs[game].LauncherOptionConverted)
                         {
+
                             Global.config.Configs[game].LauncherOptionIndex = Convert.ToInt32(Global.config.Configs[game].LauncherOption);
                             Global.config.Configs[game].LauncherOptionConverted = true;
                             Global.UpdateConfig();
@@ -140,7 +141,6 @@ namespace DivaModManager
             }
             else
                 GameBox.SelectedIndex = Global.games.IndexOf(Global.config.CurrentGame);
-
             if (String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].CurrentLoadout))
                 Global.config.Configs[Global.config.CurrentGame].CurrentLoadout = "Default";
             if (Global.config.Configs[Global.config.CurrentGame].Loadouts == null)
@@ -169,6 +169,8 @@ namespace DivaModManager
             }
             else
             {
+                // Refresh は InitializeFileSystemWatcherAndTimer 内で必要に応じて行うか、別途呼び出す
+                // Refresh(); // ここでは呼ばず、初期化後に明示的に呼ぶか、起動時のチェックに任せる
                 StartWatching(); // イベント監視を開始
             }
 
@@ -179,18 +181,19 @@ namespace DivaModManager
             var bitmap = new BitmapImage(new Uri("pack://application:,,,/DivaModManager;component/Assets/preview_enomoto.png"));
             ImageBehavior.SetAnimatedSource(Preview, bitmap);
             ImageBehavior.SetAnimatedSource(PreviewBG, null);
-
             App.Current.Dispatcher.Invoke(async () =>
             {
                 IsEnabledControls(false);
                 Global.logger.WriteLine("Checking for mod updates...", LoggerType.Info);
                 //await ModUpdater.CheckForUpdates(Global.config.Configs[Global.config.CurrentGame].ModsFolder, this);
                 await ModUpdater.CheckForUpdatesInit(this);
+
                 Global.logger.WriteLine("Checking for Diva Mod Manager update...", LoggerType.Info);
                 if (await AutoUpdater.CheckForDMMUpdate(new CancellationTokenSource()))
                     Close();
                 // Check for DML update only if its already setup
                 if (!String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].ModLoaderVersion))
+
                 {
                     Global.logger.WriteLine("Checking for DivaModLoader update...", LoggerType.Info);
                     await Setup.CheckForDMLUpdate(new CancellationTokenSource());
@@ -286,7 +289,6 @@ namespace DivaModManager
         private async void WindowLoaded(object sender, RoutedEventArgs e)
         {
             await Task.Run(() => OnFirstOpen());
-
             LauncherOptionsBox.IsEnabled = true;
             LauncherOptionsBox.ItemsSource = LauncherOptions;
             LauncherOptionsBox.SelectedIndex = Global.config.Configs[Global.config.CurrentGame].LauncherOptionIndex;
@@ -877,6 +879,7 @@ namespace DivaModManager
             }
         }
 
+
         #endregion
 
         private void ModGrid_SelectedCellsChanged(object sender, SelectedCellsChangedEventArgs e)
@@ -929,7 +932,8 @@ namespace DivaModManager
                             if (m.selected)
                             {
                                 m.enabled = setEnabled;
-                                UpdateModConfigToml(checkMod, setEnabled);
+                                //UpdateModConfigToml(checkMod, setEnabled);
+                                RefreshAsync(); // 同期させるためawaitはなし(非同期では非常に遅いため)
                             }
                         }
                     }
@@ -950,6 +954,8 @@ namespace DivaModManager
             }
         }
 
+        // UpdateModConfigToml は RefreshAsync 内のロジックに統合されたため不要になる可能性
+        /*
         private void UpdateModConfigToml(Mod m, bool value)
         {
             var configPath = $"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}{m.name}{Global.s}config.toml";
@@ -992,69 +998,59 @@ namespace DivaModManager
                 });
             }
         }
+        */
 
-        private void UpdateModConfigToml_e(Mod m, string column, object value)
+        private async Task UpdateModConfigToml_e(Mod m, string column, object value)
         {
             var configPath_e = $"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}{m.name}{Global.s}config_e.toml";
+            TomlTable config_e = await TryReadTomlAsync(configPath_e);
 
-            if (!File.Exists(configPath_e))
+            bool needsWrite = false;
+            if (config_e == null) // ファイルがないか読めない場合、新規作成
             {
-                TomlTable config_dmme = new();
-                config_dmme.Add("priority", "");
-                config_dmme.Add("category", "");
-                config_dmme.Add("note", "");
-                var isReady = false;
-                while (!isReady)
-                {
-                    try
-                    {
-                        File.WriteAllText(configPath_e, Toml.FromModel(config_dmme));
-                        isReady = true;
-                    }
-                    catch (Exception e)
-                    {
-                        // Check if the exception is related to an IO error.
-                        if (e.GetType() != typeof(IOException))
-                        {
-                            Global.logger.WriteLine($"Couldn't access {configPath_e} ({e.Message})", LoggerType.Error);
-                            break;
-                        }
-                    }
-                }
+                config_e = new TomlTable();
+                // デフォルト値を追加（空文字列）
+                config_e.Add("priority", "");
+                config_e.Add("category", "");
+                config_e.Add("note", "");
+                //Global.logger.WriteLine($"Creating new config_e.toml for {m.name}.", LoggerType.Debug);
+                needsWrite = true; // 新規作成なので書き込み必要
             }
-            if (File.Exists(configPath_e))
+
+            // 要求されたカラムの値を更新
+            string valueStr = value?.ToString() ?? ""; // nullを空文字列に
+            switch (column)
             {
-                var configString_e = File.ReadAllText(configPath_e);
-                if (Toml.TryToModel(configString_e, out TomlTable config_e, out var diagnostics))
-                {
-                    switch (column)
+                case "Priority":
+                    if (!config_e.ContainsKey("priority") || config_e["priority"]?.ToString() != valueStr)
                     {
-                        case "Priority":
-                            config_e["priority"] = value;
-                            break;
-                        case "Category":
-                            config_e["category"] = value;
-                            break;
-                        case "Note":
-                            config_e["note"] = value;
-                            break;
+                        config_e["priority"] = valueStr;
+                        needsWrite = true;
                     }
-                    File.WriteAllText(configPath_e, Toml.FromModel(config_e));
-                }
-                else
-                {
-                    Global.logger.WriteLine($"{diagnostics[0].Message} for {m.name}. Rewriting {configPath_e} with only enabled field", LoggerType.Warning);
-                    // Create config_e.toml with enabled field to be true if failed to parse
-                    config_e = new();
-                    config_e.Add("priority", "");
-                    config_e.Add("category", "");
-                    config_e.Add("note", "");
-                    File.WriteAllText(configPath_e, Toml.FromModel(config_e));
-                }
+                    break;
+                case "Category":
+                    if (!config_e.ContainsKey("category") || config_e["category"]?.ToString() != valueStr)
+                    {
+                        config_e["category"] = valueStr;
+                        needsWrite = true;
+                    }
+                    break;
+                case "Note":
+                    if (!config_e.ContainsKey("note") || config_e["note"]?.ToString() != valueStr)
+                    {
+                        config_e["note"] = valueStr;
+                        needsWrite = true;
+                    }
+                    break;
+                default:
+                    Global.logger.WriteLine($"Unknown column '{column}' for config_e.toml update.", LoggerType.Warning);
+                    return; // 不明なカラムなら何もしない
             }
-            else
+
+            if (needsWrite)
             {
-                Global.logger.WriteLine("No config_e.toml file window triggered but it was already open.", LoggerType.Info);
+                await TryWriteTomlAsync(configPath_e, config_e);
+                //Global.logger.WriteLine($"Updated '{column}' in config_e.toml for {m.name}.", LoggerType.Debug);
             }
         }
 
@@ -1080,6 +1076,7 @@ namespace DivaModManager
                : Application.Current.Windows.OfType<T>().Any(w => w.Name.Equals(name));
         }
 
+        // このメソッドはUIスレッドから呼び出される想定
         private bool ConfirmConfigCreation(string configPath, Mod m, bool enabled)
         {
             var choices = new List<Choice>();
@@ -1142,6 +1139,7 @@ namespace DivaModManager
             return false;
         }
 
+        // Setup_Click などで ModsWatcher を再設定する際の処理を変更
         private async void Setup_Click(object sender, RoutedEventArgs e)
         {
             if (Global.SearchModListFlg)
@@ -1183,6 +1181,7 @@ namespace DivaModManager
             });
             GameBox.IsEnabled = true;
         }
+
         private void Launch_Click(object sender, RoutedEventArgs e)
         {
             if (Global.config.Configs[Global.config.CurrentGame].Launcher != null && File.Exists(Global.config.Configs[Global.config.CurrentGame].Launcher))
@@ -1391,18 +1390,12 @@ namespace DivaModManager
             }
         }
 
+        // Window_Closing でリソースを破棄
         private void Window_Closing(object sender, CancelEventArgs e)
         {
-            try
-            {
-                ModsWatcher.EnableRaisingEvents = false;
-            }
-            catch (Exception ex)
-            {
-                Global.logger.WriteLine($"Error stopping FileSystemWatcher: {ex.Message}", LoggerType.Error);
-            }
-            ModsWatcher?.Dispose();
-            ModsWatcher = null;
+            // --- Watcher と Timer を破棄 ---
+            DisposeWatcherAndTimer();
+            // ------------------------------
 
             if (WindowState == WindowState.Maximized)
             {
@@ -1423,7 +1416,7 @@ namespace DivaModManager
             InitSearchMod();
             SetColumnDisplayIndex();
             SetColumnVisible();
-            Global.UpdateConfig();
+            Global.UpdateConfig(); // この前に破棄処理を入れるべきか？終了処理内なので問題ないか。
             System.Windows.Application.Current.Shutdown();
         }
 
@@ -1452,28 +1445,37 @@ namespace DivaModManager
                 }
             }
         }
+        // RenameMod_Click での一時停止処理を変更
         private async void RenameMod_Click(object sender, RoutedEventArgs e)
         {
             var selectedMods = ModGrid.SelectedItems;
             var temp = new Mod[selectedMods.Count];
             selectedMods.CopyTo(temp, 0);
 
-            // Stop refreshing while renaming folders
-            ModsWatcher.EnableRaisingEvents = false;
+            // --- 監視を一時停止 ---
+            StopWatching();
+            // ---------------------
+
             foreach (var row in temp)
             {
                 if (row != null)
                 {
                     EditWindow ew = new EditWindow(row.name, true);
                     ew.ShowDialog();
+                    // EditWindow内で実際にリネームが行われたかどうかの結果を受け取るのが望ましい
                 }
             }
-            ModsWatcher.EnableRaisingEvents = true;
-            Global.UpdateConfig();
-            ModGrid.Items.Refresh();
 
-            await Task.Run(() => ModLoader.Build());
+            // --- 監視を再開 ---
+            StartWatching();
+            // -----------------
+
+            Global.UpdateConfig();
+            ModGrid.Items.Refresh(); // ViewModelを使えば不要になる可能性
+
+            await Task.Run(() => ModLoader.Build()); // 非同期化推奨
         }
+
 
         private void ConfigureModItem_Click(object sender, RoutedEventArgs e)
         {
@@ -2844,6 +2846,7 @@ namespace DivaModManager
                         ModsWatcher.Created += OnFileSystemChanged;
                         ModsWatcher.Deleted += OnFileSystemChanged;
                         ModsWatcher.Renamed += OnFileSystemChanged;
+                        //Refresh();
                         RefreshAsync(); // ★非同期版を呼び出す
                         ModsWatcher.EnableRaisingEvents = true;
                     });
@@ -2897,12 +2900,9 @@ namespace DivaModManager
         }
         private async void LoadoutsBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (!IsLoaded)
-            {
-                return;
-            }
-            // Change the loadout
-            else if (LoadoutBox.SelectedItem != null)
+            if (!IsLoaded) return;
+
+            if (LoadoutBox.SelectedItem != null)
             {
                 InitSearchMod();
                 Global.config.Configs[Global.config.CurrentGame].CurrentLoadout = LoadoutBox.SelectedItem.ToString();
@@ -2917,15 +2917,16 @@ namespace DivaModManager
                 UpdateSearchMod();
                 await RefreshAsync(); // ★非同期版を呼び出す
                 Global.logger.WriteLine($"Loadout changed to {LoadoutBox.SelectedItem}", LoggerType.Info);
-                await Task.Run(() => ModLoader.Build());
+                // ModLoader.Build は RefreshAsync 内で実行されるように変更済み
             }
         }
+        // EditLoadouts_Click で Refresh を呼び出す箇所を変更
         private void EditLoadouts_Click(object sender, RoutedEventArgs e)
         {
             if (Global.SearchModListFlg)
             {
                 MessageBox.Show($"Please do it with the mod search cleared.\nSorry.", "Attention.", MessageBoxButton.OK, MessageBoxImage.Information);
-                e.Handled = true;
+                e.Handled = true; // イベント処理済みフラグ
                 return;
             }
 
@@ -2954,13 +2955,19 @@ namespace DivaModManager
                 OptionSubText = $"Copy Current loadout",
                 Index = 3
             });
-            Dispatcher.Invoke(() =>
+
+            // Dispatcher.InvokeAsync を使用してUIスレッドで非同期ラムダを実行
+            Dispatcher.InvokeAsync(async () =>
             {
-                var choice = new ChoiceWindow(choices, $"Loadout Options for {Global.config.CurrentGame}");
-                choice.ShowDialog();
-                if (choice.choice != null)
+                var choiceWindow = new ChoiceWindow(choices, $"Loadout Options for {Global.config.CurrentGame}");
+                // ShowDialog は UI スレッドで同期的に実行され、完了を待つ
+                choiceWindow.ShowDialog();
+
+                if (choiceWindow.choice != null)
                 {
-                    switch ((int)choice.choice)
+                    bool refreshNeeded = false; // Refreshが必要かどうかのフラグ（状況による）
+
+                    switch ((int)choiceWindow.choice)
                     {
                         // Add new loadout
                         case 0:
@@ -2968,8 +2975,12 @@ namespace DivaModManager
                             newLoadoutWindow.ShowDialog();
                             if (!String.IsNullOrEmpty(newLoadoutWindow.loadout))
                             {
+                                // ObservableCollection への追加は UI スレッドでOK
                                 Global.LoadoutItems.Add(newLoadoutWindow.loadout);
+                                // LoadoutBox.SelectedItem の変更により SelectionChanged イベントが発生し、
+                                // そのハンドラ内で RefreshAsync が呼ばれることを期待する
                                 LoadoutBox.SelectedItem = newLoadoutWindow.loadout;
+                                // refreshNeeded = true; // SelectionChangedで呼ばれない場合に備えるならフラグを立てる
                             }
                             break;
                         // Rename current loadout
@@ -2978,50 +2989,59 @@ namespace DivaModManager
                             renameLoadoutWindow.ShowDialog();
                             if (!String.IsNullOrEmpty(renameLoadoutWindow.loadout))
                             {
-                                // Insert new name at index of original loadout
-                                Global.LoadoutItems.Insert(Global.LoadoutItems.IndexOf(Global.config.Configs[Global.config.CurrentGame].CurrentLoadout), renameLoadoutWindow.loadout);
-                                // Copy over current loadout
-                                Global.config.Configs[Global.config.CurrentGame].Loadouts.Add(renameLoadoutWindow.loadout, Global.ModList);
-                                // Delete current loadout
-                                Global.LoadoutItems.Remove(Global.config.Configs[Global.config.CurrentGame].CurrentLoadout);
-                                Global.config.Configs[Global.config.CurrentGame].Loadouts.Remove(Global.config.Configs[Global.config.CurrentGame].CurrentLoadout);
-                                // Trigger selection changed event
+                                var originalLoadout = Global.config.Configs[Global.config.CurrentGame].CurrentLoadout;
+                                var originalIndex = Global.LoadoutItems.IndexOf(originalLoadout);
+
+                                // 新しいロードアウト名とModリスト（ディープコピーが必要か確認）を追加
+                                // Modリストのコピー処理（元の case 3 を参考に Clone() を使うべきか検討）
+                                ObservableCollection<Mod> ModList_Copy = new ObservableCollection<Mod>(Global.ModList.Select(m => m.Clone())); // Cloneメソッドがあると仮定
+                                Global.config.Configs[Global.config.CurrentGame].Loadouts.Add(renameLoadoutWindow.loadout, ModList_Copy);
+
+                                // UI上のリストを更新
+                                if (originalIndex >= 0)
+                                {
+                                    Global.LoadoutItems.Insert(originalIndex, renameLoadoutWindow.loadout);
+                                    Global.LoadoutItems.Remove(originalLoadout); // Insert後にRemove
+                                }
+                                else
+                                {
+                                    // 元の要素が見つからない場合 (エラーケース？)
+                                    Global.LoadoutItems.Add(renameLoadoutWindow.loadout);
+                                }
+
+                                // 古い設定を削除
+                                Global.config.Configs[Global.config.CurrentGame].Loadouts.Remove(originalLoadout);
+
+                                // 選択を新しい名前に変更 (SelectionChanged発生を期待)
                                 LoadoutBox.SelectedItem = renameLoadoutWindow.loadout;
+                                // refreshNeeded = true;
                             }
                             break;
                         // Delete current loadout
                         case 2:
-                            var yesno_choice = new List<Choice>();
-                            yesno_choice.Add(new Choice()
+                            if (Global.config.Configs[Global.config.CurrentGame].Loadouts.Count <= 1)
                             {
-                                OptionText = "Yes",
-                                OptionSubText = $"This action cannot be undone.",
-                                Index = 0
-                            });
-                            var yesno = new ChoiceWindow(yesno_choice, $"Delete Current Loadout");
+                                Global.logger.WriteLine("Unable to delete current loadout since there is only one", LoggerType.Error);
+                                MessageBox.Show("Cannot delete the only loadout.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning); // ユーザー通知
+                                break;
+                            }
+
+                            var yesno_choice = new List<Choice>();
+                            yesno_choice.Add(new Choice() { OptionText = "Yes", OptionSubText = $"This action cannot be undone.", Index = 0 });
+                            yesno_choice.Add(new Choice() { OptionText = "No", OptionSubText = $"", Index = 1 });
+
+                            var yesno = new ChoiceWindow(yesno_choice, $"Delete Current Loadout: {Global.config.Configs[Global.config.CurrentGame].CurrentLoadout}?");
                             yesno.ShowDialog();
 
-                            if (yesno.choice != null)
+                            if (yesno.choice == 0) // Yes
                             {
-                                switch ((int)yesno.choice)
-                                {
-                                    case 0:
-                                        if (Global.config.Configs[Global.config.CurrentGame].Loadouts.Count == 1)
-                                        {
-                                            Global.logger.WriteLine("Unable to delete current loadout since there is only one", LoggerType.Error);
-                                            return;
-                                        }
-                                        else
-                                        {
-                                            Global.LoadoutItems.Remove(Global.config.Configs[Global.config.CurrentGame].CurrentLoadout);
-                                            Global.config.Configs[Global.config.CurrentGame].Loadouts.Remove(Global.config.Configs[Global.config.CurrentGame].CurrentLoadout);
-                                            // Triggers selection changed event
-                                            LoadoutBox.SelectedIndex = 0;
-                                        }
-                                        break;
-                                    case 1:
-                                        break;
-                                }
+                                var loadoutToDelete = Global.config.Configs[Global.config.CurrentGame].CurrentLoadout;
+                                Global.LoadoutItems.Remove(loadoutToDelete);
+                                Global.config.Configs[Global.config.CurrentGame].Loadouts.Remove(loadoutToDelete);
+
+                                // 削除後、最初のロードアウトを選択 (SelectionChanged発生を期待)
+                                LoadoutBox.SelectedIndex = 0;
+                                // refreshNeeded = true;
                             }
                             break;
                         // Copy current loadout
@@ -3030,17 +3050,15 @@ namespace DivaModManager
                             copyLoadoutWindow.ShowDialog();
                             if (!String.IsNullOrEmpty(copyLoadoutWindow.loadout))
                             {
-                                // Insert new name at index of original loadout
+                                // Deep Copy over current loadout (Mod.Clone() を使用)
+                                ObservableCollection<Mod> ModList_Copy = new ObservableCollection<Mod>(Global.ModList.Select(m => m.Clone()));
+
                                 Global.LoadoutItems.Add(copyLoadoutWindow.loadout);
-                                // Deep Copy over current loadout
-                                ObservableCollection<Mod> ModList_Copy = new ObservableCollection<Mod>();
-                                foreach (Mod m in Global.ModList)
-                                {
-                                    ModList_Copy.Add(m.Clone());
-                                }
                                 Global.config.Configs[Global.config.CurrentGame].Loadouts.Add(copyLoadoutWindow.loadout, ModList_Copy);
+
                                 // Trigger selection changed event
                                 LoadoutBox.SelectedItem = copyLoadoutWindow.loadout;
+                                // refreshNeeded = true;
                             }
                             break;
                     }
@@ -3081,6 +3099,7 @@ namespace DivaModManager
                 InitializeFileSystemWatcherAndTimer();
                 StartWatching();
                 // -------------------------------------------------------
+
                 Global.logger.WriteLine($"Game switched to {Global.config.CurrentGame}", LoggerType.Info);
                 await RefreshAsync(); // ★非同期版を呼び出す
                 if (String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].ModsFolder)
@@ -3104,17 +3123,29 @@ namespace DivaModManager
                 var bitmap = new BitmapImage(new Uri("pack://application:,,,/DivaModManager;component/Assets/preview_enomoto.png"));
                 ImageBehavior.SetAnimatedSource(Preview, bitmap);
                 ImageBehavior.SetAnimatedSource(PreviewBG, null);
-                
-                await App.Current.Dispatcher.Invoke(async () =>
+
+                // OnFirstOpen も非同期化が必要な場合がある
+                // await OnFirstOpenAsync(); // OnFirstOpen が async Task になっていると仮定
+
+                // Updateチェックも非同期なので await する
+                await App.Current.Dispatcher.InvokeAsync(async () =>
                 {
                     IsEnabledControls(false);
                     Global.logger.WriteLine("Checking for mod updates...", LoggerType.Info);
-                    await ModUpdater.CheckForUpdates(Global.config.Configs[Global.config.CurrentGame].ModsFolder, this, true);
+                    // CheckForUpdates が非同期なら await
+                    // await ModUpdater.CheckForUpdates(Global.config.Configs[Global.config.CurrentGame].ModsFolder, this, true);
+                    await ModUpdater.CheckForUpdatesInit(this); // こちらを呼んでいる場合
+
                     Global.logger.WriteLine("Checking for Diva Mod Manager update...", LoggerType.Info);
                     if (await AutoUpdater.CheckForDMMUpdate(new CancellationTokenSource()))
-                        Close();
+                    {
+                        Close(); // DMMアップデートが見つかったら閉じる
+                        return; // 以降の処理は不要
+                    }
                     IsEnabledControls(true);
                 });
+
+
                 handle = false;
             }
         }
@@ -3550,43 +3581,66 @@ namespace DivaModManager
             }
         }
 
-        private void ModGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
+        // ModGrid_CellEditEnding を非同期化
+        private async void ModGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
         {
-            if (e.Column is not DataGridTextColumn textCol) return;
+            if (e.EditAction == DataGridEditAction.Cancel) return; // キャンセル時は何もしない
+            if (e.Column is not DataGridBoundColumn boundCol) return; // テキスト以外のカラムは対象外？
             if (e.Row.DataContext is not Mod mod) return;
             if (e.EditingElement is not TextBox textBox) return;
 
             string newText = textBox.Text;
-            string columnHeader = e.Column.Header.ToString();
+            // Header を直接使うのではなく、Binding Path を使う方がより堅牢
+            string bindingPath = (boundCol.Binding as System.Windows.Data.Binding)?.Path.Path;
+            string columnHeader = e.Column.Header.ToString(); // Header も fallback として使う
 
-            switch (columnHeader)
+            // 変更があった場合のみ処理 (UI上は編集完了しているように見えるが、実際の値と比較)
+            bool changed = false;
+            switch (bindingPath ?? columnHeader) // Binding Path があれば優先
             {
-                case "Priority":
-                    mod.priority = newText;
+                case "priority": // Binding Path
+                case "Priority": // Header
+                    if (mod.priority != newText)
+                    {
+                        mod.priority = newText; // ViewModel があれば setter で処理
+                        changed = true;
+                        columnHeader = "Priority"; // UpdateModConfigToml_e 用に Header 名を確定
+                    }
                     break;
-
+                case "category":
                 case "Category":
-                    mod.category = newText;
-
-                    if (Global.ModList.Count > 1)
+                    if (mod.category != newText)
                     {
-                        // If the number of categories increases, reload the category combo box.
-                        CategoryComboInit();
-                    }
-                    else
-                    {
-                        // If the number of categories decreases, please set the category combobox to ALL.
-                        CategoryComboInit(0);
-                        SearchModList(SearchModListTextBox.Text, SearchCategoryComboBox.Text);
+                        mod.category = newText;
+                        changed = true;
+                        columnHeader = "Category";
+                        // カテゴリコンボの更新 (UI スレッドで)
+                        await Application.Current.Dispatcher.InvokeAsync(() => CategoryComboInit());
                     }
                     break;
-
+                case "note":
                 case "Note":
-                    mod.note = newText;
+                    if (mod.note != newText)
+                    {
+                        mod.note = newText;
+                        changed = true;
+                        columnHeader = "Note";
+                    }
                     break;
+                default:
+                    return; // 対象外のカラム
             }
 
-            UpdateModConfigToml_e(mod, columnHeader, newText);
+            if (changed)
+            {
+                // config_e.toml の更新 (非同期)
+                await UpdateModConfigToml_e(mod, columnHeader, newText);
+                // 必要であれば Global.UpdateConfig() や ModLoader.Build() も呼ぶが、
+                // RefreshAsync 内で実行されるため、ここでは不要かもしれない。
+                // ただし、即時反映が必要な場合は検討。
+                // Global.UpdateConfig();
+                // await Task.Run(() => ModLoader.Build());
+            }
         }
 
         private void SearchCategoryComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
