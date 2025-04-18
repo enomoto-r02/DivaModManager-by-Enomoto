@@ -1639,7 +1639,8 @@ namespace DivaModManager
                         {
                             MessageBox.Show($"Couldn't extract {file}: {e.Message}", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
                         }
-                        File.Delete(_ArchiveSource);
+                        // ドロップしたファイルを削除しないよう修正
+                        //File.Delete(_ArchiveSource);
                     }
                 }
                 foreach (var folder in Directory.GetDirectories(temp, "*", SearchOption.AllDirectories).Where(x => File.Exists($@"{x}{Global.s}config.toml")))
