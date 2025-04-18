@@ -3614,7 +3614,7 @@ namespace DivaModManager
         {
             if (e.MouseDevice.DirectlyOver is not FrameworkElement elem) return;
             if (elem.Parent is not DataGridCell cell) return;
-            if (cell.Column.Header?.ToString() != "Name") return;
+            if (cell.Column.Header?.ToString() != "Name" && cell.Column.Header?.ToString() != "Size") return;
 
             ExecConfigAction(sender, e);
         }
