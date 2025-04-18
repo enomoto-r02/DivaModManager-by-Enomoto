@@ -3811,6 +3811,9 @@ namespace DivaModManager
                     case "Category":
                         Global.config.CategoryColumnVisible = col.Visibility;
                         break;
+                    case "Size":
+                        Global.config.SizeColumnVisible = col.Visibility;
+                        break;
                     case "Note":
                         Global.config.NoteColumnVisible = col.Visibility;
                         break;
