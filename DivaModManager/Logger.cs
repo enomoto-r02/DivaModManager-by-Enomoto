@@ -14,7 +14,9 @@ namespace DivaModManager
     {
         Info,
         Warning,
-        Error
+        Error,
+        Debug,
+        Critical,
     }
     public class Logger
     {
