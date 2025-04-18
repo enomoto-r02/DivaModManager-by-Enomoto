@@ -106,6 +106,8 @@ namespace DivaModManager
                 ModGrid.Columns[(int)Global.Col.Name].DisplayIndex = (int)Global.config.NameColumnIndex;
             if (Global.config.CategoryColumnIndex != null)
                 ModGrid.Columns[(int)Global.Col.Category].DisplayIndex = (int)Global.config.CategoryColumnIndex;
+            if (Global.config.SizeColumnIndex != null)
+                ModGrid.Columns[(int)Global.Col.Size].DisplayIndex = (int)Global.config.SizeColumnIndex;
             if (Global.config.NoteColumnIndex != null)
                 ModGrid.Columns[(int)Global.Col.Note].DisplayIndex = (int)Global.config.NoteColumnIndex;
 
@@ -117,6 +119,8 @@ namespace DivaModManager
                 ModGrid.Columns[(int)Global.Col.Name].Width = (double)Global.config.NameColumnWidth;
             if (Global.config.CategoryColumnWidth != null)
                 ModGrid.Columns[(int)Global.Col.Category].Width = (double)Global.config.CategoryColumnWidth;
+            if (Global.config.SizeColumnWidth != null)
+                ModGrid.Columns[(int)Global.Col.Size].Width = (double)Global.config.SizeColumnWidth;
             if (Global.config.NoteColumnWidth != null)
                 ModGrid.Columns[(int)Global.Col.Note].Width = (double)Global.config.NoteColumnWidth;
 
@@ -124,6 +128,7 @@ namespace DivaModManager
             ModGrid.Columns[(int)Global.Col.Priority].Visibility = (Visibility)Global.config.PriorityColumnVisible;
             ModGrid.Columns[(int)Global.Col.Name].Visibility = (Visibility)Global.config.NameColumnVisible;
             ModGrid.Columns[(int)Global.Col.Category].Visibility = (Visibility)Global.config.CategoryColumnVisible;
+            ModGrid.Columns[(int)Global.Col.Size].Visibility = (Visibility)Global.config.SizeColumnVisible;
             ModGrid.Columns[(int)Global.Col.Note].Visibility = (Visibility)Global.config.NoteColumnVisible;
 
             Global.games = new List<string>();
@@ -3232,6 +3237,9 @@ namespace DivaModManager
                 case "Category":
                     SortByCategory();
                     break;
+                case "Size":
+                    SortBySize();
+                    break;
                 case "Note":
                     SortByNote();
                     break;
@@ -3258,6 +3266,11 @@ namespace DivaModManager
         private void SortByCategory()
         {
             SortByField(m => m.category, "Category");
+        }
+
+        private void SortBySize()
+        {
+            SortByField(m => m._directorySize.ToString(), "Size");
         }
 
         private void SortByNote()
@@ -3588,6 +3601,9 @@ namespace DivaModManager
                 case "Category":
                     Global.config.CategoryColumnWidth = column.Width.DisplayValue;
                     break;
+                case "Size":
+                    Global.config.SizeColumnWidth = column.Width.DisplayValue;
+                    break;
                 case "Note":
                     Global.config.NoteColumnWidth = column.Width.DisplayValue;
                     break;
@@ -3763,6 +3779,9 @@ namespace DivaModManager
                     case "Category":
                         Global.config.CategoryColumnIndex = col.DisplayIndex;
                         break;
+                    case "Size":
+                        Global.config.SizeColumnIndex = col.DisplayIndex;
+                        break;
                     case "Note":
                         Global.config.NoteColumnIndex = col.DisplayIndex;
                         break;
@@ -3826,6 +3845,10 @@ namespace DivaModManager
                             break;
                         case "Category":
                             col = GetDataGridColumnByName(ModGrid, "Category");
+                            col.Visibility = col.Visibility == Visibility.Visible ? Visibility.Hidden : col.Visibility = Visibility.Visible;
+                            break;
+                        case "Size":
+                            col = GetDataGridColumnByName(ModGrid, "Size");
                             col.Visibility = col.Visibility == Visibility.Visible ? Visibility.Hidden : col.Visibility = Visibility.Visible;
                             break;
                         case "Note":

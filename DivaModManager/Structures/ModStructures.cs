@@ -139,8 +139,11 @@ namespace DivaModManager
         public Visibility CategoryColumnVisible { get; set; } = Visibility.Visible;
         public int? CategoryColumnIndex { get; set; } = 3;
         public double? CategoryColumnWidth { get; set; }
+        public Visibility SizeColumnVisible { get; set; } = Visibility.Visible;
+        public int? SizeColumnIndex { get; set; } = 4;
+        public double? SizeColumnWidth { get; set; }
         public Visibility NoteColumnVisible { get; set; } = Visibility.Visible;
-        public int? NoteColumnIndex { get; set; } = 4;
+        public int? NoteColumnIndex { get; set; } = 5;
         public double? NoteColumnWidth { get; set; }
 
         public bool CategoryColumnColor { get; set; } = false;
