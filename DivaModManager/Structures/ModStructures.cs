@@ -64,6 +64,33 @@ namespace DivaModManager
         public string category { get; set; } = string.Empty;
         [JsonIgnore]
         public bool IsCategoryHighlighted { get; set; } = true;
+        [JsonIgnore]
+        public long _directorySize { get; set; } = -1;
+        [JsonIgnore]
+        public string directorySizeString { 
+            get
+            {
+                if (_directorySize == -1)
+                    return string.Empty;
+                else if (_directorySize < 1024)
+                    return $"{_directorySize} B";
+                else if (_directorySize < 1048576)
+                    return $"{Math.Round(_directorySize / 1024.0, 2)} KB";
+                else if (_directorySize < 1073741824)
+                    return $"{Math.Round(_directorySize / 1048576.0, 2)} MB";
+                else
+                    return $"{Math.Round(_directorySize / 1073741824.0, 2)} GB";
+            }
+            set
+            {
+                var newValue = value ?? string.Empty;
+                if (_directorySize.ToString() != newValue)
+                {
+                    _directorySize = long.Parse(newValue);
+                    OnPropertyChanged();
+                }
+            }
+        }
 
 
         public event PropertyChangedEventHandler? PropertyChanged;

@@ -845,6 +845,7 @@
                                             </Style>
                                         </DataGridTextColumn.CellStyle>
                                     </DataGridTextColumn>
+                                    <DataGridTextColumn Header="Size" Binding="{Binding directorySizeString, Mode=TwoWay}" Width="1.5*" IsReadOnly="True" CanUserResize="True"/>
                                     <DataGridTextColumn Header="Note" Binding="{Binding note, Mode=TwoWay}" Width="1.5*" IsReadOnly="False" CanUserResize="True">
                                         <DataGridTextColumn.EditingElementStyle>
                                             <Style TargetType="TextBox">

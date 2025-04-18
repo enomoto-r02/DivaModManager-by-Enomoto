@@ -512,6 +512,8 @@ namespace DivaModManager
                 // config_e.toml, mod.json の読み込み (既存Modでも毎回読み込む)
                 await TryLoadExtendedConfigAsync(modEntry, configEPath);
                 await TryLoadModJsonAsync(modEntry, modJsonPath);
+                // ディレクトリのサイズ読み込み
+                await TryLoadDirectorySizeAsync(modEntry, modPath);
             }
         }
 
@@ -659,6 +661,24 @@ namespace DivaModManager
             }
         }
 
+        /// <summary>
+        /// ディレクトリのサイズを読み込む
+        /// </summary>
+        private async Task TryLoadDirectorySizeAsync(Mod mod, string modDirectoryPath)
+        {
+            bool isDirectoryPath = await DirectoryExistsAsync(modDirectoryPath);
+            if (!isDirectoryPath) return; // ファイルがなければ何もしない
+
+            try
+            {
+                mod._directorySize = await GetDirectoriesSizeAsync(modDirectoryPath);
+            }
+            catch (Exception ex) // その他の予期せぬエラー
+            {
+                Global.logger.WriteLine($"Unexpected error processing in TryLoadDirectorySizeAsync at {modDirectoryPath}: {ex.Message}", LoggerType.Error);
+            }
+        }
+
 
         /// <summary>
         /// ディレクトリに存在しないModをGlobal.ModListから削除する
@@ -762,6 +782,29 @@ namespace DivaModManager
                 Global.logger.WriteLine($"Error getting directories in {path}: {ex.Message}", LoggerType.Error);
                 return Array.Empty<string>(); // 空配列を返す
             }
+        }
+
+        private async Task<long> GetDirectoriesSizeAsync(string path)
+        {
+            try
+            {
+                return await Task.Run(() => GetDirectorySize(new DirectoryInfo(path)));
+            }
+            catch (Exception ex)
+            {
+                Global.logger.WriteLine($"Error getting directories size in {path}: {ex.Message}", LoggerType.Error);
+                return -1; // -1を返すことでエラーを示す
+            }
+        }
+
+        private async Task<long> GetDirectorySize(DirectoryInfo dirInfo)
+        {
+            long DirectorySize = 0;
+            foreach (FileInfo fi in dirInfo.GetFiles())//フォルダ内の全ファイルを取得
+                DirectorySize += fi.Length;//フォルダ内の全ファイルのサイズを加算
+            foreach (DirectoryInfo di in dirInfo.GetDirectories())//サブフォルダを取得
+                DirectorySize += await GetDirectorySize(di);//サブフォルダのサイズを合算
+            return DirectorySize;
         }
 
         private async Task<string> TryReadAllTextAsync(string path, int retries = 3, int delayMs = 100)
