@@ -1570,6 +1570,11 @@ namespace DivaModManager
             if (e.Data.GetDataPresent(DataFormats.FileDrop))
             {
                 string[] fileList = (string[])e.Data.GetData(DataFormats.FileDrop, false);
+                foreach (var file in fileList)
+                {
+                    var filePath = Path.GetFileName(file);
+                    Global.logger.WriteLine($"Expanding the dropped file. [{filePath}]", LoggerType.Info);
+                }
                 await Task.Run(() => ExtractPackages(fileList));
             }
             DropBox.Visibility = Visibility.Collapsed;
