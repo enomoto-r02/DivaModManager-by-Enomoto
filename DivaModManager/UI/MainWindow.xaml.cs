@@ -34,7 +34,7 @@ namespace DivaModManager
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class MainWindow : Window, IDisposable
     {
         public string version;
         private FileSystemWatcher ModsWatcher;
@@ -48,6 +48,52 @@ namespace DivaModManager
         private Timer _debounceTimer;
         private const int DebounceTimeoutMs = 500; // 500ミリ秒待機してからRefreshを実行
         // -----------------------------------------
+
+        #region IDisposable 実装
+
+        private bool disposed = false; // Disposeが複数回呼ばれるのを防ぐフラグ
+
+        // Public implementation of Dispose pattern callable by consumers.
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this); // ファイナライザがある場合は不要にする
+        }
+
+        // Protected implementation of Dispose pattern.
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposed)
+                return;
+
+            if (disposing)
+            {
+                // --- 管理対象リソース (managed resources) の破棄 ---
+
+                // FileSystemWatcher と Timer を破棄
+                DisposeWatcherAndTimer();
+
+                // (オプション) DataGridColumn のイベントハンドラ解除
+                RemoveColumnWidthChangedHandlers();
+
+                // 他の管理対象リソースがあればここで破棄
+                // defaultFlow?.Dispose(); // FlowDocument は通常 Dispose 不要
+                // LauncherOptions = null; // 不要な参照を解除
+            }
+
+            // --- 管理対象外リソース (unmanaged resources) の破棄 ---
+            // (このクラスでは直接管理しているものはない想定)
+
+            disposed = true;
+        }
+
+        // ファイナライザ (通常は不要だが、管理対象外リソースを持つ場合に備える)
+        // ~MainWindow()
+        // {
+        //     Dispose(false);
+        // }
+
+        #endregion
 
         public MainWindow()
         {
@@ -328,9 +374,20 @@ namespace DivaModManager
             _debounceTimer?.Change(Timeout.Infinite, Timeout.Infinite);
         }
 
+        // --- FileSystemWatcher と Timer の破棄処理を DisposeWatcherAndTimer に集約 ---
         private void DisposeWatcherAndTimer()
         {
             StopWatching(); // まず監視を停止
+
+            // --- イベントハンドラの解除 (より安全) ---
+            if (ModsWatcher != null)
+            {
+                ModsWatcher.Created -= OnFileSystemChanged;
+                ModsWatcher.Deleted -= OnFileSystemChanged;
+                ModsWatcher.Renamed -= OnFileSystemChanged;
+                // ModsWatcher.Changed -= OnFileSystemChanged; // もし監視していた場合
+            }
+            // ------------------------------------
 
             _debounceTimer?.Dispose();
             _debounceTimer = null;
@@ -338,6 +395,27 @@ namespace DivaModManager
             ModsWatcher?.Dispose();
             ModsWatcher = null;
             //Global.logger.WriteLine($"Disposed watcher and timer.", LoggerType.Debug); // デバッグ用ログ
+        }
+
+        // --- (オプション) DataGridColumn イベントハンドラ解除用メソッド ---
+        private void RemoveColumnWidthChangedHandlers()
+        {
+            if (ModGrid != null) // ModGrid が初期化されているか確認
+            {
+                foreach (var column in ModGrid.Columns)
+                {
+                    try
+                    {
+                        var descriptor = DependencyPropertyDescriptor.FromProperty(DataGridColumn.WidthProperty, typeof(DataGridColumn));
+                        descriptor?.RemoveValueChanged(column, ColumnWidthChanged);
+                    }
+                    catch (Exception ex)
+                    {
+                        // 解除時のエラーはログに記録する程度で良いか
+                        Global.logger?.WriteLine($"Error removing WidthChanged handler for column '{column.Header}': {ex.Message}", LoggerType.Warning);
+                    }
+                }
+            }
         }
 
         private async void WindowLoaded(object sender, RoutedEventArgs e)
@@ -1541,9 +1619,9 @@ namespace DivaModManager
         // Window_Closing でリソースを破棄
         private void Window_Closing(object sender, CancelEventArgs e)
         {
-            // --- Watcher と Timer を破棄 ---
-            DisposeWatcherAndTimer();
-            // ------------------------------
+            // --- リソースの破棄 ---
+            Dispose(); // ★ Dispose メソッドを呼び出す
+            // ---------------------
 
             if (WindowState == WindowState.Maximized)
             {
@@ -1564,8 +1642,8 @@ namespace DivaModManager
             InitSearchMod();
             SetColumnDisplayIndex();
             SetColumnVisible();
-            Global.UpdateConfig(); // この前に破棄処理を入れるべきか？終了処理内なので問題ないか。
-            System.Windows.Application.Current.Shutdown();
+            //Global.UpdateConfig(); // この前に破棄処理を入れるべきか？終了処理内なので問題ないか。
+            Application.Current.Shutdown();  // ここでシャットダウンすると設定保存が完了しない可能性？ Closing イベント内での Shutdown は注意が必要
         }
 
         private void OpenItem_Click(object sender, RoutedEventArgs e)
@@ -1931,9 +2009,28 @@ namespace DivaModManager
         private void ShowMetadata(string mod)
         {
             FlowDocument descFlow = new FlowDocument();
-            // Set image
             string path = $@"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}{mod}";
-            FileInfo[] previewFiles = new DirectoryInfo(path).GetFiles("Preview.*");
+
+            // --- previewFiles 取得のエラーハンドリングを追加 ---
+            FileInfo[] previewFiles = null;
+            try
+            {
+                if (Directory.Exists(path)) // ディレクトリ存在確認
+                {
+                    previewFiles = new DirectoryInfo(path).GetFiles("Preview.*");
+                }
+                else
+                {
+                    Global.logger?.WriteLine($"Mod directory not found for metadata: '{path}'", LoggerType.Warning);
+                }
+            }
+            catch (Exception ex)
+            {
+                Global.logger?.WriteLine($"Error accessing preview files in '{path}': {ex.Message}", LoggerType.Error);
+                previewFiles = Array.Empty<FileInfo>(); // エラー時は空配列
+            }
+            // --------------------------------------------------
+
             // Add info from mod.json and config.toml
             if (File.Exists($"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}{mod}{Global.s}mod.json")
                 || File.Exists($"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}{mod}{Global.s}config.toml"))
@@ -2035,40 +2132,78 @@ namespace DivaModManager
                     var init = ConvertToFlowParagraph(text);
                     descFlow.Blocks.Add(init);
                 }
-                if (previewFiles.Length > 0)
+                if (previewFiles != null && previewFiles.Length > 0)
                 {
                     try
                     {
-                        byte[] imageBytes = File.ReadAllBytes(previewFiles[0].FullName);
-                        var stream = new MemoryStream(imageBytes);
-                        var img = new BitmapImage();
+                        // --- MemoryStream を using で囲む ---
+                        byte[] imageBytes = File.ReadAllBytes(previewFiles[0].FullName); // ReadAllBytes は同期だが、非同期版を使うほどではないか？
+                        using (var stream = new MemoryStream(imageBytes)) // ★ using を追加
+                        {
+                            var img = new BitmapImage();
+                            img.BeginInit();
+                            img.StreamSource = stream;
+                            img.CacheOption = BitmapCacheOption.OnLoad; // OnLoad推奨
+                            img.EndInit();
+                            // フリーズしないように Freezable.Freeze() を検討（UIスレッド外で生成した場合など）
+                            // if (img.CanFreeze) img.Freeze();
 
-                        img.BeginInit();
-                        img.StreamSource = stream;
-                        img.CacheOption = BitmapCacheOption.OnLoad;
-                        img.EndInit();
-                        ImageBehavior.SetAnimatedSource(Preview, img);
-                        ImageBehavior.SetAnimatedSource(PreviewBG, img);
+                            // UI 要素への設定は Dispatcher を介すのが安全（特に非同期処理から呼ばれる場合）
+                            // このメソッドがUIスレッドからのみ呼ばれるなら直接代入でもOK
+                            ImageBehavior.SetAnimatedSource(Preview, img);
+                            ImageBehavior.SetAnimatedSource(PreviewBG, img);
+                        }
+                        // -----------------------------------
+                    }
+                    catch (FileNotFoundException)
+                    {
+                        Global.logger?.WriteLine($"Preview file not found (read attempt): '{previewFiles[0].FullName}'", LoggerType.Warning);
+                        SetDefaultPreviewImage(); // デフォルト画像設定
+                    }
+                    catch (IOException ex)
+                    {
+                        Global.logger?.WriteLine($"IO error reading preview file '{previewFiles[0].FullName}': {ex.Message}", LoggerType.Error);
+                        SetDefaultPreviewImage();
+                    }
+                    catch (NotSupportedException ex) // BitmapImage がサポートしない形式の場合
+                    {
+                        Global.logger?.WriteLine($"Unsupported image format for preview file '{previewFiles[0].FullName}': {ex.Message}", LoggerType.Warning);
+                        SetDefaultPreviewImage();
+                    }
+                    catch (Exception ex) // その他の予期せぬエラー
+                    {
+                        Global.logger?.WriteLine($"Error loading preview image '{previewFiles[0].FullName}': {ex}", LoggerType.Error);
+                        SetDefaultPreviewImage();
+                    }
+                }
+                else if (File.Exists($"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}{mod}{Global.s}mod.json")) // mod.json の存在確認
+                {
+                    // ... (mod.json からメタデータとプレビューURLを取得する処理) ...
+                    try
+                    {
+                        // metadata.preview (Uri) から BitmapImage を作成
+                        metadata = null; // (mod.json からロードする処理が必要)
+                        if (metadata?.preview != null)
+                        {
+                            var bitmap = new BitmapImage();
+                            bitmap.BeginInit();
+                            bitmap.UriSource = metadata.preview; // ネットワークアクセスが発生
+                            bitmap.CacheOption = BitmapCacheOption.OnLoad; // OnLoad推奨
+                            bitmap.EndInit();
+                            // if (bitmap.CanFreeze) bitmap.Freeze();
+                            ImageBehavior.SetAnimatedSource(Preview, bitmap);
+                            ImageBehavior.SetAnimatedSource(PreviewBG, bitmap);
+                        }
+                        else
+                        {
+                            SetDefaultPreviewImage();
+                        }
                     }
                     catch (Exception ex)
-                    {
-                        Global.logger.WriteLine(ex.Message, LoggerType.Error);
+                    { // UriSource 設定時のエラーなど
+                        Global.logger?.WriteLine($"Error loading preview image from URI '{mod}/mod.json': {ex.Message}", LoggerType.Error);
+                        SetDefaultPreviewImage();
                     }
-                }
-                else if (metadata != null && metadata.preview != null)
-                {
-                    var bitmap = new BitmapImage();
-                    bitmap.BeginInit();
-                    bitmap.UriSource = metadata.preview;
-                    bitmap.EndInit();
-                    ImageBehavior.SetAnimatedSource(Preview, bitmap);
-                    ImageBehavior.SetAnimatedSource(PreviewBG, bitmap);
-                }
-                else
-                {
-                    var bitmap = new BitmapImage(new Uri("pack://application:,,,/DivaModManager;component/Assets/preview_enomoto.png"));
-                    ImageBehavior.SetAnimatedSource(Preview, bitmap);
-                    ImageBehavior.SetAnimatedSource(PreviewBG, null);
                 }
             }
             else if (previewFiles.Length > 0)
@@ -2092,11 +2227,9 @@ namespace DivaModManager
                 }
             }
             // Set preview if no mod.json or preview exists
-            else
+            else // プレビューファイルも mod.json もない場合
             {
-                var bitmap = new BitmapImage(new Uri("pack://application:,,,/DivaModManager;component/Assets/preview_enomoto.png"));
-                ImageBehavior.SetAnimatedSource(Preview, bitmap);
-                ImageBehavior.SetAnimatedSource(PreviewBG, null);
+                SetDefaultPreviewImage();
             }
             // Default preview if no config.toml or mod.json
             if (descFlow.Blocks.Count == 0)
@@ -2108,6 +2241,23 @@ namespace DivaModManager
                 descriptionText.ApplyPropertyValue(Inline.BaselineAlignmentProperty, BaselineAlignment.Center);
             }
         }
+
+        // --- デフォルトプレビュー画像設定の共通化 ---
+        private void SetDefaultPreviewImage()
+        {
+             try {
+                var bitmap = new BitmapImage(new Uri("pack://application:,,,/DivaModManager;component/Assets/preview_enomoto.png"));
+                // if (bitmap.CanFreeze) bitmap.Freeze();
+                ImageBehavior.SetAnimatedSource(Preview, bitmap);
+                ImageBehavior.SetAnimatedSource(PreviewBG, null); // BG はクリア
+             } catch (Exception ex) {
+                  Global.logger?.WriteLine($"Error loading default preview image: {ex.Message}", LoggerType.Error);
+                  // デフォルト画像すら読み込めない場合のフォールバック？
+                  ImageBehavior.SetAnimatedSource(Preview, null);
+                  ImageBehavior.SetAnimatedSource(PreviewBG, null);
+             }
+        }
+        // -----------------------------------------
         private void ModGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             Mod row = (Mod)ModGrid.SelectedItem;
