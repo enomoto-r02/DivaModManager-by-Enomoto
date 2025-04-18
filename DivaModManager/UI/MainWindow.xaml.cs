@@ -1474,6 +1474,8 @@ namespace DivaModManager
             ModGrid.Items.Refresh(); // ViewModelを使えば不要になる可能性
 
             await Task.Run(() => ModLoader.Build()); // 非同期化推奨
+
+            ModGrid.Focus();
         }
 
 
@@ -3340,6 +3342,11 @@ namespace DivaModManager
             else if (e.Key == Key.Enter)
             {
                 ExecConfigAction(sender, e);
+                e.Handled = true;
+            }
+            else if (e.Key == Key.F2)
+            {
+                RenameMod_Click(sender, e);
                 e.Handled = true;
             }
         }
