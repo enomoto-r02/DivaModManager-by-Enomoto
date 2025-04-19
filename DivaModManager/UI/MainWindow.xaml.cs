@@ -1982,35 +1982,9 @@ namespace DivaModManager
             InitSearchMod();
             SetColumnDisplayIndex();
             SetColumnVisible();
-            //Global.UpdateConfig(); // この前に破棄処理を入れるべきか？終了処理内なので問題ないか。
+            Global.UpdateConfig(); // この前に破棄処理を入れるべきか？終了処理内なので問題ないか。
             Application.Current.Shutdown();  // ここでシャットダウンすると設定保存が完了しない可能性？ Closing イベント内での Shutdown は注意が必要
         }
-
-        //private void OpenItem_Click(object sender, RoutedEventArgs e)
-        //{
-        //    var selectedMods = ModGrid.SelectedItems;
-        //    var temp = new Mod[selectedMods.Count];
-        //    selectedMods.CopyTo(temp, 0);
-        //    foreach (var row in temp)
-        //    {
-        //        if (row != null)
-        //        {
-        //            var folderName = $@"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}{row.name}";
-        //            if (Directory.Exists(folderName))
-        //            {
-        //                try
-        //                {
-        //                    Process process = Process.Start("explorer.exe", folderName);
-        //                    Global.logger.WriteLine($@"Opened {folderName}.", LoggerType.Info);
-        //                }
-        //                catch (Exception ex)
-        //                {
-        //                    Global.logger.WriteLine($@"Couldn't open {folderName}. ({ex.Message})", LoggerType.Error);
-        //                }
-        //            }
-        //        }
-        //    }
-        //}
 
         private void OpenItem_Click(object sender, RoutedEventArgs e)
         {
