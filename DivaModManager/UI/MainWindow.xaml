@@ -704,6 +704,7 @@
                             <ComboBoxItem Content="Priority"/>
                             <!--<ComboBoxItem Content="Name"/>-->
                             <ComboBoxItem Content="Category"/>
+                            <ComboBoxItem Content="Size"/>
                             <ComboBoxItem Content="Note"/>
                         </ComboBox>
                         <Grid x:Name="MiddleGrid" Grid.Row="2" Grid.ColumnSpan="8">
@@ -845,6 +846,7 @@
                                             </Style>
                                         </DataGridTextColumn.CellStyle>
                                     </DataGridTextColumn>
+                                    <DataGridTextColumn Header="Size" Binding="{Binding directorySizeString, Mode=TwoWay}" Width="0.5*" IsReadOnly="True" CanUserResize="True"/>
                                     <DataGridTextColumn Header="Note" Binding="{Binding note, Mode=TwoWay}" Width="1.5*" IsReadOnly="False" CanUserResize="True">
                                         <DataGridTextColumn.EditingElementStyle>
                                             <Style TargetType="TextBox">

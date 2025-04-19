@@ -26,6 +26,7 @@ namespace DivaModManager
             Priority,
             Name,
             Category,
+            Size,
             Note,
         }
 

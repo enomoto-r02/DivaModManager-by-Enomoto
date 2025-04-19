@@ -304,12 +304,10 @@ namespace DivaModManager
                 // Environment.Exit(1); // または Application.Current.Shutdown();
             }
         }
-
         // --- FileSystemWatcher と Timer の初期化・監視開始/停止メソッド ---
         private void InitializeFileSystemWatcherAndTimer()
         {
             DisposeWatcherAndTimer(); // 既存があれば破棄
-
             string modsFolder = Global.config.Configs[Global.config.CurrentGame].ModsFolder;
             if (!string.IsNullOrEmpty(modsFolder) && Directory.Exists(modsFolder))
             {
@@ -388,7 +386,6 @@ namespace DivaModManager
 
             _debounceTimer?.Dispose();
             _debounceTimer = null;
-
             ModsWatcher?.Dispose();
             ModsWatcher = null;
             //Global.logger.WriteLine($"Disposed watcher and timer.", LoggerType.Debug); // デバッグ用ログ
@@ -643,7 +640,6 @@ namespace DivaModManager
                         Global.logger.WriteLine($"Created missing config.toml for existing mod {modName}.", LoggerType.Info);
                     }
                 }
-
                 // config_e.toml, mod.json の読み込み (既存Modでも毎回読み込む)
                 await TryLoadExtendedConfigAsync(modEntry, configEPath);
                 await TryLoadModJsonAsync(modEntry, modJsonPath);
@@ -656,7 +652,6 @@ namespace DivaModManager
         private async Task TryUpdateModFromConfigAsync(Mod mod, string configPath, bool isNewMod)
         {
             TomlTable config = await TryReadTomlAsync(configPath); // 非同期ヘルパーを使用
-
             if (config == null)
             {
                 // 読み取り失敗 or 不正なファイル
@@ -792,6 +787,60 @@ namespace DivaModManager
             catch (Exception ex) // その他の予期せぬエラー
             {
                 Global.logger.WriteLine($"Unexpected error processing {modJsonPath}: {ex.Message}", LoggerType.Error);
+            }
+        }
+
+        /// <summary>
+        /// ディレクトリに存在しないModをGlobal.ModListから削除する
+        /// </summary>
+        private async Task RemoveDeletedModsAsync(HashSet<string> existingModNamesInDirectory)
+        {
+            // UIスレッドで実行する必要がある
+            await Application.Current.Dispatcher.InvokeAsync(() =>
+            {
+                // ToList() でコピーを作成してから反復処理
+                var modsToRemove = Global.ModList.Where(mod => !existingModNamesInDirectory.Contains(mod.name)).ToList();
+                foreach (var modToRemove in modsToRemove)
+                {
+                    Global.ModList.Remove(modToRemove); // ObservableCollectionからの削除はUIスレッドで
+                    Global.logger.WriteLine($"Deleted {modToRemove.name}", LoggerType.Info);
+                }
+            });
+        }
+
+        /// <summary>
+        /// UI要素（統計情報、ModGrid）の更新とModLoader.Buildの実行
+        /// </summary>
+        private async Task UpdateUIElementsAndBuildAsync()
+        {
+            // UI 更新 (UI スレッドで)
+            await Application.Current.Dispatcher.InvokeAsync(async () => // await をつける
+            {
+                ModGrid.ItemsSource = Global.ModList; // 再設定で変更を反映
+                ModGrid.Items.Refresh(); // またはこちら、ItemsSource再設定の方が確実な場合も
+                CategoryComboInit(0); // カテゴリコンボ更新
+
+                var currentModDirectory = Global.config.Configs[Global.config.CurrentGame].ModsFolder;
+                long totalFiles = 0;
+                long totalSize = 0;
+            }
+        }
+
+        /// <summary>
+        /// ディレクトリのサイズを読み込む
+        /// </summary>
+        private async Task TryLoadDirectorySizeAsync(Mod mod, string modDirectoryPath)
+        {
+            bool isDirectoryPath = await DirectoryExistsAsync(modDirectoryPath);
+            if (!isDirectoryPath) return; // ファイルがなければ何もしない
+
+            try
+            {
+                mod._directorySize = await GetDirectoriesSizeAsync(modDirectoryPath);
+            }
+            catch (Exception ex) // その他の予期せぬエラー
+            {
+                Global.logger.WriteLine($"Unexpected error processing in TryLoadDirectorySizeAsync at {modDirectoryPath}: {ex.Message}", LoggerType.Error);
             }
         }
 
@@ -983,6 +1032,70 @@ namespace DivaModManager
                     await Task.Run(() => Directory.CreateDirectory(dir));
                     Global.logger.WriteLine($"Created directory '{dir}'", LoggerType.Info);
                 }
+
+                var enabledCount = Global.ModList.Count(x => x.enabled); // これは高速
+                var totalCount = Global.ModList.Count; // これも高速
+
+                var stats = $"{enabledCount}/{totalCount} mods • {totalFiles:N0} files • {StringConverters.FormatSize(totalSize)}";
+                if (!String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].ModLoaderVersion))
+                    stats += $" • DML v{Global.config.Configs[Global.config.CurrentGame].ModLoaderVersion}";
+                stats += $" • DMM v{version}";
+                Stats.Text = stats; // UI要素の更新
+            });
+
+            // 設定保存 (同期のまま？ UpdateConfigが軽ければOK)
+            Global.UpdateConfig();
+
+            // ModLoader.Build (重い場合は Task.Run で非同期実行)
+            try
+            {
+                await Task.Run(() => ModLoader.Build());
+                // もし ModLoader.BuildAsync() があれば await ModLoader.BuildAsync();
+            }
+            catch (Exception ex)
+            {
+                Global.logger.WriteLine($"Error during ModLoader.Build: {ex}", LoggerType.Error);
+                // 必要に応じてユーザーに通知
+            }
+        }
+
+        #endregion
+
+        #region 非同期ファイル・ディレクトリ操作ヘルパー
+
+        private async Task<bool> FileExistsAsync(string path)
+        {
+            return await Task.Run(() => File.Exists(path));
+        }
+
+        private async Task<bool> DirectoryExistsAsync(string path)
+        {
+            return await Task.Run(() => Directory.Exists(path));
+        }
+
+        private async Task<string[]> GetDirectoriesAsync(string path)
+        {
+            try
+            {
+                return await Task.Run(() => Directory.GetDirectories(path));
+            }
+            catch (Exception ex)
+            {
+                Global.logger.WriteLine($"Error getting directories in {path}: {ex.Message}", LoggerType.Error);
+                return Array.Empty<string>(); // 空配列を返す
+            }
+        }
+
+        private async Task<long> GetDirectoriesSizeAsync(string path)
+        {
+            try
+            {
+                return await Task.Run(() => GetDirectorySize(new DirectoryInfo(path)));
+            }
+            catch (Exception ex)
+            {
+                Global.logger.WriteLine($"Error getting directories size in {path}: {ex.Message}", LoggerType.Error);
+                return -1; // -1を返すことでエラーを示す
             }
             catch (Exception ex)
             {
@@ -1262,7 +1375,6 @@ namespace DivaModManager
             }
         }
 
-
         //private async void CheckedCommon(object sender, RoutedEventArgs e, bool setEnabled)
         //{
         //    var checkMods = ModGrid.SelectedItems;
@@ -1388,7 +1500,6 @@ namespace DivaModManager
         //    }
         //}
 
-
         // UpdateModConfigToml は RefreshAsync 内のロジックに統合されたため不要になる可能性
         /*
         private void UpdateModConfigToml(Mod m, bool value)
@@ -1439,7 +1550,6 @@ namespace DivaModManager
         {
             var configPath_e = $"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}{m.name}{Global.s}config_e.toml";
             TomlTable config_e = await TryReadTomlAsync(configPath_e);
-
             bool needsWrite = false;
             if (config_e == null) // ファイルがないか読めない場合、新規作成
             {
@@ -1839,7 +1949,7 @@ namespace DivaModManager
                 }
             }
         }
-
+        
         #region その他のメソッドのエラーハンドリング改善例
 
         private async void DeleteItem_Click(object sender, RoutedEventArgs e)
@@ -1964,8 +2074,6 @@ namespace DivaModManager
                 }
             }
         }
-
-
         // RenameMod_Click での一時停止処理を変更
         private async void RenameMod_Click(object sender, RoutedEventArgs e)
         {
@@ -1995,6 +2103,7 @@ namespace DivaModManager
             ModGrid.Items.Refresh(); // ViewModelを使えば不要になる可能性
 
             await Task.Run(() => ModLoader.Build()); // 非同期化推奨
+            ModGrid.Focus();
         }
 
 
@@ -2089,6 +2198,11 @@ namespace DivaModManager
             if (e.Data.GetDataPresent(DataFormats.FileDrop))
             {
                 string[] fileList = (string[])e.Data.GetData(DataFormats.FileDrop, false);
+                foreach (var file in fileList)
+                {
+                    var filePath = Path.GetFileName(file);
+                    Global.logger.WriteLine($"Expanding the dropped file. [{filePath}]", LoggerType.Info);
+                }
                 await Task.Run(() => ExtractPackages(fileList));
             }
             DropBox.Visibility = Visibility.Collapsed;
@@ -2185,7 +2299,11 @@ namespace DivaModManager
                             MoveDirectory(folder, path);
                         }
                         if (Directory.Exists(tempDir))
+                        {
                             Directory.Delete(tempDir, true);
+                        }   
+                        // ドロップしたファイルを削除しないよう修正
+                        //File.Delete(_ArchiveSource);
                     }
                 }); // end Task.Run
             }
@@ -3951,6 +4069,7 @@ namespace DivaModManager
 
                 Global.logger.WriteLine($"Game switched to {Global.config.CurrentGame}", LoggerType.Info);
                 await RefreshAsync();
+
                 if (String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].ModsFolder)
                     || String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].Launcher) || !File.Exists(Global.config.Configs[Global.config.CurrentGame].Launcher))
                 {
@@ -4030,6 +4149,9 @@ namespace DivaModManager
                 case "Category":
                     SortByCategory();
                     break;
+                case "Size":
+                    SortBySize();
+                    break;
                 case "Note":
                     SortByNote();
                     break;
@@ -4056,6 +4178,11 @@ namespace DivaModManager
         private void SortByCategory()
         {
             SortByField(m => m.category, "Category");
+        }
+
+        private void SortBySize()
+        {
+            SortByField(m => m._directorySize.ToString(), "Size");
         }
 
         private void SortByNote()
@@ -4189,6 +4316,11 @@ namespace DivaModManager
             else if (e.Key == Key.Enter)
             {
                 ExecConfigAction(sender, e);
+                e.Handled = true;
+            }
+            else if (e.Key == Key.F2)
+            {
+                RenameMod_Click(sender, e);
                 e.Handled = true;
             }
         }
@@ -4381,6 +4513,9 @@ namespace DivaModManager
                 case "Category":
                     Global.config.CategoryColumnWidth = column.Width.DisplayValue;
                     break;
+                case "Size":
+                    Global.config.SizeColumnWidth = column.Width.DisplayValue;
+                    break;
                 case "Note":
                     Global.config.NoteColumnWidth = column.Width.DisplayValue;
                     break;
@@ -4391,7 +4526,7 @@ namespace DivaModManager
         {
             if (e.MouseDevice.DirectlyOver is not FrameworkElement elem) return;
             if (elem.Parent is not DataGridCell cell) return;
-            if (cell.Column.Header?.ToString() != "Name") return;
+            if (cell.Column.Header?.ToString() != "Name" && cell.Column.Header?.ToString() != "Size") return;
 
             ExecConfigAction(sender, e);
         }
@@ -4482,8 +4617,8 @@ namespace DivaModManager
 
             if (changed)
             {
-                // config_e.toml の更新 (非同期)
-                await UpdateModConfigToml_e(mod, columnHeader, newText);
+                // config_e.toml の更新 (同期)
+                UpdateModConfigToml_e(mod, columnHeader, newText);
                 // 必要であれば Global.UpdateConfig() や ModLoader.Build() も呼ぶが、
                 // RefreshAsync 内で実行されるため、ここでは不要かもしれない。
                 // ただし、即時反映が必要な場合は検討。
@@ -4569,6 +4704,9 @@ namespace DivaModManager
                     case "Category":
                         Global.config.CategoryColumnIndex = col.DisplayIndex;
                         break;
+                    case "Size":
+                        Global.config.SizeColumnIndex = col.DisplayIndex;
+                        break;
                     case "Note":
                         Global.config.NoteColumnIndex = col.DisplayIndex;
                         break;
@@ -4596,6 +4734,9 @@ namespace DivaModManager
                         break;
                     case "Category":
                         Global.config.CategoryColumnVisible = col.Visibility;
+                        break;
+                    case "Size":
+                        Global.config.SizeColumnVisible = col.Visibility;
                         break;
                     case "Note":
                         Global.config.NoteColumnVisible = col.Visibility;
@@ -4632,6 +4773,10 @@ namespace DivaModManager
                             break;
                         case "Category":
                             col = GetDataGridColumnByName(ModGrid, "Category");
+                            col.Visibility = col.Visibility == Visibility.Visible ? Visibility.Hidden : col.Visibility = Visibility.Visible;
+                            break;
+                        case "Size":
+                            col = GetDataGridColumnByName(ModGrid, "Size");
                             col.Visibility = col.Visibility == Visibility.Visible ? Visibility.Hidden : col.Visibility = Visibility.Visible;
                             break;
                         case "Note":
