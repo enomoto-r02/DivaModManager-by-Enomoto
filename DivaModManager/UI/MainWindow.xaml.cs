@@ -293,7 +293,7 @@ namespace DivaModManager
                     // 初期表示のために RefreshAsync を呼ぶ
                     if (await DirectoryExistsAsync(Global.config.Configs[Global.config.CurrentGame].ModsFolder)) // 非同期チェック
                     {
-                        await RefreshAsync();
+                        RefreshAsync();
                     }
                 });
             }
@@ -451,7 +451,7 @@ namespace DivaModManager
                 {
                     // Activate() や InitSearchMod() は Refresh の前後どちらで行うか検討
                     InitSearchMod(); // Mod検索状態をリセット
-                    await RefreshAsync();
+                    RefreshAsync();
                     // Activate(); // 必要であればウィンドウを前面に表示
                 });
             }
@@ -596,6 +596,7 @@ namespace DivaModManager
                 // config_e.toml, mod.json の読み込み (新規Modでも読み込む)
                 await TryLoadExtendedConfigAsync(modEntry, configEPath);
                 await TryLoadModJsonAsync(modEntry, modJsonPath);
+                await TryLoadDirectorySizeAsync(modEntry, modPath);
 
                 // ModListへの追加 (UIスレッドで実行)
                 await Application.Current.Dispatcher.InvokeAsync(() =>
@@ -643,6 +644,7 @@ namespace DivaModManager
                 // config_e.toml, mod.json の読み込み (既存Modでも毎回読み込む)
                 await TryLoadExtendedConfigAsync(modEntry, configEPath);
                 await TryLoadModJsonAsync(modEntry, modJsonPath);
+                await TryLoadDirectorySizeAsync(modEntry, modPath);
             }
         }
 
@@ -823,61 +825,6 @@ namespace DivaModManager
                 var currentModDirectory = Global.config.Configs[Global.config.CurrentGame].ModsFolder;
                 long totalFiles = 0;
                 long totalSize = 0;
-            }
-        }
-
-        /// <summary>
-        /// ディレクトリのサイズを読み込む
-        /// </summary>
-        private async Task TryLoadDirectorySizeAsync(Mod mod, string modDirectoryPath)
-        {
-            bool isDirectoryPath = await DirectoryExistsAsync(modDirectoryPath);
-            if (!isDirectoryPath) return; // ファイルがなければ何もしない
-
-            try
-            {
-                mod._directorySize = await GetDirectoriesSizeAsync(modDirectoryPath);
-            }
-            catch (Exception ex) // その他の予期せぬエラー
-            {
-                Global.logger.WriteLine($"Unexpected error processing in TryLoadDirectorySizeAsync at {modDirectoryPath}: {ex.Message}", LoggerType.Error);
-            }
-        }
-
-
-        /// <summary>
-        /// ディレクトリに存在しないModをGlobal.ModListから削除する
-        /// </summary>
-        private async Task RemoveDeletedModsAsync(HashSet<string> existingModNamesInDirectory)
-        {
-            // UIスレッドで実行する必要がある
-            await Application.Current.Dispatcher.InvokeAsync(() =>
-            {
-                // ToList() でコピーを作成してから反復処理
-                var modsToRemove = Global.ModList.Where(mod => !existingModNamesInDirectory.Contains(mod.name)).ToList();
-                foreach (var modToRemove in modsToRemove)
-                {
-                    Global.ModList.Remove(modToRemove); // ObservableCollectionからの削除はUIスレッドで
-                    Global.logger.WriteLine($"Deleted {modToRemove.name}", LoggerType.Info);
-                }
-            });
-        }
-
-        /// <summary>
-        /// UI要素（統計情報、ModGrid）の更新とModLoader.Buildの実行
-        /// </summary>
-        private async Task UpdateUIElementsAndBuildAsync()
-        {
-            // UI 更新 (UI スレッドで)
-            await Application.Current.Dispatcher.InvokeAsync(async () => // await をつける
-            {
-                ModGrid.ItemsSource = Global.ModList; // 再設定で変更を反映
-                ModGrid.Items.Refresh(); // またはこちら、ItemsSource再設定の方が確実な場合も
-                CategoryComboInit(0); // カテゴリコンボ更新
-
-                var currentModDirectory = Global.config.Configs[Global.config.CurrentGame].ModsFolder;
-                long totalFiles = 0;
-                long totalSize = 0;
 
                 if (await DirectoryExistsAsync(currentModDirectory)) // 非同期チェック
                 {
@@ -920,6 +867,34 @@ namespace DivaModManager
                 Global.logger.WriteLine($"Error during ModLoader.Build: {ex}", LoggerType.Error);
                 // 必要に応じてユーザーに通知
             }
+        }
+
+        /// <summary>
+        /// ディレクトリのサイズを読み込む
+        /// </summary>
+        private async Task TryLoadDirectorySizeAsync(Mod mod, string modDirectoryPath)
+        {
+            bool isDirectoryPath = await DirectoryExistsAsync(modDirectoryPath);
+            if (!isDirectoryPath) return; // ファイルがなければ何もしない
+
+            try
+            {
+                mod._directorySize = await GetDirectoriesSizeAsync(modDirectoryPath);
+            }
+            catch (Exception ex) // その他の予期せぬエラー
+            {
+                Global.logger.WriteLine($"Unexpected error processing in TryLoadDirectorySizeAsync at {modDirectoryPath}: {ex.Message}", LoggerType.Error);
+            }
+        }
+
+        private async Task<long> GetDirectorySize(DirectoryInfo dirInfo)
+        {
+            long DirectorySize = 0;
+            foreach (FileInfo fi in dirInfo.GetFiles())//フォルダ内の全ファイルを取得
+                DirectorySize += fi.Length;//フォルダ内の全ファイルのサイズを加算
+            foreach (DirectoryInfo di in dirInfo.GetDirectories())//サブフォルダを取得
+                DirectorySize += await GetDirectorySize(di);//サブフォルダのサイズを合算
+            return DirectorySize;
         }
 
         #endregion
@@ -1032,70 +1007,6 @@ namespace DivaModManager
                     await Task.Run(() => Directory.CreateDirectory(dir));
                     Global.logger.WriteLine($"Created directory '{dir}'", LoggerType.Info);
                 }
-
-                var enabledCount = Global.ModList.Count(x => x.enabled); // これは高速
-                var totalCount = Global.ModList.Count; // これも高速
-
-                var stats = $"{enabledCount}/{totalCount} mods • {totalFiles:N0} files • {StringConverters.FormatSize(totalSize)}";
-                if (!String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].ModLoaderVersion))
-                    stats += $" • DML v{Global.config.Configs[Global.config.CurrentGame].ModLoaderVersion}";
-                stats += $" • DMM v{version}";
-                Stats.Text = stats; // UI要素の更新
-            });
-
-            // 設定保存 (同期のまま？ UpdateConfigが軽ければOK)
-            Global.UpdateConfig();
-
-            // ModLoader.Build (重い場合は Task.Run で非同期実行)
-            try
-            {
-                await Task.Run(() => ModLoader.Build());
-                // もし ModLoader.BuildAsync() があれば await ModLoader.BuildAsync();
-            }
-            catch (Exception ex)
-            {
-                Global.logger.WriteLine($"Error during ModLoader.Build: {ex}", LoggerType.Error);
-                // 必要に応じてユーザーに通知
-            }
-        }
-
-        #endregion
-
-        #region 非同期ファイル・ディレクトリ操作ヘルパー
-
-        private async Task<bool> FileExistsAsync(string path)
-        {
-            return await Task.Run(() => File.Exists(path));
-        }
-
-        private async Task<bool> DirectoryExistsAsync(string path)
-        {
-            return await Task.Run(() => Directory.Exists(path));
-        }
-
-        private async Task<string[]> GetDirectoriesAsync(string path)
-        {
-            try
-            {
-                return await Task.Run(() => Directory.GetDirectories(path));
-            }
-            catch (Exception ex)
-            {
-                Global.logger.WriteLine($"Error getting directories in {path}: {ex.Message}", LoggerType.Error);
-                return Array.Empty<string>(); // 空配列を返す
-            }
-        }
-
-        private async Task<long> GetDirectoriesSizeAsync(string path)
-        {
-            try
-            {
-                return await Task.Run(() => GetDirectorySize(new DirectoryInfo(path)));
-            }
-            catch (Exception ex)
-            {
-                Global.logger.WriteLine($"Error getting directories size in {path}: {ex.Message}", LoggerType.Error);
-                return -1; // -1を返すことでエラーを示す
             }
             catch (Exception ex)
             {
@@ -1135,6 +1046,46 @@ namespace DivaModManager
                 }
             }
             return false; // リトライ失敗
+        }
+
+        #endregion
+
+        #region 非同期ファイル・ディレクトリ操作ヘルパー
+
+        //private async Task<bool> FileExistsAsync(string path)
+        //{
+        //    return await Task.Run(() => File.Exists(path));
+        //}
+
+        //private async Task<bool> DirectoryExistsAsync(string path)
+        //{
+        //    return await Task.Run(() => Directory.Exists(path));
+        //}
+
+        //private async Task<string[]> GetDirectoriesAsync(string path)
+        //{
+        //    try
+        //    {
+        //        return await Task.Run(() => Directory.GetDirectories(path));
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Global.logger.WriteLine($"Error getting directories in {path}: {ex.Message}", LoggerType.Error);
+        //        return Array.Empty<string>(); // 空配列を返す
+        //    }
+        //}
+
+        private async Task<long> GetDirectoriesSizeAsync(string path)
+        {
+            try
+            {
+                return await Task.Run(() => GetDirectorySize(new DirectoryInfo(path)));
+            }
+            catch (Exception ex)
+            {
+                Global.logger.WriteLine($"Error getting directories size in {path}: {ex.Message}", LoggerType.Error);
+                return -1; // -1を返すことでエラーを示す
+            }
         }
 
         private async Task<TomlTable> TryReadTomlAsync(string path)
@@ -1719,7 +1670,7 @@ namespace DivaModManager
                     {
                         InitializeFileSystemWatcherAndTimer();
                         StartWatching();
-                        await RefreshAsync();
+                        RefreshAsync();
                         LaunchButton.IsEnabled = true;
                     });
                 }
@@ -3882,7 +3833,7 @@ namespace DivaModManager
 
                 Global.ModList = Global.config.Configs[Global.config.CurrentGame].Loadouts[Global.config.Configs[Global.config.CurrentGame].CurrentLoadout];
                 UpdateSearchMod();
-                await RefreshAsync();
+                RefreshAsync();
                 Global.logger.WriteLine($"Loadout changed to {LoadoutBox.SelectedItem}", LoggerType.Info);
                 // ModLoader.Build は RefreshAsync 内で実行されるように変更済み
             }
@@ -4068,7 +4019,7 @@ namespace DivaModManager
                 // -------------------------------------------------------
 
                 Global.logger.WriteLine($"Game switched to {Global.config.CurrentGame}", LoggerType.Info);
-                await RefreshAsync();
+                RefreshAsync();
 
                 if (String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].ModsFolder)
                     || String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].Launcher) || !File.Exists(Global.config.Configs[Global.config.CurrentGame].Launcher))
