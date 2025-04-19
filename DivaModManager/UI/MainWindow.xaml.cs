@@ -1,7 +1,6 @@
 ﻿using DivaModManager.UI;
 using GongSolutions.Wpf.DragDrop.Utilities;
 using SharpCompress.Archives;
-using SharpCompress.Archives.SevenZip; // SharpCompress 例外用
 using SharpCompress.Common;
 using SharpCompress.Readers;
 using System;
@@ -23,10 +22,8 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 using Tomlyn; // Tomlyn 例外用 (具体的な例外クラスがあれば指定)
 using Tomlyn.Model;
-using Tomlyn.Syntax; // Tomlyn SyntaxErrorException 用 (もし使うなら)
 using WpfAnimatedGif;
 
 namespace DivaModManager
@@ -1119,42 +1116,278 @@ namespace DivaModManager
                 CheckedCommon(sender, e, false);
             }
         }
+
+        // --- UpdateModConfigToml を非同期化し、ヘルパーを使用 ---
+        private async Task UpdateModConfigTomlAsync(Mod m, bool value)
+        {
+            var configPath = System.IO.Path.Combine(Global.config.Configs[Global.config.CurrentGame].ModsFolder, m.name, "config.toml");
+
+            TomlTable config = await TryReadTomlAsync(configPath);
+            bool needsWrite = false;
+
+            if (config == null) // ファイルがないか読めない場合
+            {
+                // ユーザー確認処理 (ConfirmConfigCreation) を呼び出すべきか？
+                // CheckedCommon で状態が変更された直後なので、ファイルが存在しない場合は作成するのが自然か。
+                bool createConfig = false;
+                await Application.Current.Dispatcher.InvokeAsync(() =>
+                {
+                    if (!IsWindowOpen<ChoiceWindow>())
+                    {
+                        createConfig = ConfirmConfigCreation(configPath, m, value); // 新しい enabled 値で確認
+                    }
+                });
+
+                if (createConfig)
+                {
+                    config = new TomlTable { { "enabled", value } };
+                    AddInclude(config);
+                    needsWrite = true;
+                    Global.logger?.WriteLine($"Creating config.toml for {m.name} with enabled={value}.", LoggerType.Info);
+                }
+                else
+                {
+                    Global.logger?.WriteLine($"Config.toml not found or user chose not to create for {m.name}. Cannot update.", LoggerType.Warning);
+                    return; // 書き込み不可
+                }
+            }
+            else // ファイルが存在する場合
+            {
+                // enabled 値を更新
+                if (!config.ContainsKey("enabled") || (bool)config["enabled"] != value)
+                {
+                    config["enabled"] = value;
+                    needsWrite = true;
+                }
+                // include がなければ追加
+                if (!config.ContainsKey("include"))
+                {
+                    AddInclude(config);
+                    needsWrite = true;
+                }
+            }
+
+            if (needsWrite)
+            {
+                await TryWriteTomlAsync(configPath, config);
+            }
+        }
+        // ----------------------------------------------------
+
+        // --- CheckedCommon を async void に変更し、UpdateModConfigTomlAsync を呼び出す ---
         private async void CheckedCommon(object sender, RoutedEventArgs e, bool setEnabled)
         {
-            var checkMods = ModGrid.SelectedItems;
-            if (checkMods != null)
+            var checkMods = ModGrid.SelectedItems.OfType<Mod>().ToList(); // 型安全に
+            if (!checkMods.Any()) return; // 選択されていない場合は何もしない
+
+            bool configChanged = false;
+            List<Task> updateTasks = new List<Task>();
+
+            // Global.ModList の更新は UI スレッドで行うのが安全
+            await Application.Current.Dispatcher.InvokeAsync(() =>
             {
-                List<Mod> temp = Global.config.Configs[Global.config.CurrentGame].Loadouts[Global.config.Configs[Global.config.CurrentGame].CurrentLoadout].ToList();
-                foreach (var m in temp)
+                // ToList() でコピーを作成するか、インデックスでアクセス
+                foreach (Mod checkMod in checkMods)
                 {
-                    foreach (Mod checkMod in checkMods)
+                    // Global.ModList から対応する Mod を検索 (Name が一意である前提)
+                    var modInList = Global.ModList.FirstOrDefault(m => m.name == checkMod.name);
+                    if (modInList != null && modInList.selected) // selected フラグを確認
                     {
-                        if (m.name == checkMod.name)
+                        if (modInList.enabled != setEnabled)
                         {
-                            if (m.selected)
-                            {
-                                m.enabled = setEnabled;
-                                //UpdateModConfigToml(checkMod, setEnabled);
-                                RefreshAsync(); // 同期させるためawaitはなし
-                            }
+                            modInList.enabled = setEnabled;
+                            // UpdateModConfigTomlAsync を呼び出す Task をリストに追加
+                            updateTasks.Add(UpdateModConfigTomlAsync(modInList, setEnabled)); // 名前変更＆非同期化
+                            configChanged = true;
                         }
                     }
                 }
-                Global.config.Configs[Global.config.CurrentGame].Loadouts[Global.config.Configs[Global.config.CurrentGame].CurrentLoadout] = new ObservableCollection<Mod>(temp);
-                Global.UpdateConfig();
-                await Task.Run(() => ModLoader.Build());
+                // Global.ModList の内容が変更された場合、UIに反映させる必要がある
+                // ModGrid.Items.Refresh(); // データバインディングが正しく機能していれば不要な場合も
+            });
 
-                App.Current.Dispatcher.Invoke((Action)delegate
+
+            if (configChanged)
+            {
+                // --- config.toml の更新を並行して待機 ---
+                try
                 {
-                    var stats = $"{Global.ModList.ToList().Where(x => x.enabled).ToList().Count}/{Global.ModList.Count} mods • {Directory.GetFiles(Global.config.Configs[Global.config.CurrentGame].ModsFolder, "*", SearchOption.AllDirectories).Length.ToString("N0")} files • " +
-                    $"{StringConverters.FormatSize(new DirectoryInfo(Global.config.Configs[Global.config.CurrentGame].ModsFolder).GetDirectorySize())}";
-                    if (!String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].ModLoaderVersion))
-                        stats += $" • DML v{Global.config.Configs[Global.config.CurrentGame].ModLoaderVersion}";
-                    stats += $" • DMM v{version}";
-                    Stats.Text = stats;
+                    await Task.WhenAll(updateTasks);
+                }
+                catch (Exception ex)
+                {
+                    // WhenAll で集約された例外処理
+                    Global.logger?.WriteLine($"Error(s) occurred while updating mod config files: {ex}", LoggerType.Error);
+                    // 必要ならユーザーに通知
+                }
+                // ------------------------------------
+
+                // Global.config の更新 (これは同期で良いか？)
+                Global.UpdateConfig();
+
+                // ModLoader.Build (RefreshAsync 内でも呼ばれるが、即時反映が必要な場合)
+                try
+                {
+                    await Task.Run(() => ModLoader.Build());
+                }
+                catch (Exception ex)
+                {
+                    Global.logger?.WriteLine($"Error during ModLoader.Build after CheckedCommon: {ex}", LoggerType.Error);
+                }
+
+
+                // 統計情報の更新 (UI スレッドで)
+                await Application.Current.Dispatcher.InvokeAsync(() =>
+                {
+                    // UpdateUIElementsAndBuildAsync 内の統計更新ロジックを再利用するのが理想
+                    // ここでは簡易的に実装
+                    try
+                    {
+                        var currentModDirectory = Global.config.Configs[Global.config.CurrentGame].ModsFolder;
+                        long totalFiles = Directory.Exists(currentModDirectory) ? Directory.GetFiles(currentModDirectory, "*", SearchOption.AllDirectories).Length : 0;
+                        long totalSize = Directory.Exists(currentModDirectory) ? new DirectoryInfo(currentModDirectory).GetDirectorySize() : 0; // 同期処理注意
+                        var enabledCount = Global.ModList.Count(x => x.enabled);
+                        var totalCount = Global.ModList.Count;
+                        var stats = $"{enabledCount}/{totalCount} mods • {totalFiles:N0} files • {StringConverters.FormatSize(totalSize)}";
+                        if (!String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].ModLoaderVersion))
+                            stats += $" • DML v{Global.config.Configs[Global.config.CurrentGame].ModLoaderVersion}";
+                        stats += $" • DMM v{version}";
+                        Stats.Text = stats;
+                    }
+                    catch (Exception ex)
+                    {
+                        Global.logger?.WriteLine($"Error updating stats after CheckedCommon: {ex.Message}", LoggerType.Warning);
+                    }
                 });
             }
         }
+
+
+        //private async void CheckedCommon(object sender, RoutedEventArgs e, bool setEnabled)
+        //{
+        //    var checkMods = ModGrid.SelectedItems;
+        //    if (checkMods != null)
+        //    {
+        //        List<Mod> temp = Global.config.Configs[Global.config.CurrentGame].Loadouts[Global.config.Configs[Global.config.CurrentGame].CurrentLoadout].ToList();
+        //        foreach (var m in temp)
+        //        {
+        //            foreach (Mod checkMod in checkMods)
+        //            {
+        //                if (m.name == checkMod.name)
+        //                {
+        //                    if (m.selected)
+        //                    {
+        //                        m.enabled = setEnabled;
+        //                        //UpdateModConfigToml(checkMod, setEnabled);
+        //                        RefreshAsync(); // 同期させるためawaitはなし
+        //                    }
+        //                }
+        //            }
+        //        }
+        //        Global.config.Configs[Global.config.CurrentGame].Loadouts[Global.config.Configs[Global.config.CurrentGame].CurrentLoadout] = new ObservableCollection<Mod>(temp);
+        //        Global.UpdateConfig();
+        //        await Task.Run(() => ModLoader.Build());
+
+        //        App.Current.Dispatcher.Invoke((Action)delegate
+        //        {
+        //            var stats = $"{Global.ModList.ToList().Where(x => x.enabled).ToList().Count}/{Global.ModList.Count} mods • {Directory.GetFiles(Global.config.Configs[Global.config.CurrentGame].ModsFolder, "*", SearchOption.AllDirectories).Length.ToString("N0")} files • " +
+        //            $"{StringConverters.FormatSize(new DirectoryInfo(Global.config.Configs[Global.config.CurrentGame].ModsFolder).GetDirectorySize())}";
+        //            if (!String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].ModLoaderVersion))
+        //                stats += $" • DML v{Global.config.Configs[Global.config.CurrentGame].ModLoaderVersion}";
+        //            stats += $" • DMM v{version}";
+        //            Stats.Text = stats;
+        //        });
+        //    }
+        //}
+
+        //// --- CheckedCommon を async void に変更し、UpdateModConfigTomlAsync を呼び出す ---
+        //private async void CheckedCommon(object sender, RoutedEventArgs e, bool setEnabled)
+        //{
+        //    var checkMods = ModGrid.SelectedItems.OfType<Mod>().ToList(); // 型安全に
+        //    if (!checkMods.Any()) return; // 選択されていない場合は何もしない
+
+        //    bool configChanged = false;
+        //    List<Task> updateTasks = new List<Task>();
+
+        //    // Global.ModList の更新は UI スレッドで行うのが安全
+        //    await Application.Current.Dispatcher.InvokeAsync(() =>
+        //    {
+        //        // ToList() でコピーを作成するか、インデックスでアクセス
+        //        foreach (Mod checkMod in checkMods)
+        //        {
+        //            // Global.ModList から対応する Mod を検索 (Name が一意である前提)
+        //            var modInList = Global.ModList.FirstOrDefault(m => m.name == checkMod.name);
+        //            if (modInList != null && modInList.selected) // selected フラグを確認
+        //            {
+        //                if (modInList.enabled != setEnabled)
+        //                {
+        //                    modInList.enabled = setEnabled;
+        //                    // UpdateModConfigTomlAsync を呼び出す Task をリストに追加
+        //                    updateTasks.Add(UpdateModConfigTomlAsync(modInList, setEnabled)); // 名前変更＆非同期化
+        //                    configChanged = true;
+        //                }
+        //            }
+        //        }
+        //        // Global.ModList の内容が変更された場合、UIに反映させる必要がある
+        //        // ModGrid.Items.Refresh(); // データバインディングが正しく機能していれば不要な場合も
+        //    });
+
+
+        //    if (configChanged)
+        //    {
+        //        // --- config.toml の更新を並行して待機 ---
+        //        try
+        //        {
+        //            await Task.WhenAll(updateTasks);
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            // WhenAll で集約された例外処理
+        //            Global.logger?.WriteLine($"Error(s) occurred while updating mod config files: {ex}", LoggerType.Error);
+        //            // 必要ならユーザーに通知
+        //        }
+        //        // ------------------------------------
+
+        //        // Global.config の更新 (これは同期で良いか？)
+        //        Global.UpdateConfig();
+
+        //        // ModLoader.Build (RefreshAsync 内でも呼ばれるが、即時反映が必要な場合)
+        //        try
+        //        {
+        //            await Task.Run(() => ModLoader.Build());
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            Global.logger?.WriteLine($"Error during ModLoader.Build after CheckedCommon: {ex}", LoggerType.Error);
+        //        }
+
+
+        //        // 統計情報の更新 (UI スレッドで)
+        //        await Application.Current.Dispatcher.InvokeAsync(() =>
+        //        {
+        //            // UpdateUIElementsAndBuildAsync 内の統計更新ロジックを再利用するのが理想
+        //            // ここでは簡易的に実装
+        //            try
+        //            {
+        //                var currentModDirectory = Global.config.Configs[Global.config.CurrentGame].ModsFolder;
+        //                long totalFiles = Directory.Exists(currentModDirectory) ? Directory.GetFiles(currentModDirectory, "*", SearchOption.AllDirectories).Length : 0;
+        //                long totalSize = Directory.Exists(currentModDirectory) ? new DirectoryInfo(currentModDirectory).GetDirectorySize() : 0; // 同期処理注意
+        //                var enabledCount = Global.ModList.Count(x => x.enabled);
+        //                var totalCount = Global.ModList.Count;
+        //                var stats = $"{enabledCount}/{totalCount} mods • {totalFiles:N0} files • {StringConverters.FormatSize(totalSize)}";
+        //                if (!String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].ModLoaderVersion))
+        //                    stats += $" • DML v{Global.config.Configs[Global.config.CurrentGame].ModLoaderVersion}";
+        //                stats += $" • DMM v{version}";
+        //                Stats.Text = stats;
+        //            }
+        //            catch (Exception ex)
+        //            {
+        //                Global.logger?.WriteLine($"Error updating stats after CheckedCommon: {ex.Message}", LoggerType.Warning);
+        //            }
+        //        });
+        //    }
+        //}
+
 
         // UpdateModConfigToml は RefreshAsync 内のロジックに統合されたため不要になる可能性
         /*
@@ -1425,94 +1658,136 @@ namespace DivaModManager
             else
                 Global.logger.WriteLine($"Please click Setup before launching!", LoggerType.Warning);
         }
+        //private void Github_Click(object sender, RoutedEventArgs e)
+        //{
+        //    try
+        //    {
+        //        var ps = new ProcessStartInfo($"https://github.com/enomoto-r02/DivaModManager-by-Enomoto/releases")
+        //        {
+        //            UseShellExecute = true,
+        //            Verb = "open"
+        //        };
+        //        Process.Start(ps);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Global.logger.WriteLine($"Couldn't open up Github ({ex.Message})", LoggerType.Error);
+        //    }
+        //}
+        //private void GameBanana_Click(object sender, RoutedEventArgs e)
+        //{
+        //    var id = "";
+        //    switch ((GameFilter)GameFilterBox.SelectedIndex)
+        //    {
+        //        case GameFilter.MMP:
+        //            id = "16522";
+        //            break;
+        //    }
+        //    try
+        //    {
+        //        var ps = new ProcessStartInfo($"https://gamebanana.com/games/{id}")
+        //        {
+        //            UseShellExecute = true,
+        //            Verb = "open"
+        //        };
+        //        Process.Start(ps);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Global.logger.WriteLine($"Couldn't open up GameBanana ({ex.Message})", LoggerType.Error);
+        //    }
+        //}
+        //private void DMA_Click(object sender, RoutedEventArgs e)
+        //{
+        //    try
+        //    {
+        //        var ps = new ProcessStartInfo($"https://divamodarchive.com")
+        //        {
+        //            UseShellExecute = true,
+        //            Verb = "open"
+        //        };
+        //        Process.Start(ps);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Global.logger.WriteLine($"Couldn't open up DivaModArchive ({ex.Message})", LoggerType.Error);
+        //    }
+        //}
+        //private void DMADonate_Click(object sender, RoutedEventArgs e)
+        //{
+        //    try
+        //    {
+        //        var ps = new ProcessStartInfo($"https://ko-fi.com/brogamer")
+        //        {
+        //            UseShellExecute = true,
+        //            Verb = "open"
+        //        };
+        //        Process.Start(ps);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Global.logger.WriteLine($"Couldn't open up Ko-Fi ({ex.Message})", LoggerType.Error);
+        //    }
+        //}
+        //private void Discord_Click(object sender, RoutedEventArgs e)
+        //{
+        //    try
+        //    {
+        //        var discordLink = "https://discord.gg/cvBVGDZ";
+        //        var ps = new ProcessStartInfo(discordLink)
+        //        {
+        //            UseShellExecute = true,
+        //            Verb = "open"
+        //        };
+        //        Process.Start(ps);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Global.logger.WriteLine(ex.Message, LoggerType.Error);
+        //    }
+        //}
+
+        // --- 各種クリックイベントハンドラで TryStartProcess を使用 ---
         private void Github_Click(object sender, RoutedEventArgs e)
         {
-            try
-            {
-                var ps = new ProcessStartInfo($"https://github.com/enomoto-r02/DivaModManager-by-Enomoto/releases")
-                {
-                    UseShellExecute = true,
-                    Verb = "open"
-                };
-                Process.Start(ps);
-            }
-            catch (Exception ex)
-            {
-                Global.logger.WriteLine($"Couldn't open up Github ({ex.Message})", LoggerType.Error);
-            }
+            TryStartProcess($"https://github.com/enomoto-r02/DivaModManager-by-Enomoto/releases");
         }
+
         private void GameBanana_Click(object sender, RoutedEventArgs e)
         {
             var id = "";
-            switch ((GameFilter)GameFilterBox.SelectedIndex)
+            // GameFilterBox.SelectedIndex を使うべき？ GameBox ではなく
+            switch ((GameFilter)GameFilterBox.SelectedIndex) // GameFilterBox を使う
             {
-                case GameFilter.MMP:
-                    id = "16522";
-                    break;
+                case GameFilter.MMP: id = "16522"; break;
+                    // 他のゲームIDがあれば追加
             }
-            try
+            if (!string.IsNullOrEmpty(id))
             {
-                var ps = new ProcessStartInfo($"https://gamebanana.com/games/{id}")
-                {
-                    UseShellExecute = true,
-                    Verb = "open"
-                };
-                Process.Start(ps);
+                TryStartProcess($"https://gamebanana.com/games/{id}");
             }
-            catch (Exception ex)
+            else
             {
-                Global.logger.WriteLine($"Couldn't open up GameBanana ({ex.Message})", LoggerType.Error);
+                Global.logger?.WriteLine($"GameBanana link not configured for selected game index: {GameFilterBox.SelectedIndex}", LoggerType.Warning);
             }
         }
         private void DMA_Click(object sender, RoutedEventArgs e)
         {
-            try
-            {
-                var ps = new ProcessStartInfo($"https://divamodarchive.com")
-                {
-                    UseShellExecute = true,
-                    Verb = "open"
-                };
-                Process.Start(ps);
-            }
-            catch (Exception ex)
-            {
-                Global.logger.WriteLine($"Couldn't open up DivaModArchive ({ex.Message})", LoggerType.Error);
-            }
+            TryStartProcess($"https://divamodarchive.com");
         }
+
         private void DMADonate_Click(object sender, RoutedEventArgs e)
         {
-            try
-            {
-                var ps = new ProcessStartInfo($"https://ko-fi.com/brogamer")
-                {
-                    UseShellExecute = true,
-                    Verb = "open"
-                };
-                Process.Start(ps);
-            }
-            catch (Exception ex)
-            {
-                Global.logger.WriteLine($"Couldn't open up Ko-Fi ({ex.Message})", LoggerType.Error);
-            }
+            TryStartProcess($"https://ko-fi.com/brogamer");
         }
+
         private void Discord_Click(object sender, RoutedEventArgs e)
         {
-            try
-            {
-                var discordLink = "https://discord.gg/cvBVGDZ";
-                var ps = new ProcessStartInfo(discordLink)
-                {
-                    UseShellExecute = true,
-                    Verb = "open"
-                };
-                Process.Start(ps);
-            }
-            catch (Exception ex)
-            {
-                Global.logger.WriteLine(ex.Message, LoggerType.Error);
-            }
+            var discordLink = "https://discord.gg/cvBVGDZ"; // 定数にする方が良いかも
+            TryStartProcess(discordLink);
         }
+
+
         private void ScrollToBottom(object sender, TextChangedEventArgs args)
         {
             ConsoleWindow.ScrollToEnd();
@@ -1646,31 +1921,51 @@ namespace DivaModManager
             Application.Current.Shutdown();  // ここでシャットダウンすると設定保存が完了しない可能性？ Closing イベント内での Shutdown は注意が必要
         }
 
+        //private void OpenItem_Click(object sender, RoutedEventArgs e)
+        //{
+        //    var selectedMods = ModGrid.SelectedItems;
+        //    var temp = new Mod[selectedMods.Count];
+        //    selectedMods.CopyTo(temp, 0);
+        //    foreach (var row in temp)
+        //    {
+        //        if (row != null)
+        //        {
+        //            var folderName = $@"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}{row.name}";
+        //            if (Directory.Exists(folderName))
+        //            {
+        //                try
+        //                {
+        //                    Process process = Process.Start("explorer.exe", folderName);
+        //                    Global.logger.WriteLine($@"Opened {folderName}.", LoggerType.Info);
+        //                }
+        //                catch (Exception ex)
+        //                {
+        //                    Global.logger.WriteLine($@"Couldn't open {folderName}. ({ex.Message})", LoggerType.Error);
+        //                }
+        //            }
+        //        }
+        //    }
+        //}
+
         private void OpenItem_Click(object sender, RoutedEventArgs e)
         {
-            var selectedMods = ModGrid.SelectedItems;
-            var temp = new Mod[selectedMods.Count];
-            selectedMods.CopyTo(temp, 0);
-            foreach (var row in temp)
+            var selectedMods = ModGrid.SelectedItems.OfType<Mod>().ToList();
+            foreach (var row in selectedMods)
             {
-                if (row != null)
+                string folderName = System.IO.Path.Combine(Global.config.Configs[Global.config.CurrentGame].ModsFolder, row.name);
+                // TryStartProcess はフォルダも開けるはず
+                if (Directory.Exists(folderName))
+                { // 存在確認は行う
+                    TryStartProcess(folderName);
+                }
+                else
                 {
-                    var folderName = $@"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}{row.name}";
-                    if (Directory.Exists(folderName))
-                    {
-                        try
-                        {
-                            Process process = Process.Start("explorer.exe", folderName);
-                            Global.logger.WriteLine($@"Opened {folderName}.", LoggerType.Info);
-                        }
-                        catch (Exception ex)
-                        {
-                            Global.logger.WriteLine($@"Couldn't open {folderName}. ({ex.Message})", LoggerType.Error);
-                        }
-                    }
+                    Global.logger?.WriteLine($"Directory not found: '{folderName}'. Cannot open.", LoggerType.Warning);
                 }
             }
         }
+
+
         // RenameMod_Click での一時停止処理を変更
         private async void RenameMod_Click(object sender, RoutedEventArgs e)
         {
@@ -1965,48 +2260,48 @@ namespace DivaModManager
                 IsEnabledControls(true);
             });
         }
-        private Paragraph ConvertToFlowParagraph(string text)
-        {
-            var flowDocument = new FlowDocument();
+        //private Paragraph ConvertToFlowParagraph(string text)
+        //{
+        //    var flowDocument = new FlowDocument();
 
-            var regex = new Regex(@"(https?:\/\/[^\s]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-            var matches = regex.Matches(text).Cast<Match>().Select(m => m.Value).ToList();
+        //    var regex = new Regex(@"(https?:\/\/[^\s]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        //    var matches = regex.Matches(text).Cast<Match>().Select(m => m.Value).ToList();
 
-            var paragraph = new Paragraph();
-            flowDocument.Blocks.Add(paragraph);
+        //    var paragraph = new Paragraph();
+        //    flowDocument.Blocks.Add(paragraph);
 
 
-            foreach (var segment in regex.Split(text))
-            {
-                if (matches.Contains(segment))
-                {
-                    var hyperlink = new Hyperlink(new Run(segment))
-                    {
-                        NavigateUri = new Uri(segment),
-                    };
+        //    foreach (var segment in regex.Split(text))
+        //    {
+        //        if (matches.Contains(segment))
+        //        {
+        //            var hyperlink = new Hyperlink(new Run(segment))
+        //            {
+        //                NavigateUri = new Uri(segment),
+        //            };
 
-                    hyperlink.RequestNavigate += (sender, args) =>
-                    {
-                        var ps = new ProcessStartInfo(segment)
-                        {
-                            UseShellExecute = true,
-                            Verb = "open"
-                        };
-                        Process.Start(ps);
-                    };
+        //            hyperlink.RequestNavigate += (sender, args) =>
+        //            {
+        //                var ps = new ProcessStartInfo(segment)
+        //                {
+        //                    UseShellExecute = true,
+        //                    Verb = "open"
+        //                };
+        //                Process.Start(ps);
+        //            };
 
-                    paragraph.Inlines.Add(hyperlink);
-                }
-                else
-                {
-                    paragraph.Inlines.Add(new Run(segment));
-                }
-            }
+        //            paragraph.Inlines.Add(hyperlink);
+        //        }
+        //        else
+        //        {
+        //            paragraph.Inlines.Add(new Run(segment));
+        //        }
+        //    }
 
-            return paragraph;
-        }
+        //    return paragraph;
+        //}
 
-        private void ShowMetadata(string mod)
+        private async Task ShowMetadata(string mod)
         {
             FlowDocument descFlow = new FlowDocument();
             string path = $@"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}{mod}";
@@ -2136,36 +2431,53 @@ namespace DivaModManager
                 {
                     try
                     {
-                        // --- MemoryStream を using で囲む ---
-                        byte[] imageBytes = File.ReadAllBytes(previewFiles[0].FullName); // ReadAllBytes は同期だが、非同期版を使うほどではないか？
-                        using (var stream = new MemoryStream(imageBytes)) // ★ using を追加
-                        {
-                            var img = new BitmapImage();
-                            img.BeginInit();
-                            img.StreamSource = stream;
-                            img.CacheOption = BitmapCacheOption.OnLoad; // OnLoad推奨
-                            img.EndInit();
-                            // フリーズしないように Freezable.Freeze() を検討（UIスレッド外で生成した場合など）
-                            // if (img.CanFreeze) img.Freeze();
+                        string imagePath = previewFiles[0].FullName; // ファイルのフルパスを取得
 
-                            // UI 要素への設定は Dispatcher を介すのが安全（特に非同期処理から呼ばれる場合）
-                            // このメソッドがUIスレッドからのみ呼ばれるなら直接代入でもOK
+                        // --- MemoryStream を使わずに UriSource で直接読み込む ---
+                        var img = new BitmapImage();
+                        img.BeginInit();
+                        // UriSource にファイルパスを設定 (絶対パスを指定)
+                        img.UriSource = new Uri(imagePath, UriKind.Absolute);
+                        // CacheOption は OnLoad のまま推奨 (読み込み完了後にファイルを解放するため)
+                        img.CacheOption = BitmapCacheOption.OnLoad;
+                        // DecodePixelWidth/Height を設定するとメモリ効率が良くなる場合がある (任意)
+                        // img.DecodePixelWidth = (int)Preview.ActualWidth; // または固定値
+                        img.EndInit();
+
+                        // Freeze すると別スレッドからのアクセスでも安全になる場合がある
+                        if (img.CanFreeze)
+                        {
+                            img.Freeze();
+                        }
+                        // ----------------------------------------------------
+
+                        // UI 要素への設定 (Dispatcher経由がより安全)
+                        await Dispatcher.InvokeAsync(() => {
+                            // WpfAnimatedGif を使う場合
                             ImageBehavior.SetAnimatedSource(Preview, img);
                             ImageBehavior.SetAnimatedSource(PreviewBG, img);
-                        }
-                        // -----------------------------------
+
+                            // または標準の Source を使う場合 (診断ステップ2の検証を確実に行う場合)
+                            // Preview.Source = img;
+                            // PreviewBG.Source = img;
+                        });
                     }
-                    catch (FileNotFoundException)
+                    catch (UriFormatException ex)
                     {
-                        Global.logger?.WriteLine($"Preview file not found (read attempt): '{previewFiles[0].FullName}'", LoggerType.Warning);
-                        SetDefaultPreviewImage(); // デフォルト画像設定
-                    }
-                    catch (IOException ex)
-                    {
-                        Global.logger?.WriteLine($"IO error reading preview file '{previewFiles[0].FullName}': {ex.Message}", LoggerType.Error);
+                        Global.logger?.WriteLine($"Invalid URI format for image path '{previewFiles[0].FullName}': {ex.Message}", LoggerType.Error);
                         SetDefaultPreviewImage();
                     }
-                    catch (NotSupportedException ex) // BitmapImage がサポートしない形式の場合
+                    catch (FileNotFoundException) // UriSource でもファイルが見つからない場合
+                    {
+                        Global.logger?.WriteLine($"Preview file not found (UriSource): '{previewFiles[0].FullName}'", LoggerType.Warning);
+                        SetDefaultPreviewImage();
+                    }
+                    catch (IOException ex) // ファイル読み込み中のIOエラー
+                    {
+                        Global.logger?.WriteLine($"IO error loading preview image from UriSource '{previewFiles[0].FullName}': {ex.Message}", LoggerType.Error);
+                        SetDefaultPreviewImage();
+                    }
+                    catch (NotSupportedException ex) // サポートされていない画像形式
                     {
                         Global.logger?.WriteLine($"Unsupported image format for preview file '{previewFiles[0].FullName}': {ex.Message}", LoggerType.Warning);
                         SetDefaultPreviewImage();
@@ -2250,7 +2562,7 @@ namespace DivaModManager
                 // if (bitmap.CanFreeze) bitmap.Freeze();
                 ImageBehavior.SetAnimatedSource(Preview, bitmap);
                 ImageBehavior.SetAnimatedSource(PreviewBG, null); // BG はクリア
-             } catch (Exception ex) {
+            } catch (Exception ex) {
                   Global.logger?.WriteLine($"Error loading default preview image: {ex.Message}", LoggerType.Error);
                   // デフォルト画像すら読み込めない場合のフォールバック？
                   ImageBehavior.SetAnimatedSource(Preview, null);
@@ -2285,84 +2597,102 @@ namespace DivaModManager
                 (((GameFilterBox.SelectedValue as ComboBoxItem).Content as StackPanel).Children[1] as TextBlock).Text.Trim().Replace(":", String.Empty),
                 item.Link.AbsoluteUri).ShowDialog();
         }
+        //private void Homepage_Click(object sender, RoutedEventArgs e)
+        //{
+        //    Button button = sender as Button;
+        //    var item = button.DataContext as GameBananaRecord;
+        //    try
+        //    {
+        //        var ps = new ProcessStartInfo(item.Link.ToString())
+        //        {
+        //            UseShellExecute = true,
+        //            Verb = "open"
+        //        };
+        //        Process.Start(ps);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Global.logger.WriteLine($"Couldn't open up {item.Link} ({ex.Message})", LoggerType.Error);
+        //    }
+        //}
+        //private void DMAHomepage_Click(object sender, RoutedEventArgs e)
+        //{
+        //    Button button = sender as Button;
+        //    var item = button.DataContext as DivaModArchivePost;
+        //    try
+        //    {
+        //        var ps = new ProcessStartInfo(item.Link.ToString())
+        //        {
+        //            UseShellExecute = true,
+        //            Verb = "open"
+        //        };
+        //        Process.Start(ps);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Global.logger.WriteLine($"Couldn't open up {item.Link} ({ex.Message})", LoggerType.Error);
+        //    }
+        //}
+
         private void Homepage_Click(object sender, RoutedEventArgs e)
         {
-            Button button = sender as Button;
-            var item = button.DataContext as GameBananaRecord;
-            try
+            if (sender is Button button && button.DataContext is GameBananaRecord item && item.Link != null)
             {
-                var ps = new ProcessStartInfo(item.Link.ToString())
-                {
-                    UseShellExecute = true,
-                    Verb = "open"
-                };
-                Process.Start(ps);
-            }
-            catch (Exception ex)
-            {
-                Global.logger.WriteLine($"Couldn't open up {item.Link} ({ex.Message})", LoggerType.Error);
+                TryStartProcess(item.Link.AbsoluteUri);
             }
         }
+
         private void DMAHomepage_Click(object sender, RoutedEventArgs e)
         {
-            Button button = sender as Button;
-            var item = button.DataContext as DivaModArchivePost;
-            try
+            if (sender is Button button && button.DataContext is DivaModArchivePost item && item.Link != null)
             {
-                var ps = new ProcessStartInfo(item.Link.ToString())
-                {
-                    UseShellExecute = true,
-                    Verb = "open"
-                };
-                Process.Start(ps);
-            }
-            catch (Exception ex)
-            {
-                Global.logger.WriteLine($"Couldn't open up {item.Link} ({ex.Message})", LoggerType.Error);
+                TryStartProcess(item.Link.AbsoluteUri);
             }
         }
+
+
         private int imageCounter;
         private int imageCount;
-        private FlowDocument ConvertToFlowDocument(string text)
-        {
-            var flowDocument = new FlowDocument();
+        //private FlowDocument ConvertToFlowDocument(string text)
+        //{
+        //    var flowDocument = new FlowDocument();
 
-            var regex = new Regex(@"(https?:\/\/[^\s]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-            var matches = regex.Matches(text).Cast<Match>().Select(m => m.Value).ToList();
+        //    var regex = new Regex(@"(https?:\/\/[^\s]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        //    var matches = regex.Matches(text).Cast<Match>().Select(m => m.Value).ToList();
 
-            var paragraph = new Paragraph();
-            flowDocument.Blocks.Add(paragraph);
+        //    var paragraph = new Paragraph();
+        //    flowDocument.Blocks.Add(paragraph);
 
 
-            foreach (var segment in regex.Split(text))
-            {
-                if (matches.Contains(segment))
-                {
-                    var hyperlink = new Hyperlink(new Run(segment))
-                    {
-                        NavigateUri = new Uri(segment),
-                    };
+        //    foreach (var segment in regex.Split(text))
+        //    {
+        //        if (matches.Contains(segment))
+        //        {
+        //            var hyperlink = new Hyperlink(new Run(segment))
+        //            {
+        //                NavigateUri = new Uri(segment),
+        //            };
 
-                    hyperlink.RequestNavigate += (sender, args) =>
-                    {
-                        var ps = new ProcessStartInfo(segment)
-                        {
-                            UseShellExecute = true,
-                            Verb = "open"
-                        };
-                        Process.Start(ps);
-                    };
+        //            hyperlink.RequestNavigate += (sender, args) =>
+        //            {
+        //                var ps = new ProcessStartInfo(segment)
+        //                {
+        //                    UseShellExecute = true,
+        //                    Verb = "open"
+        //                };
+        //                Process.Start(ps);
+        //            };
 
-                    paragraph.Inlines.Add(hyperlink);
-                }
-                else
-                {
-                    paragraph.Inlines.Add(new Run(segment));
-                }
-            }
+        //            paragraph.Inlines.Add(hyperlink);
+        //        }
+        //        else
+        //        {
+        //            paragraph.Inlines.Add(new Run(segment));
+        //        }
+        //    }
 
-            return flowDocument;
-        }
+        //    return flowDocument;
+        //}
         private void MoreInfo_Click(object sender, RoutedEventArgs e)
         {
             HomepageButton.Content = $"{(TypeBox.SelectedValue as ComboBoxItem).Content.ToString().Trim().TrimEnd('s')} Page";
@@ -2839,7 +3169,8 @@ namespace DivaModManager
         }
         private void OnManagerTabSelected(object sender, RoutedEventArgs e)
         {
-
+            // サーバーダウン等で別タブから戻ってきた時にも操作が続行できるよう、強制的にUIを有効化する
+            IsEnabledControls(true);
         }
 
         private static int page = 1;
@@ -2886,33 +3217,20 @@ namespace DivaModManager
         }
         private static bool filterSelect;
         private static bool searched = false;
+        // --- ブラウザタブの IsEnabledControls 適用見直し ---
+        // RefreshFilter と DMARefreshFilter の最初と最後に IsEnabledControls を適用
         private async void RefreshFilter()
         {
-            // --- UI 無効化 ---
+            // --- UI 無効化 (共通メソッドを使用) ---
+            IsEnabledControls(false); // ★ 共通メソッド呼び出しに変更
+                                      // LoadingBar など個別の設定は残す
             await Dispatcher.InvokeAsync(() => {
-                NSFWCheckbox.IsEnabled = false;
-                SearchBar.IsEnabled = false;
-                SearchButton.IsEnabled = false;
-                GameFilterBox.IsEnabled = false;
-                FilterBox.IsEnabled = false;
-                TypeBox.IsEnabled = false;
-                CatBox.IsEnabled = false;
-                SubCatBox.IsEnabled = false;
-                PageLeft.IsEnabled = false;
-                PageRight.IsEnabled = false;
-                PageBox.IsEnabled = false;
-                PerPageBox.IsEnabled = false;
-                ClearCacheButton.IsEnabled = false;
-                ErrorPanel.Visibility = Visibility.Collapsed;
-                filterSelect = true;
-                PageBox.SelectedValue = page;
-                filterSelect = false;
                 ErrorPanel.Visibility = Visibility.Collapsed;
                 LoadingBar.Visibility = Visibility.Visible;
-                FeedBox.Visibility = Visibility.Collapsed; // 開始時に隠す
+                FeedBox.Visibility = Visibility.Collapsed;
                 Page.Text = $"Page {page}";
             });
-            // ----------------
+            // ------------------------------------
 
             try
             {
@@ -3023,63 +3341,39 @@ namespace DivaModManager
                     }
                     LoadingBar.Visibility = Visibility.Collapsed; // 完了時に非表示
                 });
-                // -----------------------
-
             }
-            catch (Exception ex) // RefreshFilter 自体の予期せぬエラー
+            catch (Exception ex)
             {
-                Global.logger.WriteLine($"Unexpected error in RefreshFilter: {ex}", LoggerType.Critical);
-                ShowBrowserError($"An unexpected error occurred: {ex.Message}"); // UIにエラー表示
+                Global.logger?.WriteLine($"Unexpected error in RefreshFilter: {ex}", LoggerType.Critical);
+                // ShowBrowserError 内で LoadingBar は隠されるはず
+                ShowBrowserError($"An unexpected error occurred: {ex.Message}");
             }
             finally
             {
-                // --- UI 有効化 ---
-                await Dispatcher.InvokeAsync(() =>
-                {
-                    LoadingBar.Visibility = Visibility.Collapsed;
-                    CatBox.IsEnabled = true;
-                    SubCatBox.IsEnabled = true;
-                    TypeBox.IsEnabled = true;
-                    FilterBox.IsEnabled = true;
-                    PageBox.IsEnabled = true;
-                    PerPageBox.IsEnabled = true;
-                    GameFilterBox.IsEnabled = true;
-                    SearchBar.IsEnabled = true;
-                    SearchButton.IsEnabled = true;
-                    NSFWCheckbox.IsEnabled = true;
-                    ClearCacheButton.IsEnabled = true;
-                    // LoadingBarがまだ表示されていたら隠す
+                // --- UI 有効化 (共通メソッドを使用) ---
+                IsEnabledControls(true); // ★ 共通メソッド呼び出しに変更
+                                         // 念のため LoadingBar を隠す
+                await Dispatcher.InvokeAsync(() => {
                     if (LoadingBar.Visibility == Visibility.Visible) LoadingBar.Visibility = Visibility.Collapsed;
                 });
+                // ----------------------------------
             }
         }
         private static bool DMAselected = false;
         private async void DMARefreshFilter()
         {
-            // --- UI 無効化 ---
-            await Dispatcher.InvokeAsync(() =>
-            {
-                DMASearchBar.IsEnabled = false;
-                DMASearchButton.IsEnabled = false;
-                DMASortBox.IsEnabled = false;
-                DMAFilterBox.IsEnabled = false;
-                DMAClearCacheButton.IsEnabled = false;
-                DMAPageLeft.IsEnabled = false;
-                DMAPageRight.IsEnabled = false;
-                DMAPageBox.IsEnabled = false;
-                DMAFilterSelect = true;
-                DMAPageBox.SelectedValue = DMApage;
-                DMAPerPageBox.IsEnabled = false;
-                DMAFilterSelect = false;
-                DMAPage.Text = $"Page {DMApage}";
+            // --- UI 無効化 (共通メソッドを使用) ---
+            IsEnabledControls(false); // ★ 共通メソッド呼び出しに変更
+            await Dispatcher.InvokeAsync(() => {
                 DMAErrorPanel.Visibility = Visibility.Collapsed;
                 DMALoadingBar.Visibility = Visibility.Visible;
                 DMAFeedBox.Visibility = Visibility.Collapsed;
+                DMAPage.Text = $"Page {DMApage}";
             });
-
-            var search = searched ? SearchBar.Text : null;
+            // ------------------------------------
             try
             {
+                var search = searched ? SearchBar.Text : null;
                 try
                 {
                     await DMAFeedGenerator.GetFeed(DMApage, (DMAFeedSort)DMASortBox.SelectedIndex, (DMAFeedFilter)DMAFilterBox.SelectedIndex, search, (DMAPerPageBox.SelectedIndex + 1) * 10);
@@ -3156,22 +3450,19 @@ namespace DivaModManager
                     DMAPageBox.ItemsSource = Enumerable.Range(1, (int)(DMAFeedGenerator.CurrentFeed.TotalPages));
                 });
             }
-            catch (Exception ex) // DMARefreshFilter 自体の予期せぬエラー
+            catch (Exception ex)
             {
-                Global.logger.WriteLine($"Unexpected error in DMARefreshFilter: {ex}", LoggerType.Critical);
-                ShowBrowserError($"An unexpected error occurred: {ex.Message}"); // UIにエラー表示
+                Global.logger?.WriteLine($"Unexpected error in DMARefreshFilter: {ex}", LoggerType.Critical);
+                ShowDMAError($"An unexpected error occurred: {ex.Message}");
             }
             finally
             {
-                DMALoadingBar.Visibility = Visibility.Collapsed;
-                DMASortBox.IsEnabled = true;
-                DMAFilterBox.IsEnabled = true;
-                DMASearchBar.IsEnabled = true;
-                DMASearchButton.IsEnabled = true;
-                DMAClearCacheButton.IsEnabled = true;
-                DMAPageBox.IsEnabled = true;
-                DMAPerPageBox.IsEnabled = true;
-                DMAselected = true;
+                // --- UI 有効化 (共通メソッドを使用) ---
+                IsEnabledControls(true); // ★ 共通メソッド呼び出しに変更
+                await Dispatcher.InvokeAsync(() => {
+                    if (DMALoadingBar.Visibility == Visibility.Visible) DMALoadingBar.Visibility = Visibility.Collapsed;
+                });
+                // ----------------------------------
             }
         }
         private bool DMAFilterSelect = false;
@@ -4229,20 +4520,33 @@ namespace DivaModManager
             }
         }
 
+        //private void DMM_Folder_Click(object sender, RoutedEventArgs e)
+        //{
+        //    var folderName = $@"{Global.assemblyLocation}";
+        //    if (Directory.Exists(folderName))
+        //    {
+        //        try
+        //        {
+        //            Process process = Process.Start("explorer.exe", folderName);
+        //            Global.logger.WriteLine($@"Opened {folderName}.", LoggerType.Info);
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            Global.logger.WriteLine($@"Couldn't open {folderName}. ({ex.Message})", LoggerType.Error);
+        //        }
+        //    }
+        //}
+
         private void DMM_Folder_Click(object sender, RoutedEventArgs e)
         {
-            var folderName = $@"{Global.assemblyLocation}";
+            var folderName = Global.assemblyLocation;
             if (Directory.Exists(folderName))
             {
-                try
-                {
-                    Process process = Process.Start("explorer.exe", folderName);
-                    Global.logger.WriteLine($@"Opened {folderName}.", LoggerType.Info);
-                }
-                catch (Exception ex)
-                {
-                    Global.logger.WriteLine($@"Couldn't open {folderName}. ({ex.Message})", LoggerType.Error);
-                }
+                TryStartProcess(folderName);
+            }
+            else
+            {
+                Global.logger?.WriteLine($"DMM application directory not found: '{folderName}'.", LoggerType.Warning);
             }
         }
 
@@ -4362,27 +4666,208 @@ namespace DivaModManager
 
         private void IsEnabledControls(bool isEnabled)
         {
+            // 各コントロールの IsEnabled を設定
+            // ブラウザタブ
             GBModBrowser.IsEnabled = isEnabled;
             DMAModBrowser.IsEnabled = isEnabled;
 
+            // 上部コントロール
             GameBox.IsEnabled = isEnabled;
             LauncherOptionsBox.IsEnabled = isEnabled;
             EditLoadoutsButton.IsEnabled = isEnabled;
-            ConfigButton.IsEnabled = isEnabled;
+            ConfigButton.IsEnabled = isEnabled; // Setup Button? 名前確認
             LaunchButton.IsEnabled = isEnabled;
-            OpenModsButton.IsEnabled = isEnabled;
+            OpenModsButton.IsEnabled = isEnabled; // Open Mods Folder Button?
             UpdateCheckAllButton.IsEnabled = isEnabled;
             LoadoutBox.IsEnabled = isEnabled;
-            
+
+            // Modリスト上部検索/フィルタ関連
             SearchModListButton.IsEnabled = isEnabled;
             SearchModListTextBox.IsEnabled = isEnabled;
-            SearchModListButton.IsEnabled = IsEnabled;
             SearchClearButton.IsEnabled = isEnabled;
             SearchTargetComboBox.IsEnabled = isEnabled;
             SearchCategoryComboBox.IsEnabled = isEnabled;
             VisibleColumnComboBox.IsEnabled = isEnabled;
-            
+
+            // Modグリッド
             ModGrid.IsEnabled = isEnabled;
+
+            // ブラウザタブ内のコントロールもここで制御するか、別途制御するか検討
+            // 例: FilterBox, TypeBox, CatBox, SubCatBox, SearchBar, SearchButton etc.
+            // もしここで制御するなら RefreshFilter/DMARefreshFilter 内の個別設定は不要になる
+            SearchBar.IsEnabled = isEnabled;
+            SearchButton.IsEnabled = isEnabled;
+            GameFilterBox.IsEnabled = isEnabled;
+            FilterBox.IsEnabled = isEnabled;
+            TypeBox.IsEnabled = isEnabled;
+            CatBox.IsEnabled = isEnabled;
+            SubCatBox.IsEnabled = isEnabled;
+            PageLeft.IsEnabled = isEnabled && page > 1; // ページ状態も考慮
+            PageRight.IsEnabled = isEnabled /* && page < maxPage */; // 最大ページ数を考慮
+            PageBox.IsEnabled = isEnabled;
+            PerPageBox.IsEnabled = isEnabled;
+            ClearCacheButton.IsEnabled = isEnabled;
+            NSFWCheckbox.IsEnabled = isEnabled; // チェックボックスも制御
+
+            DMASearchBar.IsEnabled = isEnabled;
+            DMASearchButton.IsEnabled = isEnabled;
+            DMASortBox.IsEnabled = isEnabled;
+            DMAFilterBox.IsEnabled = isEnabled;
+            DMAClearCacheButton.IsEnabled = isEnabled;
+            DMAPageLeft.IsEnabled = isEnabled && DMApage > 1; // ページ状態考慮
+            DMAPageRight.IsEnabled = isEnabled /* && DMApage < maxDMAPage */;
+            DMAPageBox.IsEnabled = isEnabled;
+            DMAPerPageBox.IsEnabled = isEnabled;
         }
+        // ------------------------------------------------------
+
+        #region 外部プロセス起動 共通ヘルパー
+
+        /// <summary>
+        /// 指定されたターゲット（URLまたはファイル/フォルダパス）を外部プロセスで安全に開きます。
+        /// </summary>
+        /// <param name="target">開くURLまたはパス。</param>
+        /// <param name="workingDirectory">プロセスの作業ディレクトリ（オプション）。</param>
+        /// <returns>プロセスが正常に開始された場合は true、それ以外は false。</returns>
+        private bool TryStartProcess(string target, string workingDirectory = null)
+        {
+            if (string.IsNullOrWhiteSpace(target))
+            {
+                Global.logger?.WriteLine($"Target for Process.Start is empty or null.", LoggerType.Warning);
+                return false;
+            }
+
+            try
+            {
+                // UseShellExecute = true を使うと、関連付けられたアプリケーションで開く（URLやフォルダなど）
+                // UseShellExecute = false は直接実行ファイルを実行する場合に使うことが多い
+                var psi = new ProcessStartInfo(target)
+                {
+                    UseShellExecute = true,
+                    Verb = "open" // Verb は UseShellExecute = true の場合に意味を持つ
+                };
+
+                if (!string.IsNullOrEmpty(workingDirectory) && Directory.Exists(workingDirectory))
+                {
+                    psi.WorkingDirectory = workingDirectory;
+                }
+
+                Process.Start(psi);
+                Global.logger?.WriteLine($"Successfully started process for target: '{target}'.", LoggerType.Info);
+                return true;
+            }
+            catch (Win32Exception ex) // プロセス開始時の一般的なエラー
+            {
+                Global.logger?.WriteLine($"Error starting process for '{target}': {ex.Message} (ErrorCode: {ex.ErrorCode})", LoggerType.Error);
+                // ユーザーに通知するかどうかはケースバイケース
+                // MessageBox.Show($"Could not open '{target}':\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
+            catch (FileNotFoundException ex) // 実行ファイルが見つからない場合 (UseShellExecute=false の場合など)
+            {
+                Global.logger?.WriteLine($"File not found for process start '{target}': {ex.Message}", LoggerType.Error);
+                return false;
+            }
+            catch (Exception ex) // その他の予期せぬエラー
+            {
+                Global.logger?.WriteLine($"Unexpected error starting process for '{target}': {ex}", LoggerType.Error);
+                return false;
+            }
+        }
+
+        #endregion
+
+        #region FlowDocument 変換ロジック共通化
+
+        /// <summary>
+        /// 指定されたテキストを FlowDocument の Paragraph に変換します。テキスト内のURLはハイパーリンクになります。
+        /// </summary>
+        /// <param name="text">変換するテキスト。</param>
+        /// <returns>変換された Paragraph。</returns>
+        private Paragraph ConvertToFlowParagraph(string text)
+        {
+            var paragraph = new Paragraph();
+            if (string.IsNullOrEmpty(text)) return paragraph; // 空の場合は空の Paragraph を返す
+
+            // ハイパーリンク生成ロジックを呼び出す
+            AddHyperlinksToParagraph(paragraph, text);
+
+            return paragraph;
+        }
+
+        /// <summary>
+        /// 指定された Paragraph に、テキスト内のURLをハイパーリンクとして追加します。
+        /// </summary>
+        /// <param name="paragraph">インライン要素を追加する Paragraph。</param>
+        /// <param name="text">解析するテキスト。</param>
+        private void AddHyperlinksToParagraph(Paragraph paragraph, string text)
+        {
+            // URLを検出する正規表現 (より多くの形式に対応させることも可能)
+            var regex = new Regex(@"(https?://[^\s""'<>()]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            var lastIndex = 0;
+
+            foreach (Match match in regex.Matches(text))
+            {
+                // URLの前のテキスト部分を追加
+                if (match.Index > lastIndex)
+                {
+                    paragraph.Inlines.Add(new Run(text.Substring(lastIndex, match.Index - lastIndex)));
+                }
+
+                // ハイパーリンク部分を追加
+                string url = match.Value;
+                try
+                {
+                    var hyperlink = new Hyperlink(new Run(url))
+                    {
+                        NavigateUri = new Uri(url),
+                        ToolTip = $"Open link: {url}" // ツールチップを追加 (任意)
+                    };
+                    // RequestNavigate イベントでブラウザなどを起動
+                    hyperlink.RequestNavigate += (sender, args) =>
+                    {
+                        TryStartProcess(args.Uri.AbsoluteUri); // 共通ヘルパーを使用
+                        args.Handled = true; // イベント処理済み
+                    };
+                    paragraph.Inlines.Add(hyperlink);
+                }
+                catch (UriFormatException ex) // 不正なURI形式の場合
+                {
+                    // URLとして認識されたがURIとして不正な場合は、通常のテキストとして追加
+                    Global.logger?.WriteLine($"Invalid URI format detected in text: '{url}'. Treating as plain text. Error: {ex.Message}", LoggerType.Debug);
+                    paragraph.Inlines.Add(new Run(url));
+                }
+                catch (Exception ex) // その他の予期せぬエラー
+                {
+                    Global.logger?.WriteLine($"Error creating hyperlink for '{url}': {ex.Message}. Treating as plain text.", LoggerType.Warning);
+                    paragraph.Inlines.Add(new Run(url));
+                }
+
+                lastIndex = match.Index + match.Length;
+            }
+
+            // 最後のURLの後のテキスト部分を追加
+            if (lastIndex < text.Length)
+            {
+                paragraph.Inlines.Add(new Run(text.Substring(lastIndex)));
+            }
+        }
+
+        // ConvertToFlowDocument メソッドは ConvertToFlowParagraph を使うように修正するか、
+        // 共通のヘルパー AddHyperlinksToParagraph を使うようにリファクタリング可能
+        private FlowDocument ConvertToFlowDocument(string text)
+        {
+            var flowDocument = new FlowDocument();
+            if (string.IsNullOrEmpty(text)) return flowDocument;
+
+            var paragraph = new Paragraph();
+            AddHyperlinksToParagraph(paragraph, text); // 共通ヘルパーを使用
+            flowDocument.Blocks.Add(paragraph);
+
+            return flowDocument;
+        }
+
+
+        #endregion
     }
 }
