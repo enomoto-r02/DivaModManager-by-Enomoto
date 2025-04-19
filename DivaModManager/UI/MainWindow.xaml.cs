@@ -4237,8 +4237,8 @@ namespace DivaModManager
                 // 必要であれば Global.UpdateConfig() や ModLoader.Build() も呼ぶが、
                 // RefreshAsync 内で実行されるため、ここでは不要かもしれない。
                 // ただし、即時反映が必要な場合は検討。
-                // Global.UpdateConfig();
-                // await Task.Run(() => ModLoader.Build());
+                Global.UpdateConfig();
+                await Task.Run(() => ModLoader.Build());
             }
         }
 
