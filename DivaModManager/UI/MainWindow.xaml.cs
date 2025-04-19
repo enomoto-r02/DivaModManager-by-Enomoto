@@ -1057,29 +1057,6 @@ namespace DivaModManager
 
         #region 非同期ファイル・ディレクトリ操作ヘルパー
 
-        //private async Task<bool> FileExistsAsync(string path)
-        //{
-        //    return await Task.Run(() => File.Exists(path));
-        //}
-
-        //private async Task<bool> DirectoryExistsAsync(string path)
-        //{
-        //    return await Task.Run(() => Directory.Exists(path));
-        //}
-
-        //private async Task<string[]> GetDirectoriesAsync(string path)
-        //{
-        //    try
-        //    {
-        //        return await Task.Run(() => Directory.GetDirectories(path));
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Global.logger.WriteLine($"Error getting directories in {path}: {ex.Message}", LoggerType.Error);
-        //        return Array.Empty<string>(); // 空配列を返す
-        //    }
-        //}
-
         private async Task<long> GetDirectoriesSizeAsync(string path)
         {
             try
@@ -1329,177 +1306,6 @@ namespace DivaModManager
                 });
             }
         }
-
-        //private async void CheckedCommon(object sender, RoutedEventArgs e, bool setEnabled)
-        //{
-        //    var checkMods = ModGrid.SelectedItems;
-        //    if (checkMods != null)
-        //    {
-        //        List<Mod> temp = Global.config.Configs[Global.config.CurrentGame].Loadouts[Global.config.Configs[Global.config.CurrentGame].CurrentLoadout].ToList();
-        //        foreach (var m in temp)
-        //        {
-        //            foreach (Mod checkMod in checkMods)
-        //            {
-        //                if (m.name == checkMod.name)
-        //                {
-        //                    if (m.selected)
-        //                    {
-        //                        m.enabled = setEnabled;
-        //                        //UpdateModConfigToml(checkMod, setEnabled);
-        //                        RefreshAsync(); // 同期させるためawaitはなし
-        //                    }
-        //                }
-        //            }
-        //        }
-        //        Global.config.Configs[Global.config.CurrentGame].Loadouts[Global.config.Configs[Global.config.CurrentGame].CurrentLoadout] = new ObservableCollection<Mod>(temp);
-        //        Global.UpdateConfig();
-        //        await Task.Run(() => ModLoader.Build());
-
-        //        App.Current.Dispatcher.Invoke((Action)delegate
-        //        {
-        //            var stats = $"{Global.ModList.ToList().Where(x => x.enabled).ToList().Count}/{Global.ModList.Count} mods • {Directory.GetFiles(Global.config.Configs[Global.config.CurrentGame].ModsFolder, "*", SearchOption.AllDirectories).Length.ToString("N0")} files • " +
-        //            $"{StringConverters.FormatSize(new DirectoryInfo(Global.config.Configs[Global.config.CurrentGame].ModsFolder).GetDirectorySize())}";
-        //            if (!String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].ModLoaderVersion))
-        //                stats += $" • DML v{Global.config.Configs[Global.config.CurrentGame].ModLoaderVersion}";
-        //            stats += $" • DMM v{version}";
-        //            Stats.Text = stats;
-        //        });
-        //    }
-        //}
-
-        //// --- CheckedCommon を async void に変更し、UpdateModConfigTomlAsync を呼び出す ---
-        //private async void CheckedCommon(object sender, RoutedEventArgs e, bool setEnabled)
-        //{
-        //    var checkMods = ModGrid.SelectedItems.OfType<Mod>().ToList(); // 型安全に
-        //    if (!checkMods.Any()) return; // 選択されていない場合は何もしない
-
-        //    bool configChanged = false;
-        //    List<Task> updateTasks = new List<Task>();
-
-        //    // Global.ModList の更新は UI スレッドで行うのが安全
-        //    await Application.Current.Dispatcher.InvokeAsync(() =>
-        //    {
-        //        // ToList() でコピーを作成するか、インデックスでアクセス
-        //        foreach (Mod checkMod in checkMods)
-        //        {
-        //            // Global.ModList から対応する Mod を検索 (Name が一意である前提)
-        //            var modInList = Global.ModList.FirstOrDefault(m => m.name == checkMod.name);
-        //            if (modInList != null && modInList.selected) // selected フラグを確認
-        //            {
-        //                if (modInList.enabled != setEnabled)
-        //                {
-        //                    modInList.enabled = setEnabled;
-        //                    // UpdateModConfigTomlAsync を呼び出す Task をリストに追加
-        //                    updateTasks.Add(UpdateModConfigTomlAsync(modInList, setEnabled)); // 名前変更＆非同期化
-        //                    configChanged = true;
-        //                }
-        //            }
-        //        }
-        //        // Global.ModList の内容が変更された場合、UIに反映させる必要がある
-        //        // ModGrid.Items.Refresh(); // データバインディングが正しく機能していれば不要な場合も
-        //    });
-
-
-        //    if (configChanged)
-        //    {
-        //        // --- config.toml の更新を並行して待機 ---
-        //        try
-        //        {
-        //            await Task.WhenAll(updateTasks);
-        //        }
-        //        catch (Exception ex)
-        //        {
-        //            // WhenAll で集約された例外処理
-        //            Global.logger?.WriteLine($"Error(s) occurred while updating mod config files: {ex}", LoggerType.Error);
-        //            // 必要ならユーザーに通知
-        //        }
-        //        // ------------------------------------
-
-        //        // Global.config の更新 (これは同期で良いか？)
-        //        Global.UpdateConfig();
-
-        //        // ModLoader.Build (RefreshAsync 内でも呼ばれるが、即時反映が必要な場合)
-        //        try
-        //        {
-        //            await Task.Run(() => ModLoader.Build());
-        //        }
-        //        catch (Exception ex)
-        //        {
-        //            Global.logger?.WriteLine($"Error during ModLoader.Build after CheckedCommon: {ex}", LoggerType.Error);
-        //        }
-
-
-        //        // 統計情報の更新 (UI スレッドで)
-        //        await Application.Current.Dispatcher.InvokeAsync(() =>
-        //        {
-        //            // UpdateUIElementsAndBuildAsync 内の統計更新ロジックを再利用するのが理想
-        //            // ここでは簡易的に実装
-        //            try
-        //            {
-        //                var currentModDirectory = Global.config.Configs[Global.config.CurrentGame].ModsFolder;
-        //                long totalFiles = Directory.Exists(currentModDirectory) ? Directory.GetFiles(currentModDirectory, "*", SearchOption.AllDirectories).Length : 0;
-        //                long totalSize = Directory.Exists(currentModDirectory) ? new DirectoryInfo(currentModDirectory).GetDirectorySize() : 0; // 同期処理注意
-        //                var enabledCount = Global.ModList.Count(x => x.enabled);
-        //                var totalCount = Global.ModList.Count;
-        //                var stats = $"{enabledCount}/{totalCount} mods • {totalFiles:N0} files • {StringConverters.FormatSize(totalSize)}";
-        //                if (!String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].ModLoaderVersion))
-        //                    stats += $" • DML v{Global.config.Configs[Global.config.CurrentGame].ModLoaderVersion}";
-        //                stats += $" • DMM v{version}";
-        //                Stats.Text = stats;
-        //            }
-        //            catch (Exception ex)
-        //            {
-        //                Global.logger?.WriteLine($"Error updating stats after CheckedCommon: {ex.Message}", LoggerType.Warning);
-        //            }
-        //        });
-        //    }
-        //}
-
-        // UpdateModConfigToml は RefreshAsync 内のロジックに統合されたため不要になる可能性
-        /*
-        private void UpdateModConfigToml(Mod m, bool value)
-        {
-            var configPath = $"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}{m.name}{Global.s}config.toml";
-            if (File.Exists(configPath))
-            {
-                var configString = File.ReadAllText(configPath);
-                if (Toml.TryToModel(configString, out TomlTable config, out var diagnostics))
-                {
-                    if (config.ContainsKey("enabled"))
-                        config["enabled"] = value;
-                    else
-                        // Add enabled field to be true if it doesn't exist
-                        config.Add("enabled", value);
-                    AddInclude(config);
-                    File.WriteAllText(configPath, Toml.FromModel(config));
-                }
-                else
-                {
-                    Global.logger.WriteLine($"{diagnostics[0].Message} for {m.name}. Rewriting {configPath} with only enabled field", LoggerType.Warning);
-                    // Create config.toml with enabled field to be true if failed to parse
-                    config = new();
-                    config.Add("enabled", value);
-                    AddInclude(config);
-                    File.WriteAllText(configPath, Toml.FromModel(config));
-                }
-            }
-            else
-            {
-                App.Current.Dispatcher.Invoke((Action)delegate
-                {
-                    // Create config.toml with enabled field to be true and include set, if the user desires
-                    if (!IsWindowOpen<ChoiceWindow>())
-                    {
-                        ConfirmConfigCreation(configPath, m, false);
-                    }
-                    else
-                    {
-                        Global.logger.WriteLine("No config.toml file window triggered but it was already open.", LoggerType.Info);
-                    }
-                });
-            }
-        }
-        */
 
         private async Task UpdateModConfigToml_e(Mod m, string column, object value)
         {
@@ -2307,46 +2113,6 @@ namespace DivaModManager
                 IsEnabledControls(true);
             });
         }
-        //private Paragraph ConvertToFlowParagraph(string text)
-        //{
-        //    var flowDocument = new FlowDocument();
-
-        //    var regex = new Regex(@"(https?:\/\/[^\s]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-        //    var matches = regex.Matches(text).Cast<Match>().Select(m => m.Value).ToList();
-
-        //    var paragraph = new Paragraph();
-        //    flowDocument.Blocks.Add(paragraph);
-
-
-        //    foreach (var segment in regex.Split(text))
-        //    {
-        //        if (matches.Contains(segment))
-        //        {
-        //            var hyperlink = new Hyperlink(new Run(segment))
-        //            {
-        //                NavigateUri = new Uri(segment),
-        //            };
-
-        //            hyperlink.RequestNavigate += (sender, args) =>
-        //            {
-        //                var ps = new ProcessStartInfo(segment)
-        //                {
-        //                    UseShellExecute = true,
-        //                    Verb = "open"
-        //                };
-        //                Process.Start(ps);
-        //            };
-
-        //            paragraph.Inlines.Add(hyperlink);
-        //        }
-        //        else
-        //        {
-        //            paragraph.Inlines.Add(new Run(segment));
-        //        }
-        //    }
-
-        //    return paragraph;
-        //}
 
         private async Task ShowMetadata(string mod)
         {
@@ -2503,10 +2269,6 @@ namespace DivaModManager
                             // WpfAnimatedGif を使う場合
                             ImageBehavior.SetAnimatedSource(Preview, img);
                             ImageBehavior.SetAnimatedSource(PreviewBG, img);
-
-                            // または標準の Source を使う場合 (診断ステップ2の検証を確実に行う場合)
-                            // Preview.Source = img;
-                            // PreviewBG.Source = img;
                         });
                     }
                     catch (UriFormatException ex)
@@ -2644,42 +2406,6 @@ namespace DivaModManager
                 (((GameFilterBox.SelectedValue as ComboBoxItem).Content as StackPanel).Children[1] as TextBlock).Text.Trim().Replace(":", String.Empty),
                 item.Link.AbsoluteUri).ShowDialog();
         }
-        //private void Homepage_Click(object sender, RoutedEventArgs e)
-        //{
-        //    Button button = sender as Button;
-        //    var item = button.DataContext as GameBananaRecord;
-        //    try
-        //    {
-        //        var ps = new ProcessStartInfo(item.Link.ToString())
-        //        {
-        //            UseShellExecute = true,
-        //            Verb = "open"
-        //        };
-        //        Process.Start(ps);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Global.logger.WriteLine($"Couldn't open up {item.Link} ({ex.Message})", LoggerType.Error);
-        //    }
-        //}
-        //private void DMAHomepage_Click(object sender, RoutedEventArgs e)
-        //{
-        //    Button button = sender as Button;
-        //    var item = button.DataContext as DivaModArchivePost;
-        //    try
-        //    {
-        //        var ps = new ProcessStartInfo(item.Link.ToString())
-        //        {
-        //            UseShellExecute = true,
-        //            Verb = "open"
-        //        };
-        //        Process.Start(ps);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Global.logger.WriteLine($"Couldn't open up {item.Link} ({ex.Message})", LoggerType.Error);
-        //    }
-        //}
 
         private void Homepage_Click(object sender, RoutedEventArgs e)
         {
@@ -2697,49 +2423,9 @@ namespace DivaModManager
             }
         }
 
-
         private int imageCounter;
         private int imageCount;
-        //private FlowDocument ConvertToFlowDocument(string text)
-        //{
-        //    var flowDocument = new FlowDocument();
 
-        //    var regex = new Regex(@"(https?:\/\/[^\s]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-        //    var matches = regex.Matches(text).Cast<Match>().Select(m => m.Value).ToList();
-
-        //    var paragraph = new Paragraph();
-        //    flowDocument.Blocks.Add(paragraph);
-
-
-        //    foreach (var segment in regex.Split(text))
-        //    {
-        //        if (matches.Contains(segment))
-        //        {
-        //            var hyperlink = new Hyperlink(new Run(segment))
-        //            {
-        //                NavigateUri = new Uri(segment),
-        //            };
-
-        //            hyperlink.RequestNavigate += (sender, args) =>
-        //            {
-        //                var ps = new ProcessStartInfo(segment)
-        //                {
-        //                    UseShellExecute = true,
-        //                    Verb = "open"
-        //                };
-        //                Process.Start(ps);
-        //            };
-
-        //            paragraph.Inlines.Add(hyperlink);
-        //        }
-        //        else
-        //        {
-        //            paragraph.Inlines.Add(new Run(segment));
-        //        }
-        //    }
-
-        //    return flowDocument;
-        //}
         private void MoreInfo_Click(object sender, RoutedEventArgs e)
         {
             HomepageButton.Content = $"{(TypeBox.SelectedValue as ComboBoxItem).Content.ToString().Trim().TrimEnd('s')} Page";
@@ -4583,23 +4269,6 @@ namespace DivaModManager
                 SearchCategoryComboBox.SelectedIndex = (int)selected;
             }
         }
-
-        //private void DMM_Folder_Click(object sender, RoutedEventArgs e)
-        //{
-        //    var folderName = $@"{Global.assemblyLocation}";
-        //    if (Directory.Exists(folderName))
-        //    {
-        //        try
-        //        {
-        //            Process process = Process.Start("explorer.exe", folderName);
-        //            Global.logger.WriteLine($@"Opened {folderName}.", LoggerType.Info);
-        //        }
-        //        catch (Exception ex)
-        //        {
-        //            Global.logger.WriteLine($@"Couldn't open {folderName}. ({ex.Message})", LoggerType.Error);
-        //        }
-        //    }
-        //}
 
         private void DMM_Folder_Click(object sender, RoutedEventArgs e)
         {
