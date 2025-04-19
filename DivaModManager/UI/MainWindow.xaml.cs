@@ -196,6 +196,8 @@ namespace DivaModManager
                     ModGrid.Columns[(int)Global.Col.Name].DisplayIndex = (int)Global.config.NameColumnIndex;
                 if (Global.config.CategoryColumnIndex != null)
                     ModGrid.Columns[(int)Global.Col.Category].DisplayIndex = (int)Global.config.CategoryColumnIndex;
+                if (Global.config.SizeColumnIndex != null)
+                    ModGrid.Columns[(int)Global.Col.Size].DisplayIndex = (int)Global.config.SizeColumnIndex;
                 if (Global.config.NoteColumnIndex != null)
                     ModGrid.Columns[(int)Global.Col.Note].DisplayIndex = (int)Global.config.NoteColumnIndex;
 
@@ -207,6 +209,8 @@ namespace DivaModManager
                     ModGrid.Columns[(int)Global.Col.Name].Width = (double)Global.config.NameColumnWidth;
                 if (Global.config.CategoryColumnWidth != null)
                     ModGrid.Columns[(int)Global.Col.Category].Width = (double)Global.config.CategoryColumnWidth;
+                if (Global.config.SizeColumnWidth != null)
+                    ModGrid.Columns[(int)Global.Col.Size].Width = (double)Global.config.SizeColumnWidth;
                 if (Global.config.NoteColumnWidth != null)
                     ModGrid.Columns[(int)Global.Col.Note].Width = (double)Global.config.NoteColumnWidth;
 
@@ -214,6 +218,7 @@ namespace DivaModManager
                 ModGrid.Columns[(int)Global.Col.Priority].Visibility = (Visibility)Global.config.PriorityColumnVisible;
                 ModGrid.Columns[(int)Global.Col.Name].Visibility = (Visibility)Global.config.NameColumnVisible;
                 ModGrid.Columns[(int)Global.Col.Category].Visibility = (Visibility)Global.config.CategoryColumnVisible;
+                ModGrid.Columns[(int)Global.Col.Size].Visibility = (Visibility)Global.config.SizeColumnVisible;
                 ModGrid.Columns[(int)Global.Col.Note].Visibility = (Visibility)Global.config.NoteColumnVisible;
 
                 Global.games = new List<string>();
@@ -1141,7 +1146,6 @@ namespace DivaModManager
                 return false;
             }
         }
-
 
         #endregion
 
