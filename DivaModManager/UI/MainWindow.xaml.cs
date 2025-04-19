@@ -293,7 +293,7 @@ namespace DivaModManager
                     // 初期表示のために RefreshAsync を呼ぶ
                     if (await DirectoryExistsAsync(Global.config.Configs[Global.config.CurrentGame].ModsFolder)) // 非同期チェック
                     {
-                        await RefreshAsync(); // ★非同期版を呼び出す
+                        await RefreshAsync();
                     }
                 });
             }
@@ -454,7 +454,7 @@ namespace DivaModManager
                 {
                     // Activate() や InitSearchMod() は Refresh の前後どちらで行うか検討
                     InitSearchMod(); // Mod検索状態をリセット
-                    await RefreshAsync(); // ★非同期版を呼び出す
+                    await RefreshAsync();
                     // Activate(); // 必要であればウィンドウを前面に表示
                 });
             }
@@ -1605,11 +1605,11 @@ namespace DivaModManager
                 }
                 if (SetupGame())
                 {
-                    Dispatcher.Invoke(async () => // async を追加
+                    Dispatcher.Invoke(async () =>
                     {
                         InitializeFileSystemWatcherAndTimer();
                         StartWatching();
-                        await RefreshAsync(); // ★非同期版を呼び出す
+                        await RefreshAsync();
                         LaunchButton.IsEnabled = true;
                     });
                 }
@@ -3696,7 +3696,7 @@ namespace DivaModManager
                         ModsWatcher.Deleted += OnFileSystemChanged;
                         ModsWatcher.Renamed += OnFileSystemChanged;
                         //Refresh();
-                        RefreshAsync(); // ★非同期版を呼び出す
+                        RefreshAsync();
                         ModsWatcher.EnableRaisingEvents = true;
                     });
                 }
@@ -3764,7 +3764,7 @@ namespace DivaModManager
 
                 Global.ModList = Global.config.Configs[Global.config.CurrentGame].Loadouts[Global.config.Configs[Global.config.CurrentGame].CurrentLoadout];
                 UpdateSearchMod();
-                await RefreshAsync(); // ★非同期版を呼び出す
+                await RefreshAsync();
                 Global.logger.WriteLine($"Loadout changed to {LoadoutBox.SelectedItem}", LoggerType.Info);
                 // ModLoader.Build は RefreshAsync 内で実行されるように変更済み
             }
@@ -3950,7 +3950,7 @@ namespace DivaModManager
                 // -------------------------------------------------------
 
                 Global.logger.WriteLine($"Game switched to {Global.config.CurrentGame}", LoggerType.Info);
-                await RefreshAsync(); // ★非同期版を呼び出す
+                await RefreshAsync();
                 if (String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].ModsFolder)
                     || String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].Launcher) || !File.Exists(Global.config.Configs[Global.config.CurrentGame].Launcher))
                 {
