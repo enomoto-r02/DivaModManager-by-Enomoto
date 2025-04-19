@@ -4668,8 +4668,8 @@ namespace DivaModManager
         {
             // 各コントロールの IsEnabled を設定
             // ブラウザタブ
-            GBModBrowser.IsEnabled = isEnabled;
-            DMAModBrowser.IsEnabled = isEnabled;
+            //GBModBrowser.IsEnabled = isEnabled;
+            //DMAModBrowser.IsEnabled = isEnabled;
 
             // 上部コントロール
             GameBox.IsEnabled = isEnabled;
