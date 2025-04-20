@@ -1235,15 +1235,12 @@ namespace DivaModManager
                 {
                     // Global.ModList から対応する Mod を検索 (Name が一意である前提)
                     var modInList = Global.ModList.FirstOrDefault(m => m.name == checkMod.name);
-                    if (modInList != null && modInList.selected) // selected フラグを確認
+                    if (modInList != null)
                     {
-                        if (modInList.enabled != setEnabled)
-                        {
-                            modInList.enabled = setEnabled;
-                            // UpdateModConfigTomlAsync を呼び出す Task をリストに追加
-                            updateTasks.Add(UpdateModConfigTomlAsync(modInList, setEnabled)); // 名前変更＆非同期化
-                            configChanged = true;
-                        }
+                        modInList.enabled = setEnabled;
+                        // UpdateModConfigTomlAsync を呼び出す Task をリストに追加
+                        updateTasks.Add(UpdateModConfigTomlAsync(modInList, setEnabled)); // 名前変更＆非同期化
+                        configChanged = true;
                     }
                 }
                 // Global.ModList の内容が変更された場合、UIに反映させる必要がある
