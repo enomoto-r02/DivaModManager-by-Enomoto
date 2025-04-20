@@ -278,20 +278,20 @@ namespace DivaModManager
                 ImageBehavior.SetAnimatedSource(PreviewBG, null);
                 App.Current.Dispatcher.Invoke(async () =>
                 {
-                    IsEnabledControls(false);
+                    //IsEnabledControls(false);
                     //Global.logger.WriteLine("Checking for mod updates...", LoggerType.Info);
                     //await ModUpdater.CheckForUpdates(Global.config.Configs[Global.config.CurrentGame].ModsFolder, this);
-                    await ModUpdater.CheckForUpdatesInit(this);
+                    //await ModUpdater.CheckForUpdatesInit(this);
 
-                    Global.logger.WriteLine("Checking for Diva Mod Manager update...", LoggerType.Info);
-                    if (await AutoUpdater.CheckForDMMUpdate(new CancellationTokenSource()))
-                        Close();
-                    // Check for DML update only if its already setup
-                    if (!String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].ModLoaderVersion))
-                    {
-                        Global.logger.WriteLine("Checking for DivaModLoader update...", LoggerType.Info);
-                        await Setup.CheckForDMLUpdate(new CancellationTokenSource());
-                    }
+                    //Global.logger.WriteLine("Checking for Diva Mod Manager update...", LoggerType.Info);
+                    //if (await AutoUpdater.CheckForDMMUpdate(new CancellationTokenSource()))
+                    //    Close();
+                    //// Check for DML update only if its already setup
+                    //if (!String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].ModLoaderVersion))
+                    //{
+                    //    Global.logger.WriteLine("Checking for DivaModLoader update...", LoggerType.Info);
+                    //    await Setup.CheckForDMLUpdate(new CancellationTokenSource());
+                    //}
                     IsEnabledControls(true);
 
                     // 初期表示のために RefreshAsync を呼ぶ
