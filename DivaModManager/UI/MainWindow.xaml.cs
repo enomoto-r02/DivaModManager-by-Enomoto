@@ -2144,15 +2144,16 @@ namespace DivaModManager
                 || File.Exists($"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}{mod}{Global.s}config.toml"))
             {
                 Metadata metadata = null;
+                TomlTable config = null;
                 if (File.Exists($"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}{mod}{Global.s}mod.json"))
                 {
                     var metadataString = File.ReadAllText($"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}{mod}{Global.s}mod.json");
                     metadata = JsonSerializer.Deserialize<Metadata>(metadataString);
                 }
-
-                TomlTable config = null;
-                if (File.Exists($"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}{mod}{Global.s}config.toml"))
+                else if (File.Exists($"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}{mod}{Global.s}config.toml"))
                 {
+                    SetDefaultPreviewImage();
+
                     var configPath = $"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}{mod}{Global.s}config.toml";
                     var configString = File.ReadAllText(configPath);
                     if (!Toml.TryToModel(configString, out config, out var diagnostics))
