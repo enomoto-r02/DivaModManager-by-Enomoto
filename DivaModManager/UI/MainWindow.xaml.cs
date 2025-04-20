@@ -1243,8 +1243,6 @@ namespace DivaModManager
                         configChanged = true;
                     }
                 }
-                // Global.ModList の内容が変更された場合、UIに反映させる必要がある
-                // ModGrid.Items.Refresh(); // データバインディングが正しく機能していれば不要な場合も
             });
 
 
