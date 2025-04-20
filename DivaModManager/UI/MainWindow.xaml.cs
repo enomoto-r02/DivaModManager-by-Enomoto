@@ -1150,14 +1150,14 @@ namespace DivaModManager
         {
             if (sender is DataGridCell checkBox && checkBox.IsKeyboardFocusWithin)
             {
-                CheckedCommon(sender, e, true);
+                CheckedCommon(true);
             }
         }
         private void OnUnchecked(object sender, RoutedEventArgs e)
         {
             if (sender is DataGridCell checkBox && checkBox.IsKeyboardFocusWithin)
             {
-                CheckedCommon(sender, e, false);
+                CheckedCommon(false);
             }
         }
 
@@ -1219,7 +1219,7 @@ namespace DivaModManager
         // ----------------------------------------------------
 
         // --- CheckedCommon を async void に変更し、UpdateModConfigTomlAsync を呼び出す ---
-        private async void CheckedCommon(object sender, RoutedEventArgs e, bool setEnabled)
+        private async void CheckedCommon(bool setEnabled)
         {
             var checkMods = ModGrid.SelectedItems.OfType<Mod>().ToList(); // 型安全に
             if (!checkMods.Any()) return; // 選択されていない場合は何もしない
@@ -3939,13 +3939,23 @@ namespace DivaModManager
 
         private void ToggleCheckBoxes()
         {
+            bool callCheckedCommon = false;
+            bool setEnabled = false;
             foreach (var item in ModGrid.SelectedItems)
             {
                 if (ModGrid.Columns[(int)Global.Col.Enabled].GetCellContent(item) is CheckBox checkbox)
                 {
-                    checkbox.IsChecked = !checkbox.IsChecked;
+                    // Enabledの値は最初にチェックを行ったMODに合わせる
+                    if(!callCheckedCommon)
+                        setEnabled = (bool)!checkbox.IsChecked;
+                        //checkbox.IsChecked = !checkbox.IsChecked;
+                    checkbox.IsChecked = setEnabled;
+                    callCheckedCommon = true;
                 }
             }
+
+            if (callCheckedCommon)
+                CheckedCommon(setEnabled);
         }
 
         private void HandlePriorityColumnKeyDown(KeyEventArgs e)
