@@ -279,7 +279,7 @@ namespace DivaModManager
                 App.Current.Dispatcher.Invoke(async () =>
                 {
                     IsEnabledControls(false);
-                    Global.logger.WriteLine("Checking for mod updates...", LoggerType.Info);
+                    //Global.logger.WriteLine("Checking for mod updates...", LoggerType.Info);
                     //await ModUpdater.CheckForUpdates(Global.config.Configs[Global.config.CurrentGame].ModsFolder, this);
                     await ModUpdater.CheckForUpdatesInit(this);
 
@@ -288,7 +288,6 @@ namespace DivaModManager
                         Close();
                     // Check for DML update only if its already setup
                     if (!String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].ModLoaderVersion))
-
                     {
                         Global.logger.WriteLine("Checking for DivaModLoader update...", LoggerType.Info);
                         await Setup.CheckForDMLUpdate(new CancellationTokenSource());
