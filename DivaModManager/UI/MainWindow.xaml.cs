@@ -2322,7 +2322,7 @@ namespace DivaModManager
                     }
                 }
             }
-            else if (previewFiles.Length > 0)
+            else if (previewFiles != null && previewFiles.Length > 0)
             {
                 try
                 {
