@@ -286,12 +286,12 @@ namespace DivaModManager
                     //Global.logger.WriteLine("Checking for Diva Mod Manager update...", LoggerType.Info);
                     //if (await AutoUpdater.CheckForDMMUpdate(new CancellationTokenSource()))
                     //    Close();
-                    //// Check for DML update only if its already setup
-                    //if (!String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].ModLoaderVersion))
-                    //{
-                    //    Global.logger.WriteLine("Checking for DivaModLoader update...", LoggerType.Info);
-                    //    await Setup.CheckForDMLUpdate(new CancellationTokenSource());
-                    //}
+                    // Check for DML update only if its already setup
+                    if (!String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].ModLoaderVersion))
+                    {
+                        Global.logger.WriteLine("Checking for DivaModLoader update...", LoggerType.Info);
+                        await Setup.CheckForDMLUpdate(new CancellationTokenSource());
+                    }
                     IsEnabledControls(true);
 
                     // 初期表示のために RefreshAsync を呼ぶ
@@ -2086,25 +2086,38 @@ namespace DivaModManager
         }
         private void UpdateAll_Click(object sender, RoutedEventArgs e)
         {
-            UpdateCommon(sender, e, false);
+            App.Current.Dispatcher.Invoke(async () =>
+            {
+                IsEnabledControls(false);
+                //Global.logger.WriteLine("Checking for mod all updates...", LoggerType.Info);
+                //await ModUpdater.CheckForUpdates(Global.config.Configs[Global.config.CurrentGame].ModsFolder, this, false);
+                //Global.logger.WriteLine("Checking for Diva Mod Manager update...", LoggerType.Info);
+                //if (await AutoUpdater.CheckForDMMUpdate(new CancellationTokenSource()))
+                //    Close();
+                Global.logger.WriteLine("Checking for DivaModLoader update...", LoggerType.Info);
+                await Setup.CheckForDMLUpdate(new CancellationTokenSource());
+                IsEnabledControls(true);
+
+                await UpdateUIElementsAndBuildAsync();
+            });
+
+
         }
         private void Update_Click(object sender, RoutedEventArgs e)
-        {
-            UpdateCommon(sender, e, true);
-        }
-        private void UpdateCommon(object sender, RoutedEventArgs e, bool isSelectedUpdate)
         {
             App.Current.Dispatcher.Invoke(async () =>
             {
                 IsEnabledControls(false);
                 Global.logger.WriteLine("Checking for mod updates...", LoggerType.Info);
-                await ModUpdater.CheckForUpdates(Global.config.Configs[Global.config.CurrentGame].ModsFolder, this, isSelectedUpdate);
-                Global.logger.WriteLine("Checking for Diva Mod Manager update...", LoggerType.Info);
-                if (await AutoUpdater.CheckForDMMUpdate(new CancellationTokenSource()))
-                    Close();
-                Global.logger.WriteLine("Checking for DivaModLoader update...", LoggerType.Info);
-                await Setup.CheckForDMLUpdate(new CancellationTokenSource());
+                await ModUpdater.CheckForUpdates(Global.config.Configs[Global.config.CurrentGame].ModsFolder, this, true);
+                //Global.logger.WriteLine("Checking for Diva Mod Manager update...", LoggerType.Info);
+                //if (await AutoUpdater.CheckForDMMUpdate(new CancellationTokenSource()))
+                //    Close();
+                //Global.logger.WriteLine("Checking for DivaModLoader update...", LoggerType.Info);
+                //await Setup.CheckForDMLUpdate(new CancellationTokenSource());
                 IsEnabledControls(true);
+
+                await UpdateUIElementsAndBuildAsync();
             });
         }
 
@@ -3101,10 +3114,10 @@ namespace DivaModManager
             // ------------------------------------
             try
             {
-                var search = searched ? SearchBar.Text : null;
+                //var search = searched ? SearchBar.Text : null;
                 try
                 {
-                    await DMAFeedGenerator.GetFeed(DMApage, (DMAFeedSort)DMASortBox.SelectedIndex, (DMAFeedFilter)DMAFilterBox.SelectedIndex, search, (DMAPerPageBox.SelectedIndex + 1) * 10);
+                    await DMAFeedGenerator.GetFeed(DMApage, (DMAFeedSort)DMASortBox.SelectedIndex, (DMAFeedFilter)DMAFilterBox.SelectedIndex, DMASearchBar.Text, (DMAPerPageBox.SelectedIndex + 1) * 10);
                 }
                 catch (HttpRequestException ex) // FeedGenerator 内で捕捉されなかった場合
                 {

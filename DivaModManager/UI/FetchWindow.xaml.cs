@@ -128,7 +128,9 @@ namespace DivaModManager
                 return;
             }
             else
+            {
                 Global.logger.WriteLine($"{UrlBox.Text} is invalid. The url should have the following format: https://gamebanana.com/<Mod Category>/<Mod ID> or https://divamodarchive.com/post/<Post ID>", LoggerType.Error);
+            }
         }
 
         private void ConfirmButton_Click(object sender, RoutedEventArgs e)

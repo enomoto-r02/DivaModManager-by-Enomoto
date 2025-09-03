@@ -40,6 +40,11 @@ namespace DivaModManager
 
         [JsonPropertyName("authors")]
         public List<DivaModArchiveUser> Authors { get; set; }
+
+        [JsonPropertyName("explicit")]
+        public bool Explicit { get; set; }
+        [JsonPropertyName("explicit_reason")]
+        public string Explicit_Reason { get; set; }
     }
     public class DivaModArchiveUser
     {

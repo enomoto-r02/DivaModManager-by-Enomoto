@@ -75,6 +75,17 @@ namespace DivaModManager
                 Global.logger.WriteLine("Please click Setup before installing mods!", LoggerType.Warning);
                 return;
             }
+
+            if (post.Explicit)
+            {
+                ExplicitWindow explicitWindow = new(post);
+                explicitWindow.ShowDialog();
+                if (!explicitWindow.YesNo)
+                {
+                    return;
+                }
+            }
+
             DownloadWindow downloadWindow = new DownloadWindow(post);
             downloadWindow.ShowDialog();
             if (downloadWindow.YesNo)
