@@ -30,6 +30,7 @@ namespace DivaModManager
         private GameBananaAPIV4 response = new();
         private DivaModArchivePost DMAresponse = new();
         private ProgressBox progressBox;
+
         public async void BrowserDownload(string game, GameBananaRecord record)
         {
             if (String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].ModsFolder)
@@ -252,6 +253,7 @@ namespace DivaModManager
                 return false;
             }
         }
+        // Called by BrowserDownload (Download_Click)
         private void ExtractFile(string fileName, string game, GameBananaRecord record)
         {
             switch (game)
@@ -262,7 +264,7 @@ namespace DivaModManager
             }
             string _ArchiveSource = $@"{Global.assemblyLocation}{Global.s}Downloads{Global.s}{fileName}";
             string _ArchiveType = Path.GetExtension(fileName);
-            string ArchiveDestination = $@"{Global.assemblyLocation}{Global.s}temp";
+            string ArchiveDestination = $@"{Global.assemblyLocation}Downloads{Global.s}temp_{DateTime.Now:yyyyMMddHHmmssFFF}";
             Directory.CreateDirectory(ArchiveDestination);
             if (File.Exists(_ArchiveSource))
             {
@@ -299,6 +301,7 @@ namespace DivaModManager
                     MessageBox.Show($"Couldn't extract {fileName}: {e.Message}", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
             }
+
             foreach (var folder in Directory.GetDirectories(ArchiveDestination, "*", SearchOption.AllDirectories).Where(x => File.Exists($@"{x}{Global.s}config.toml")))
             {
                 string path = $@"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}{Path.GetFileName(folder)}";
@@ -325,6 +328,7 @@ namespace DivaModManager
                     File.WriteAllText($@"{path}{Global.s}mod.json", metadataString);
                 }
             }
+
             // Check if folder output folder exists, if not nothing was extracted
             if (!Directory.Exists(ArchiveDestination))
             {
@@ -332,11 +336,35 @@ namespace DivaModManager
             }
             else
             {
-                // Only delete if successfully extracted
+                var config_toml_cnt = Directory.GetFiles(ArchiveDestination, "config.toml", SearchOption.AllDirectories).Length;
+                var file_size = new FileInfo(_ArchiveSource).Length;
+                if (config_toml_cnt == 0 && 1000 > file_size)  // 1MB
+                {
+                    Thread thread = new(() =>
+                    {
+                        DmmMessageWindow msgWindow = new(
+                            "The MOD file could not be saved.",
+                            "This MOD may have alternative file sources.\nWould you like to open the MOD page?",
+                            "Information"
+                        );
+                        msgWindow.ShowDialog();
+
+                        if (msgWindow.YesNo)
+                        {
+                            Global.TryStartProcess(record.Link.ToString());
+                        }
+                    });
+                    thread.IsBackground = true;
+                    thread.SetApartmentState(ApartmentState.STA);
+                    thread.Start();
+                }
+
                 File.Delete(_ArchiveSource);
                 Directory.Delete(ArchiveDestination, true);
             }
         }
+
+        // Called by BrowserDownload(Download_Click)、Download(OnStartup)
         private void ExtractFile(string fileName, string game, DivaModArchivePost post)
         {
             switch (game)
@@ -347,7 +375,7 @@ namespace DivaModManager
             }
             string _ArchiveSource = $@"{Global.assemblyLocation}{Global.s}Downloads{Global.s}{fileName}";
             string _ArchiveType = Path.GetExtension(fileName);
-            string ArchiveDestination = $@"{Global.assemblyLocation}{Global.s}temp";
+            string ArchiveDestination = $@"{Global.assemblyLocation}Downloads{Global.s}temp_{DateTime.Now:yyyyMMddHHmmssFFF}";
             Directory.CreateDirectory(ArchiveDestination);
             int archiveFileCount = 0;
             int extractedFileCount = 0;
@@ -458,6 +486,7 @@ namespace DivaModManager
                 File.Copy(path, newPath, true);
             }
         }
+        // Called by Download(OnStartup)
         private void ExtractFile(string fileName, string game, GameBananaAPIV4 record)
         {
             switch (game)
@@ -468,7 +497,7 @@ namespace DivaModManager
             }
             string _ArchiveSource = $@"{Global.assemblyLocation}{Global.s}Downloads{Global.s}{fileName}";
             string _ArchiveType = Path.GetExtension(fileName);
-            string ArchiveDestination = $@"{Global.assemblyLocation}{Global.s}temp";
+            string ArchiveDestination = $@"{Global.assemblyLocation}Downloads{Global.s}temp_{DateTime.Now:yyyyMMddHHmmssFFF}";
             Directory.CreateDirectory(ArchiveDestination);
             if (File.Exists(_ArchiveSource))
             {
@@ -552,6 +581,7 @@ namespace DivaModManager
                 Directory.Delete(ArchiveDestination, true);
             }
         }
+        // Download function Core ?
         private async Task DownloadFile(string uri, string fileName, Progress<DownloadProgress> progress, CancellationTokenSource cancellationToken)
         {
             try
@@ -609,6 +639,5 @@ namespace DivaModManager
                 cancelled = true;
             }
         }
-
     }
 }

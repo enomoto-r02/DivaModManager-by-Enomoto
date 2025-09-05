@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 
@@ -53,5 +55,61 @@ namespace DivaModManager
                 }
             }
         }
+
+        #region 外部プロセス起動 共通ヘルパー
+
+        /// <summary>
+        /// 指定されたターゲット（URLまたはファイル/フォルダパス）を外部プロセスで安全に開きます。
+        /// </summary>
+        /// <param name="target">開くURLまたはパス。</param>
+        /// <param name="workingDirectory">プロセスの作業ディレクトリ（オプション）。</param>
+        /// <returns>プロセスが正常に開始された場合は true、それ以外は false。</returns>
+        public static bool TryStartProcess(string target, string workingDirectory = null)
+        {
+            if (string.IsNullOrWhiteSpace(target))
+            {
+                Global.logger?.WriteLine($"Target for Process.Start is empty or null.", LoggerType.Warning);
+                return false;
+            }
+
+            try
+            {
+                // UseShellExecute = true を使うと、関連付けられたアプリケーションで開く（URLやフォルダなど）
+                // UseShellExecute = false は直接実行ファイルを実行する場合に使うことが多い
+                var psi = new ProcessStartInfo(target)
+                {
+                    UseShellExecute = true,
+                    Verb = "open" // Verb は UseShellExecute = true の場合に意味を持つ
+                };
+
+                if (!string.IsNullOrEmpty(workingDirectory) && Directory.Exists(workingDirectory))
+                {
+                    psi.WorkingDirectory = workingDirectory;
+                }
+
+                Process.Start(psi);
+                Global.logger?.WriteLine($"Successfully started process for target: '{target}'.", LoggerType.Info);
+                return true;
+            }
+            catch (Win32Exception ex) // プロセス開始時の一般的なエラー
+            {
+                Global.logger?.WriteLine($"Error starting process for '{target}': {ex.Message} (ErrorCode: {ex.ErrorCode})", LoggerType.Error);
+                // ユーザーに通知するかどうかはケースバイケース
+                // MessageBox.Show($"Could not open '{target}':\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
+            catch (FileNotFoundException ex) // 実行ファイルが見つからない場合 (UseShellExecute=false の場合など)
+            {
+                Global.logger?.WriteLine($"File not found for process start '{target}': {ex.Message}", LoggerType.Error);
+                return false;
+            }
+            catch (Exception ex) // その他の予期せぬエラー
+            {
+                Global.logger?.WriteLine($"Unexpected error starting process for '{target}': {ex}", LoggerType.Error);
+                return false;
+            }
+        }
+
+        #endregion
     }
 }

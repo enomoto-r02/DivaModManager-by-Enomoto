@@ -1615,7 +1615,7 @@ namespace DivaModManager
         // --- 各種クリックイベントハンドラで TryStartProcess を使用 ---
         private void Github_Click(object sender, RoutedEventArgs e)
         {
-            TryStartProcess($"https://github.com/enomoto-r02/DivaModManager-by-Enomoto/releases");
+            Global.TryStartProcess($"https://github.com/enomoto-r02/DivaModManager-by-Enomoto/releases");
         }
 
         private void GameBanana_Click(object sender, RoutedEventArgs e)
@@ -1629,7 +1629,7 @@ namespace DivaModManager
             }
             if (!string.IsNullOrEmpty(id))
             {
-                TryStartProcess($"https://gamebanana.com/games/{id}");
+                Global.TryStartProcess($"https://gamebanana.com/games/{id}");
             }
             else
             {
@@ -1638,18 +1638,18 @@ namespace DivaModManager
         }
         private void DMA_Click(object sender, RoutedEventArgs e)
         {
-            TryStartProcess($"https://divamodarchive.com");
+            Global.TryStartProcess($"https://divamodarchive.com");
         }
 
         private void DMADonate_Click(object sender, RoutedEventArgs e)
         {
-            TryStartProcess($"https://ko-fi.com/brogamer");
+            Global.TryStartProcess($"https://ko-fi.com/brogamer");
         }
 
         private void Discord_Click(object sender, RoutedEventArgs e)
         {
             var discordLink = "https://discord.gg/cvBVGDZ"; // 定数にする方が良いかも
-            TryStartProcess(discordLink);
+            Global.TryStartProcess(discordLink);
         }
 
 
@@ -1807,7 +1807,7 @@ namespace DivaModManager
                 // TryStartProcess はフォルダも開けるはず
                 if (Directory.Exists(folderName))
                 { // 存在確認は行う
-                    TryStartProcess(folderName);
+                    Global.TryStartProcess(folderName);
                 }
                 else
                 {
@@ -1948,10 +1948,12 @@ namespace DivaModManager
             }
             DropBox.Visibility = Visibility.Collapsed;
         }
+        // Called by Add_Drop, runs on a background thread
         private async void ExtractPackages(string[] fileList)
         {
             Dispatcher.Invoke(() => IsEnabledControls(true)); // 展開中はUI無効化
-            var tempDir = System.IO.Path.Combine(Global.assemblyLocation, "temp"); // Path.Combine を使用
+            string ArchiveDestination = $@"{Global.assemblyLocation}Downloads{Global.s}temp_{DateTime.Now:yyyyMMddHHmmssFFF}";
+            Directory.CreateDirectory(ArchiveDestination);
 
             try
             {
@@ -1961,7 +1963,7 @@ namespace DivaModManager
                     {
                         int archiveFileCount = 0;
                         int extractedFileCount = 0;
-                        Directory.CreateDirectory(tempDir);
+                        Directory.CreateDirectory(ArchiveDestination);
                         if (Directory.Exists(fileOrDir))
                         {
                             Global.logger.WriteLine($@"Moving {fileOrDir} into {Global.config.Configs[Global.config.CurrentGame].ModsFolder}", LoggerType.Info);
@@ -1994,7 +1996,7 @@ namespace DivaModManager
                                             if (!reader.Entry.IsDirectory)
                                             {
                                                 // WriteEntryToDirectory も例外を投げる可能性
-                                                reader.WriteEntryToDirectory(tempDir, new ExtractionOptions()
+                                                reader.WriteEntryToDirectory(ArchiveDestination, new ExtractionOptions()
                                                 {
                                                     ExtractFullPath = true,
                                                     Overwrite = true
@@ -2028,7 +2030,7 @@ namespace DivaModManager
                         }
 
                         // Check if the extracted file count matches the archive file count
-                        extractedFileCount = Directory.EnumerateFiles(tempDir, "*", SearchOption.AllDirectories).Count();
+                        extractedFileCount = Directory.EnumerateFiles(ArchiveDestination, "*", SearchOption.AllDirectories).Count();
                         if (archiveFileCount != extractedFileCount)
                         {
                             string msg = $"Extracted file count ({extractedFileCount}) does not match archive file count ({archiveFileCount}).\nIt may not have been unzipped correctly.";
@@ -2037,7 +2039,7 @@ namespace DivaModManager
                         }
                         // --- temp ディレクトリからの移動処理 ---
                         // GetDirectories も try-catch で囲む
-                        var extractedFolders = Directory.GetDirectories(tempDir, "*", SearchOption.AllDirectories)
+                        var extractedFolders = Directory.GetDirectories(ArchiveDestination, "*", SearchOption.AllDirectories)
                                                         .Where(x => File.Exists(System.IO.Path.Combine(x, "config.toml"))); // File.Exists もエラー可能性あり
 
                         foreach (var folder in extractedFolders)
@@ -2051,9 +2053,9 @@ namespace DivaModManager
                             }
                             MoveDirectory(folder, path);
                         }
-                        if (Directory.Exists(tempDir))
+                        if (Directory.Exists(ArchiveDestination))
                         {
-                            Directory.Delete(tempDir, true);
+                            Directory.Delete(ArchiveDestination, true);
                         }   
                         // ドロップしたファイルを削除しないよう修正
                         //File.Delete(_ArchiveSource);
@@ -2443,7 +2445,7 @@ namespace DivaModManager
         {
             if (sender is Button button && button.DataContext is GameBananaRecord item && item.Link != null)
             {
-                TryStartProcess(item.Link.AbsoluteUri);
+                Global.TryStartProcess(item.Link.AbsoluteUri);
             }
         }
 
@@ -2451,7 +2453,7 @@ namespace DivaModManager
         {
             if (sender is Button button && button.DataContext is DivaModArchivePost item && item.Link != null)
             {
-                TryStartProcess(item.Link.AbsoluteUri);
+                Global.TryStartProcess(item.Link.AbsoluteUri);
             }
         }
 
@@ -3385,7 +3387,8 @@ namespace DivaModManager
         {
             if (!filterSelect && IsLoaded)
             {
-                page = (int)PageBox.SelectedValue;
+                page = PageBox.SelectedValue == null ? 1 : (int)PageBox.SelectedValue;
+                //page = (int)PageBox.SelectedValue;
                 RefreshFilter();
             }
         }
@@ -3393,7 +3396,8 @@ namespace DivaModManager
         {
             if (!DMAFilterSelect && IsLoaded)
             {
-                DMApage = (int)DMAPageBox.SelectedValue;
+                DMApage = DMAPageBox.SelectedValue  == null ? 1 : (int)DMAPageBox.SelectedValue;
+                // DMApage = (int)DMAPageBox.SelectedValue;
                 DMARefreshFilter();
             }
         }
@@ -4317,7 +4321,7 @@ namespace DivaModManager
             var folderName = Global.assemblyLocation;
             if (Directory.Exists(folderName))
             {
-                TryStartProcess(folderName);
+                Global.TryStartProcess(folderName);
             }
             else
             {
@@ -4506,62 +4510,6 @@ namespace DivaModManager
         }
         // ------------------------------------------------------
 
-        #region 外部プロセス起動 共通ヘルパー
-
-        /// <summary>
-        /// 指定されたターゲット（URLまたはファイル/フォルダパス）を外部プロセスで安全に開きます。
-        /// </summary>
-        /// <param name="target">開くURLまたはパス。</param>
-        /// <param name="workingDirectory">プロセスの作業ディレクトリ（オプション）。</param>
-        /// <returns>プロセスが正常に開始された場合は true、それ以外は false。</returns>
-        private bool TryStartProcess(string target, string workingDirectory = null)
-        {
-            if (string.IsNullOrWhiteSpace(target))
-            {
-                Global.logger?.WriteLine($"Target for Process.Start is empty or null.", LoggerType.Warning);
-                return false;
-            }
-
-            try
-            {
-                // UseShellExecute = true を使うと、関連付けられたアプリケーションで開く（URLやフォルダなど）
-                // UseShellExecute = false は直接実行ファイルを実行する場合に使うことが多い
-                var psi = new ProcessStartInfo(target)
-                {
-                    UseShellExecute = true,
-                    Verb = "open" // Verb は UseShellExecute = true の場合に意味を持つ
-                };
-
-                if (!string.IsNullOrEmpty(workingDirectory) && Directory.Exists(workingDirectory))
-                {
-                    psi.WorkingDirectory = workingDirectory;
-                }
-
-                Process.Start(psi);
-                Global.logger?.WriteLine($"Successfully started process for target: '{target}'.", LoggerType.Info);
-                return true;
-            }
-            catch (Win32Exception ex) // プロセス開始時の一般的なエラー
-            {
-                Global.logger?.WriteLine($"Error starting process for '{target}': {ex.Message} (ErrorCode: {ex.ErrorCode})", LoggerType.Error);
-                // ユーザーに通知するかどうかはケースバイケース
-                // MessageBox.Show($"Could not open '{target}':\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return false;
-            }
-            catch (FileNotFoundException ex) // 実行ファイルが見つからない場合 (UseShellExecute=false の場合など)
-            {
-                Global.logger?.WriteLine($"File not found for process start '{target}': {ex.Message}", LoggerType.Error);
-                return false;
-            }
-            catch (Exception ex) // その他の予期せぬエラー
-            {
-                Global.logger?.WriteLine($"Unexpected error starting process for '{target}': {ex}", LoggerType.Error);
-                return false;
-            }
-        }
-
-        #endregion
-
         #region FlowDocument 変換ロジック共通化
 
         /// <summary>
@@ -4611,7 +4559,7 @@ namespace DivaModManager
                     // RequestNavigate イベントでブラウザなどを起動
                     hyperlink.RequestNavigate += (sender, args) =>
                     {
-                        TryStartProcess(args.Uri.AbsoluteUri); // 共通ヘルパーを使用
+                        Global.TryStartProcess(args.Uri.AbsoluteUri); // 共通ヘルパーを使用
                         args.Handled = true; // イベント処理済み
                     };
                     paragraph.Inlines.Add(hyperlink);

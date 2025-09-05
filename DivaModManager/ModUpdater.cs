@@ -444,6 +444,7 @@ namespace DivaModManager
                 Global.logger.WriteLine($"Error whilst downloading {fileName} ({e.Message})", LoggerType.Error);
             }
         }
+        // Called by ModUpdate to download the file
         private static async Task DownloadFile(string uri, string fileName, string mod, DivaModArchivePost item, Progress<DownloadProgress> progress, CancellationTokenSource cancellationToken)
         {
             try
@@ -522,10 +523,11 @@ namespace DivaModManager
                 di.Delete();
             }
         }
+        // Called by DownloadFile after downloading to extract the file
         private static void ExtractFile(string fileName, string output, GameBananaAPIV4 item)
         {
             string _ArchiveSource = $@"{Global.assemblyLocation}{Global.s}Downloads{Global.s}{fileName}";
-            string ArchiveDestination = $@"{Global.assemblyLocation}{Global.s}temp";
+            string ArchiveDestination = $@"{Global.assemblyLocation}Downloads{Global.s}temp_{DateTime.Now:yyyyMMddHHmmssFFF}";
             Directory.CreateDirectory(ArchiveDestination);
             if (File.Exists(_ArchiveSource))
             {
@@ -540,19 +542,17 @@ namespace DivaModManager
                     }
                     else
                     {
-                        using (Stream stream = File.OpenRead(_ArchiveSource))
-                        using (var reader = ReaderFactory.Open(stream))
+                        using Stream stream = File.OpenRead(_ArchiveSource);
+                        using var reader = ReaderFactory.Open(stream);
+                        while (reader.MoveToNextEntry())
                         {
-                            while (reader.MoveToNextEntry())
+                            if (!reader.Entry.IsDirectory)
                             {
-                                if (!reader.Entry.IsDirectory)
+                                reader.WriteEntryToDirectory(ArchiveDestination, new ExtractionOptions()
                                 {
-                                    reader.WriteEntryToDirectory(ArchiveDestination, new ExtractionOptions()
-                                    {
-                                        ExtractFullPath = true,
-                                        Overwrite = true
-                                    });
-                                }
+                                    ExtractFullPath = true,
+                                    Overwrite = true
+                                });
                             }
                         }
                     }
@@ -607,10 +607,11 @@ namespace DivaModManager
                 Directory.Delete(ArchiveDestination, true);
             }
         }
+        // Called by DownloadFile after downloading to extract the file
         private static void ExtractFile(string fileName, string output, DivaModArchivePost item)
         {
             string _ArchiveSource = $@"{Global.assemblyLocation}{Global.s}Downloads{Global.s}{fileName}";
-            string ArchiveDestination = $@"{Global.assemblyLocation}{Global.s}temp";
+            string ArchiveDestination = $@"{Global.assemblyLocation}Downloads{Global.s}temp_{DateTime.Now:yyyyMMddHHmmssFFF}";
             Directory.CreateDirectory(ArchiveDestination);
             if (File.Exists(_ArchiveSource))
             {
