@@ -1,5 +1,6 @@
 ﻿using DivaModManager.UI;
 using SevenZipExtractor;
+using SharpCompress.Archives;
 using SharpCompress.Archives.SevenZip;
 using SharpCompress.Common;
 using SharpCompress.Readers;
@@ -348,10 +349,16 @@ namespace DivaModManager
             string _ArchiveType = Path.GetExtension(fileName);
             string ArchiveDestination = $@"{Global.assemblyLocation}{Global.s}temp";
             Directory.CreateDirectory(ArchiveDestination);
+            int archiveFileCount = 0;
+            int extractedFileCount = 0;
             if (File.Exists(_ArchiveSource))
             {
                 try
                 {
+                    using (var archive = ArchiveFactory.Open(_ArchiveSource))
+                    {
+                        archiveFileCount = archive.Entries.Count(entry => !entry.IsDirectory);
+                    }
                     if (Path.GetExtension(_ArchiveSource).Equals(".7z", StringComparison.InvariantCultureIgnoreCase))
                     {
                         using (var archive = SevenZipArchive.Open(_ArchiveSource))
@@ -371,17 +378,19 @@ namespace DivaModManager
                     else
                     {
                         using (Stream stream = File.OpenRead(_ArchiveSource))
-                        using (var reader = ReaderFactory.Open(stream))
                         {
-                            while (reader.MoveToNextEntry())
+                            using (var reader = ReaderFactory.Open(stream))
                             {
-                                if (!reader.Entry.IsDirectory)
+                                while (reader.MoveToNextEntry())
                                 {
-                                    reader.WriteEntryToDirectory(ArchiveDestination, new ExtractionOptions()
+                                    if (!reader.Entry.IsDirectory)
                                     {
-                                        ExtractFullPath = true,
-                                        Overwrite = true
-                                    });
+                                        reader.WriteEntryToDirectory(ArchiveDestination, new ExtractionOptions()
+                                        {
+                                            ExtractFullPath = true,
+                                            Overwrite = true
+                                        });
+                                    }
                                 }
                             }
                         }
@@ -391,7 +400,17 @@ namespace DivaModManager
                 {
                     MessageBox.Show($"Couldn't extract {fileName}: {e.Message}", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
+
             }
+            // Check if the extracted file count matches the archive file count
+            extractedFileCount = Directory.EnumerateFiles(ArchiveDestination, "*", SearchOption.AllDirectories).Count();
+            if(archiveFileCount != extractedFileCount)
+            {
+                string msg = $"Extracted file count ({extractedFileCount}) does not match archive file count ({archiveFileCount}).\nIt may not have been unzipped correctly.";
+                MessageBox.Show(msg, "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                Global.logger.WriteLine(msg, LoggerType.Warning);
+            }
+
             foreach (var folder in Directory.GetDirectories(ArchiveDestination, "*", SearchOption.AllDirectories).Where(x => File.Exists($@"{x}{Global.s}config.toml")))
             {
                 string path = $@"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}{Path.GetFileName(folder)}";

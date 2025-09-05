@@ -1,11 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.IO;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Net.Http;
-using System.IO;
+using System.Windows;
 
 namespace DivaModManager
 {
@@ -42,6 +40,9 @@ namespace DivaModManager
                     if (progress == null || !contentLength.HasValue)
                     {
                         await download.CopyToAsync(destination);
+                        string msg = $"Could not retrieve the ContentLength of the header.\nSkip size validation after download.";
+                        MessageBox.Show(msg, "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        Global.logger.WriteLine(msg, LoggerType.Warning);
                         return;
                     }
 
@@ -50,6 +51,13 @@ namespace DivaModManager
                     // Use extension method to report progress while downloading
                     await download.CopyToAsync(destination, 81920, relativeProgress, cancellationToken);
                     progress.Report(new DownloadProgress(1, contentLength.Value, contentLength.Value, fileName));
+                }
+
+                if (contentLength.HasValue && contentLength != destination.Length)
+                {
+                    string msg = $"The file size on the server does not match the size of the downloaded file.\nThere may have been a failure during the download.\n  Server Size: {contentLength}\n  Download Size: {destination.Length}";
+                    MessageBox.Show(msg, "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    Global.logger.WriteLine(msg, LoggerType.Warning);
                 }
             }
         }

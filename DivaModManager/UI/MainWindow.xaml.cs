@@ -287,11 +287,11 @@ namespace DivaModManager
                     //if (await AutoUpdater.CheckForDMMUpdate(new CancellationTokenSource()))
                     //    Close();
                     // Check for DML update only if its already setup
-                    if (!String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].ModLoaderVersion))
-                    {
-                        Global.logger.WriteLine("Checking for DivaModLoader update...", LoggerType.Info);
-                        await Setup.CheckForDMLUpdate(new CancellationTokenSource());
-                    }
+                    //if (!String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].ModLoaderVersion))
+                    //{
+                    //    Global.logger.WriteLine("Checking for DivaModLoader update...", LoggerType.Info);
+                    //    await Setup.CheckForDMLUpdate(new CancellationTokenSource());
+                    //}
                     IsEnabledControls(true);
 
                     // 初期表示のために RefreshAsync を呼ぶ
@@ -1712,46 +1712,58 @@ namespace DivaModManager
             var selectedMods = ModGrid.SelectedItems.OfType<Mod>().ToList(); // 型安全なコピー
             if (!selectedMods.Any()) return;
 
-            foreach (var row in selectedMods)
+            try
             {
-                // 確認ダイアログ (これはUIスレッドで)
-                var dialogResult = MessageBox.Show($@"Are you sure you want to delete {row.name}?" + Environment.NewLine + "This cannot be undone.", $@"Deleting {row.name}: Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                // --- 監視を一時停止 ---
+                StopWatching();
 
-                if (dialogResult == MessageBoxResult.Yes)
+                foreach (var row in selectedMods)
                 {
-                    string modPath = System.IO.Path.Combine(Global.config.Configs[Global.config.CurrentGame].ModsFolder, row.name);
-                    Global.logger.WriteLine($@"Attempting to delete {row.name} at '{modPath}'.", LoggerType.Info);
-                    try
-                    {
-                        // Directory.Delete は時間がかかる可能性があるので Task.Run
-                        await Task.Run(() => Directory.Delete(modPath, true));
-                        Global.logger.WriteLine($"Successfully deleted '{modPath}'.", LoggerType.Info);
-                        // メタデータ表示をクリア (UI スレッドで)
-                        await Dispatcher.InvokeAsync(() => ShowMetadata(null));
-                        // ★注意: ModListからの削除はRefreshAsyncで行われるのを待つか、ここで手動で削除する必要がある
-                        // 手動削除: await Application.Current.Dispatcher.InvokeAsync(() => Global.ModList.Remove(row));
-                    }
-                    catch (IOException ex)
-                    {
-                        Global.logger.WriteLine($@"IO error deleting '{modPath}': {ex.Message}", LoggerType.Error);
-                        await Dispatcher.InvokeAsync(() => MessageBox.Show($"Could not delete '{row.name}':\n{ex.Message}", "Delete Error", MessageBoxButton.OK, MessageBoxImage.Error));
-                    }
-                    catch (UnauthorizedAccessException ex)
-                    {
-                        Global.logger.WriteLine($@"Permission error deleting '{modPath}': {ex.Message}", LoggerType.Error);
-                        await Dispatcher.InvokeAsync(() => MessageBox.Show($"Permission denied while deleting '{row.name}':\n{ex.Message}", "Delete Error", MessageBoxButton.OK, MessageBoxImage.Error));
-                    }
-                    catch (Exception ex) // その他のエラー
-                    {
-                        Global.logger.WriteLine($@"Unexpected error deleting '{modPath}': {ex}", LoggerType.Error);
-                        await Dispatcher.InvokeAsync(() => MessageBox.Show($"An unexpected error occurred while deleting '{row.name}':\n{ex.Message}", "Delete Error", MessageBoxButton.OK, MessageBoxImage.Error));
-                    }
-                } // end if Yes
-            } // end foreach
+                    // 確認ダイアログ (これはUIスレッドで)
+                    var dialogResult = MessageBox.Show($@"Are you sure you want to delete {row.name}?" + Environment.NewLine + "This cannot be undone.", $@"Deleting {row.name}: Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Warning);
 
-            // 削除操作後にリストをリフレッシュ（推奨）
-            // Debounce 処理があるので、少し待てば RefreshAsync が呼ばれるはず
-            // 必要なら手動でタイマーをトリガー: _debounceTimer?.Change(0, Timeout.Infinite);
+                    if (dialogResult == MessageBoxResult.Yes)
+                    {
+                        string modPath = System.IO.Path.Combine(Global.config.Configs[Global.config.CurrentGame].ModsFolder, row.name);
+                        Global.logger.WriteLine($@"Attempting to delete {row.name} at '{modPath}'.", LoggerType.Info);
+                        try
+                        {
+                            // Directory.Delete は時間がかかる可能性があるので Task.Run
+                            await Task.Run(() => Directory.Delete(modPath, true));
+                            Global.logger.WriteLine($"Successfully deleted '{modPath}'.", LoggerType.Info);
+                            // メタデータ表示をクリア (UI スレッドで)
+                            await Dispatcher.InvokeAsync(() => ShowMetadata(null));
+                            // ★注意: ModListからの削除はRefreshAsyncで行われるのを待つか、ここで手動で削除する必要がある
+                            // 手動削除: await Application.Current.Dispatcher.InvokeAsync(() => Global.ModList.Remove(row));
+                        }
+                        catch (IOException ex)
+                        {
+                            Global.logger.WriteLine($@"IO error deleting '{modPath}': {ex.Message}", LoggerType.Error);
+                            await Dispatcher.InvokeAsync(() => MessageBox.Show($"Could not delete '{row.name}':\n{ex.Message}", "Delete Error", MessageBoxButton.OK, MessageBoxImage.Error));
+                        }
+                        catch (UnauthorizedAccessException ex)
+                        {
+                            Global.logger.WriteLine($@"Permission error deleting '{modPath}': {ex.Message}", LoggerType.Error);
+                            await Dispatcher.InvokeAsync(() => MessageBox.Show($"Permission denied while deleting '{row.name}':\n{ex.Message}", "Delete Error", MessageBoxButton.OK, MessageBoxImage.Error));
+                        }
+                        catch (Exception ex) // その他のエラー
+                        {
+                            Global.logger.WriteLine($@"Unexpected error deleting '{modPath}': {ex}", LoggerType.Error);
+                            await Dispatcher.InvokeAsync(() => MessageBox.Show($"An unexpected error occurred while deleting '{row.name}':\n{ex.Message}", "Delete Error", MessageBoxButton.OK, MessageBoxImage.Error));
+                        }
+                    } // end if Yes
+                } // end foreach
+            }
+            finally
+            {
+                // --- 監視を再開 ---
+                StartWatching();
+                RefreshAsync();
+
+                // 削除操作後にリストをリフレッシュ（推奨）
+                // Debounce 処理があるので、少し待てば RefreshAsync が呼ばれるはず
+                // 必要なら手動でタイマーをトリガー: _debounceTimer?.Change(0, Timeout.Infinite);
+            }
         }
 
         #endregion
@@ -1938,8 +1950,8 @@ namespace DivaModManager
         }
         private async void ExtractPackages(string[] fileList)
         {
+            Dispatcher.Invoke(() => IsEnabledControls(true)); // 展開中はUI無効化
             var tempDir = System.IO.Path.Combine(Global.assemblyLocation, "temp"); // Path.Combine を使用
-            IsEnabledControls(false); // 展開中はUI無効化
 
             try
             {
@@ -1947,6 +1959,8 @@ namespace DivaModManager
                 {
                     foreach (var fileOrDir in fileList)
                     {
+                        int archiveFileCount = 0;
+                        int extractedFileCount = 0;
                         Directory.CreateDirectory(tempDir);
                         if (Directory.Exists(fileOrDir))
                         {
@@ -1973,6 +1987,7 @@ namespace DivaModManager
                                     // --- SharpCompress のエラーハンドリング ---
                                     using (var archive = ArchiveFactory.Open(fileOrDir))
                                     {
+                                        archiveFileCount = archive.Entries.Count(entry => !entry.IsDirectory);
                                         var reader = archive.ExtractAllEntries(); // これで良いか、または OpenReader を使うか
                                         while (reader.MoveToNextEntry())
                                         {
@@ -2011,6 +2026,15 @@ namespace DivaModManager
                                 Global.logger.WriteLine($"Skipping unsupported file type: '{fileOrDir}'", LoggerType.Warning);
                             }
                         }
+
+                        // Check if the extracted file count matches the archive file count
+                        extractedFileCount = Directory.EnumerateFiles(tempDir, "*", SearchOption.AllDirectories).Count();
+                        if (archiveFileCount != extractedFileCount)
+                        {
+                            string msg = $"Extracted file count ({extractedFileCount}) does not match archive file count ({archiveFileCount}).\nIt may not have been unzipped correctly.";
+                            MessageBox.Show(msg, "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                            Global.logger.WriteLine(msg, LoggerType.Warning);
+                        }
                         // --- temp ディレクトリからの移動処理 ---
                         // GetDirectories も try-catch で囲む
                         var extractedFolders = Directory.GetDirectories(tempDir, "*", SearchOption.AllDirectories)
@@ -2038,7 +2062,7 @@ namespace DivaModManager
             }
             finally
             {
-                IsEnabledControls(true); // 展開完了またはエラー後、UI有効化
+                Dispatcher.Invoke(() => IsEnabledControls(true)); // 展開完了またはエラー後、UI有効化
                                          // 展開後は Refresh が必要 (Debounce により自動で呼ばれるはず)
             }
         }
@@ -3189,6 +3213,7 @@ namespace DivaModManager
                         DMABrowserMessage.Text = "Diva Mod Manager couldn't find any mods.";
                     }
                     DMAPageBox.ItemsSource = Enumerable.Range(1, (int)(DMAFeedGenerator.CurrentFeed.TotalPages));
+                    DMAPageBox.SelectedValue = DMApage;
                 });
             }
             catch (Exception ex)
@@ -3871,7 +3896,6 @@ namespace DivaModManager
                 filterSelect = true;
                 FilterBox.ItemsSource = FilterBoxListWhenSearched;
                 FilterBox.SelectedIndex = 3;
-                NSFWCheckbox.IsChecked = true;
                 // Set categories
                 if (cats[(GameFilter)GameFilterBox.SelectedIndex][(TypeFilter)TypeBox.SelectedIndex].Any(x => x.RootID == 0))
                     CatBox.ItemsSource = All.Concat(cats[(GameFilter)GameFilterBox.SelectedIndex][(TypeFilter)TypeBox.SelectedIndex].Where(x => x.RootID == 0).OrderBy(y => y.ID));
@@ -4464,7 +4488,7 @@ namespace DivaModManager
             CatBox.IsEnabled = isEnabled;
             SubCatBox.IsEnabled = isEnabled;
             PageLeft.IsEnabled = isEnabled && page > 1; // ページ状態も考慮
-            PageRight.IsEnabled = isEnabled /* && page < maxPage */; // 最大ページ数を考慮
+            PageRight.IsEnabled = FeedGenerator.CurrentFeed == null ? false : isEnabled && page < FeedGenerator.CurrentFeed.TotalPages;
             PageBox.IsEnabled = isEnabled;
             PerPageBox.IsEnabled = isEnabled;
             ClearCacheButton.IsEnabled = isEnabled;
@@ -4476,7 +4500,7 @@ namespace DivaModManager
             DMAFilterBox.IsEnabled = isEnabled;
             DMAClearCacheButton.IsEnabled = isEnabled;
             DMAPageLeft.IsEnabled = isEnabled && DMApage > 1; // ページ状態考慮
-            DMAPageRight.IsEnabled = isEnabled /* && DMApage < maxDMAPage */;
+            DMAPageRight.IsEnabled = DMAFeedGenerator.CurrentFeed == null ? false : isEnabled && DMApage < DMAFeedGenerator.CurrentFeed.TotalPages;
             DMAPageBox.IsEnabled = isEnabled;
             DMAPerPageBox.IsEnabled = isEnabled;
         }
