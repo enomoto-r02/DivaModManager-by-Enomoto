@@ -36,7 +36,7 @@ namespace DivaModManager
         public string version;
         private FileSystemWatcher ModsWatcher;
         private FlowDocument defaultFlow = new FlowDocument();
-        private string defaultText = "Welcome to Diva Mod Manager!\n\n" +
+        private string defaultText = "Welcome to Diva Mod Manager by Enomoto!\n\n" +
             "To show metadata here:\nRight Click Row > Configure Mod and add author, version, and/or date fields" +
             "\nand/or Right Click Row > Fetch Metadata and confirm the GameBanana URL of the mod";
         private ObservableCollection<String> LauncherOptions = new ObservableCollection<String>(new string[] { "Executable", "Steam" });
@@ -106,7 +106,7 @@ namespace DivaModManager
                 version = DMMVersion;
                 //version = DMMVersion.Substring(0, DMMVersion.LastIndexOf('.'));
 
-                Global.logger.WriteLine($"Launched Diva Mod Manager v{version}!", LoggerType.Info);
+                Global.logger.WriteLine($"Launched Diva Mod Manager by Enomoto v{version}!", LoggerType.Info);
 
                 // --- Config.json 読み込みのエラーハンドリング改善 ---
                 string configFilePath = $@"{Global.assemblyLocation}{Global.s}Config.json";
@@ -148,22 +148,22 @@ namespace DivaModManager
                         {
                         Global.logger.WriteLine($"Error parsing Config.json: {ex.Message}. Using default config.", LoggerType.Error);
                         // 破損したファイルをリネームするなどの措置も検討可能
-                        // MessageBox.Show($"Configuration file (Config.json) is corrupted:\n{ex.Message}\n\nDiva Mod Manager will start with default settings.", "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        // MessageBox.Show($"Configuration file (Config.json) is corrupted:\n{ex.Message}\n\nDiva Mod Manager by Enomoto will start with default settings.", "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Warning);
                     }
                     catch (IOException ex)
                     {
                         Global.logger.WriteLine($"Error reading Config.json: {ex.Message}. Using default config.", LoggerType.Error);
-                        // MessageBox.Show($"Could not read configuration file (Config.json):\n{ex.Message}\n\nDiva Mod Manager will start with default settings.", "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        // MessageBox.Show($"Could not read configuration file (Config.json):\n{ex.Message}\n\nDiva Mod Manager by Enomoto will start with default settings.", "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Warning);
                     }
                     catch (UnauthorizedAccessException ex)
                     {
                         Global.logger.WriteLine($"Permission error reading Config.json: {ex.Message}. Using default config.", LoggerType.Error);
-                        // MessageBox.Show($"Permission denied while reading configuration file (Config.json):\n{ex.Message}\n\nDiva Mod Manager will start with default settings.", "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        // MessageBox.Show($"Permission denied while reading configuration file (Config.json):\n{ex.Message}\n\nDiva Mod Manager by Enomoto will start with default settings.", "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Warning);
                     }
                     catch (Exception ex) // 予期せぬエラー
                     {
                         Global.logger.WriteLine($"Unexpected error loading Config.json: {ex}. Using default config.", LoggerType.Critical);
-                        // MessageBox.Show($"An unexpected error occurred while loading configuration:\n{ex.Message}\n\nDiva Mod Manager will start with default settings.", "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        // MessageBox.Show($"An unexpected error occurred while loading configuration:\n{ex.Message}\n\nDiva Mod Manager by Enomoto will start with default settings.", "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                 }
                 else
@@ -283,7 +283,7 @@ namespace DivaModManager
                     //await ModUpdater.CheckForUpdates(Global.config.Configs[Global.config.CurrentGame].ModsFolder, this);
                     //await ModUpdater.CheckForUpdatesInit(this);
 
-                    //Global.logger.WriteLine("Checking for Diva Mod Manager update...", LoggerType.Info);
+                    //Global.logger.WriteLine("Checking for Diva Mod Manager by Enomoto update...", LoggerType.Info);
                     //if (await AutoUpdater.CheckForDMMUpdate(new CancellationTokenSource()))
                     //    Close();
                     // Check for DML update only if its already setup
@@ -297,7 +297,7 @@ namespace DivaModManager
                     // 初期表示のために RefreshAsync を呼ぶ
                     if (await DirectoryExistsAsync(Global.config.Configs[Global.config.CurrentGame].ModsFolder)) // 非同期チェック
                     {
-                        RefreshAsync();
+                        await RefreshAsync();
                     }
                 });
             }
@@ -1474,7 +1474,7 @@ namespace DivaModManager
                     {
                         InitializeFileSystemWatcherAndTimer();
                         StartWatching();
-                        RefreshAsync();
+                        await RefreshAsync();
                         LaunchButton.IsEnabled = true;
                     });
                 }
@@ -1523,94 +1523,6 @@ namespace DivaModManager
             else
                 Global.logger.WriteLine($"Please click Setup before launching!", LoggerType.Warning);
         }
-        //private void Github_Click(object sender, RoutedEventArgs e)
-        //{
-        //    try
-        //    {
-        //        var ps = new ProcessStartInfo($"https://github.com/enomoto-r02/DivaModManager-by-Enomoto/releases")
-        //        {
-        //            UseShellExecute = true,
-        //            Verb = "open"
-        //        };
-        //        Process.Start(ps);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Global.logger.WriteLine($"Couldn't open up Github ({ex.Message})", LoggerType.Error);
-        //    }
-        //}
-        //private void GameBanana_Click(object sender, RoutedEventArgs e)
-        //{
-        //    var id = "";
-        //    switch ((GameFilter)GameFilterBox.SelectedIndex)
-        //    {
-        //        case GameFilter.MMP:
-        //            id = "16522";
-        //            break;
-        //    }
-        //    try
-        //    {
-        //        var ps = new ProcessStartInfo($"https://gamebanana.com/games/{id}")
-        //        {
-        //            UseShellExecute = true,
-        //            Verb = "open"
-        //        };
-        //        Process.Start(ps);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Global.logger.WriteLine($"Couldn't open up GameBanana ({ex.Message})", LoggerType.Error);
-        //    }
-        //}
-        //private void DMA_Click(object sender, RoutedEventArgs e)
-        //{
-        //    try
-        //    {
-        //        var ps = new ProcessStartInfo($"https://divamodarchive.com")
-        //        {
-        //            UseShellExecute = true,
-        //            Verb = "open"
-        //        };
-        //        Process.Start(ps);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Global.logger.WriteLine($"Couldn't open up DivaModArchive ({ex.Message})", LoggerType.Error);
-        //    }
-        //}
-        //private void DMADonate_Click(object sender, RoutedEventArgs e)
-        //{
-        //    try
-        //    {
-        //        var ps = new ProcessStartInfo($"https://ko-fi.com/brogamer")
-        //        {
-        //            UseShellExecute = true,
-        //            Verb = "open"
-        //        };
-        //        Process.Start(ps);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Global.logger.WriteLine($"Couldn't open up Ko-Fi ({ex.Message})", LoggerType.Error);
-        //    }
-        //}
-        //private void Discord_Click(object sender, RoutedEventArgs e)
-        //{
-        //    try
-        //    {
-        //        var discordLink = "https://discord.gg/cvBVGDZ";
-        //        var ps = new ProcessStartInfo(discordLink)
-        //        {
-        //            UseShellExecute = true,
-        //            Verb = "open"
-        //        };
-        //        Process.Start(ps);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Global.logger.WriteLine(ex.Message, LoggerType.Error);
-        //    }
-        //}
 
         // --- 各種クリックイベントハンドラで TryStartProcess を使用 ---
         private void Github_Click(object sender, RoutedEventArgs e)
@@ -1751,6 +1663,10 @@ namespace DivaModManager
                             Global.logger.WriteLine($@"Unexpected error deleting '{modPath}': {ex}", LoggerType.Error);
                             await Dispatcher.InvokeAsync(() => MessageBox.Show($"An unexpected error occurred while deleting '{row.name}':\n{ex.Message}", "Delete Error", MessageBoxButton.OK, MessageBoxImage.Error));
                         }
+                        finally
+                        {
+                            await RefreshAsync();
+                        }
                     } // end if Yes
                 } // end foreach
             }
@@ -1758,8 +1674,7 @@ namespace DivaModManager
             {
                 // --- 監視を再開 ---
                 StartWatching();
-                RefreshAsync();
-
+                await RefreshAsync();
                 // 削除操作後にリストをリフレッシュ（推奨）
                 // Debounce 処理があるので、少し待てば RefreshAsync が呼ばれるはず
                 // 必要なら手動でタイマーをトリガー: _debounceTimer?.Change(0, Timeout.Infinite);
@@ -2069,10 +1984,12 @@ namespace DivaModManager
             }
         }
         // MoveDirectory も内部で try-catch を追加すべき
-        private static void MoveDirectory(string sourcePath, string targetPath)
+        private void MoveDirectory(string sourcePath, string targetPath)
         {
             try
             {
+                StopWatching(); // 監視を一時停止
+
                 // File.Copy も IOException, UnauthorizedAccessException などを投げる可能性
                 foreach (var path in Directory.GetFiles(sourcePath, "*.*", SearchOption.AllDirectories))
                 {
@@ -2098,6 +2015,11 @@ namespace DivaModManager
                 // エラーを再スローするか？
                 // throw;
             }
+            finally
+            {
+                StartWatching(); // 監視を再開
+                RefreshAsync();
+            }
         }
         private void CreateMod_Click(object sender, RoutedEventArgs e)
         {
@@ -2110,33 +2032,31 @@ namespace DivaModManager
             var cmw = new CreateModWindow();
             cmw.Show();
         }
-        private void UpdateAll_Click(object sender, RoutedEventArgs e)
+        private void Update_Check_Click(object sender, RoutedEventArgs e)
         {
             App.Current.Dispatcher.Invoke(async () =>
             {
                 IsEnabledControls(false);
                 //Global.logger.WriteLine("Checking for mod all updates...", LoggerType.Info);
                 //await ModUpdater.CheckForUpdates(Global.config.Configs[Global.config.CurrentGame].ModsFolder, this, false);
-                //Global.logger.WriteLine("Checking for Diva Mod Manager update...", LoggerType.Info);
-                //if (await AutoUpdater.CheckForDMMUpdate(new CancellationTokenSource()))
-                //    Close();
+                Global.logger.WriteLine("Checking for Diva Mod Manager by Enomoto update...", LoggerType.Info);
+                if (await AutoUpdater.CheckForDMMUpdate(new CancellationTokenSource()))
+                    Close();
                 Global.logger.WriteLine("Checking for DivaModLoader update...", LoggerType.Info);
                 await Setup.CheckForDMLUpdate(new CancellationTokenSource());
                 IsEnabledControls(true);
 
                 await UpdateUIElementsAndBuildAsync();
             });
-
-
         }
-        private void Update_Click(object sender, RoutedEventArgs e)
+        private void UpdateItem_Click(object sender, RoutedEventArgs e)
         {
             App.Current.Dispatcher.Invoke(async () =>
             {
                 IsEnabledControls(false);
                 Global.logger.WriteLine("Checking for mod updates...", LoggerType.Info);
                 await ModUpdater.CheckForUpdates(Global.config.Configs[Global.config.CurrentGame].ModsFolder, this, true);
-                //Global.logger.WriteLine("Checking for Diva Mod Manager update...", LoggerType.Info);
+                //Global.logger.WriteLine("Checking for Diva Mod Manager by Enomoto update...", LoggerType.Info);
                 //if (await AutoUpdater.CheckForDMMUpdate(new CancellationTokenSource()))
                 //    Close();
                 //Global.logger.WriteLine("Checking for DivaModLoader update...", LoggerType.Info);
@@ -2451,9 +2371,9 @@ namespace DivaModManager
 
         private void DMAHomepage_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button && button.DataContext is DivaModArchivePost item && item.Link != null)
+            if (sender is Button button && button.DataContext is DivaModArchivePost item)
             {
-                Global.TryStartProcess(item.Link.AbsoluteUri);
+                Global.TryStartProcess(Global.DMA_HOMEPAGE_URL_POSTS+item.ID);
             }
         }
 
@@ -3044,7 +2964,7 @@ namespace DivaModManager
                     BrowserRefreshButton.Visibility = Visibility.Visible;
                     if (FeedGenerator.exception.Message.Contains("JSON tokens"))
                     {
-                        BrowserMessage.Text = "Uh oh! Diva Mod Manager failed to deserialize the GameBanana feed.";
+                        BrowserMessage.Text = "Uh oh! Diva Mod Manager by Enomoto failed to deserialize the GameBanana feed.";
                         return;
                     }
                     switch (Regex.Match(FeedGenerator.exception.Message, @"\d+").Value)
@@ -3077,7 +2997,7 @@ namespace DivaModManager
                     ErrorPanel.Visibility = Visibility.Visible;
                     BrowserRefreshButton.Visibility = Visibility.Collapsed;
                     BrowserMessage.Visibility = Visibility.Visible;
-                    BrowserMessage.Text = "Diva Mod Manager couldn't find any mods.";
+                    BrowserMessage.Text = "Diva Mod Manager by Enomoto couldn't find any mods.";
                 }
                 PageBox.ItemsSource = Enumerable.Range(1, (int)(FeedGenerator.CurrentFeed.TotalPages));
                 // --- UI 更新 (UI スレッド) ---
@@ -3100,7 +3020,7 @@ namespace DivaModManager
                     else // レコードがない場合
                     {
                         FeedBox.Visibility = Visibility.Collapsed;
-                        ShowBrowserError("Diva Mod Manager couldn't find any mods matching the criteria.");
+                        ShowBrowserError("Diva Mod Manager by Enomoto couldn't find any mods matching the criteria.");
                         // ページネーションボタンを無効化
                         PageRight.IsEnabled = false;
                         PageLeft.IsEnabled = false;
@@ -3179,7 +3099,7 @@ namespace DivaModManager
                         DMABrowserRefreshButton.Visibility = Visibility.Visible;
                         if (DMAFeedGenerator.exception.Message.Contains("JSON tokens"))
                         {
-                            DMABrowserMessage.Text = "Uh oh! Diva Mod Manager failed to deserialize the DivaModArchive feed.";
+                            DMABrowserMessage.Text = "Uh oh! Diva Mod Manager by Enomoto failed to deserialize the DivaModArchive feed.";
                             return;
                         }
                         switch (Regex.Match(DMAFeedGenerator.exception.Message, @"\d+").Value)
@@ -3212,7 +3132,7 @@ namespace DivaModManager
                         DMAErrorPanel.Visibility = Visibility.Visible;
                         DMABrowserRefreshButton.Visibility = Visibility.Collapsed;
                         DMABrowserMessage.Visibility = Visibility.Visible;
-                        DMABrowserMessage.Text = "Diva Mod Manager couldn't find any mods.";
+                        DMABrowserMessage.Text = "Diva Mod Manager by Enomoto couldn't find any mods.";
                     }
                     DMAPageBox.ItemsSource = Enumerable.Range(1, (int)(DMAFeedGenerator.CurrentFeed.TotalPages));
                     DMAPageBox.SelectedValue = DMApage;
@@ -3465,7 +3385,6 @@ namespace DivaModManager
                         ModsWatcher.Created += OnFileSystemChanged;
                         ModsWatcher.Deleted += OnFileSystemChanged;
                         ModsWatcher.Renamed += OnFileSystemChanged;
-                        //Refresh();
                         RefreshAsync();
                         ModsWatcher.EnableRaisingEvents = true;
                     });
@@ -3534,7 +3453,7 @@ namespace DivaModManager
 
                 Global.ModList = Global.config.Configs[Global.config.CurrentGame].Loadouts[Global.config.Configs[Global.config.CurrentGame].CurrentLoadout];
                 UpdateSearchMod();
-                RefreshAsync();
+                await RefreshAsync();
                 Global.logger.WriteLine($"Loadout changed to {LoadoutBox.SelectedItem}", LoggerType.Info);
                 // ModLoader.Build は RefreshAsync 内で実行されるように変更済み
             }
@@ -3691,9 +3610,10 @@ namespace DivaModManager
                 // 通常は LoadoutBox.SelectedItem の変更による LoadoutsBox_SelectionChanged 内で RefreshAsync が呼ばれるはず
             });
         }
+        // GameBoxを切り替えること、ある？
         private async void GameBox_DropDownClosed(object sender, EventArgs e)
         {
-            if (handle) // handle フラグの意図を確認する必要あり
+            if (handle)
             {
                 if (GameBox.SelectedIndex == 5)
                     DiscordButton.Visibility = Visibility.Collapsed;
@@ -3720,7 +3640,7 @@ namespace DivaModManager
                 // -------------------------------------------------------
 
                 Global.logger.WriteLine($"Game switched to {Global.config.CurrentGame}", LoggerType.Info);
-                RefreshAsync();
+                await RefreshAsync();
 
                 if (String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].ModsFolder)
                     || String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].Launcher) || !File.Exists(Global.config.Configs[Global.config.CurrentGame].Launcher))
@@ -3751,12 +3671,12 @@ namespace DivaModManager
                 await App.Current.Dispatcher.InvokeAsync(async () =>
                 {
                     IsEnabledControls(false);
-                    Global.logger.WriteLine("Checking for mod updates...", LoggerType.Info);
+                    // Global.logger.WriteLine("Checking for mod updates...", LoggerType.Info);
                     // CheckForUpdates が非同期なら await
                     // await ModUpdater.CheckForUpdates(Global.config.Configs[Global.config.CurrentGame].ModsFolder, this, true);
                     await ModUpdater.CheckForUpdatesInit(this); // こちらを呼んでいる場合
 
-                    Global.logger.WriteLine("Checking for Diva Mod Manager update...", LoggerType.Info);
+                    Global.logger.WriteLine("Checking for Diva Mod Manager by Enomoto update...", LoggerType.Info);
                     if (await AutoUpdater.CheckForDMMUpdate(new CancellationTokenSource()))
                     {
                         Close(); // DMMアップデートが見つかったら閉じる
@@ -4212,7 +4132,7 @@ namespace DivaModManager
                     FetchItem_Click(sender, _e);
                     break;
                 case "update":
-                    Update_Click(sender, _e);
+                    UpdateItem_Click(sender, _e);
                     break;
                 case "delete":
                     DeleteItem_Click(sender, _e);
@@ -4453,7 +4373,7 @@ namespace DivaModManager
             return null;
         }
 
-        private void IsEnabledControls(bool isEnabled)
+        public void IsEnabledControls(bool isEnabled)
         {
             // 各コントロールの IsEnabled を設定
             // ブラウザタブ
@@ -4467,7 +4387,7 @@ namespace DivaModManager
             ConfigButton.IsEnabled = isEnabled; // Setup Button? 名前確認
             LaunchButton.IsEnabled = isEnabled;
             OpenModsButton.IsEnabled = isEnabled; // Open Mods Folder Button?
-            UpdateCheckAllButton.IsEnabled = isEnabled;
+            UpdateCheckButton.IsEnabled = isEnabled;
             LoadoutBox.IsEnabled = isEnabled;
 
             // Modリスト上部検索/フィルタ関連

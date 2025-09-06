@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:DivaModManager.UI"
         mc:Ignorable="d"
-        Title="Diva Mod Manager" WindowStartupLocation="CenterScreen"
+        Title="Diva Mod Manager by Enomoto" WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize" MinWidth="400" MaxWidth="750" FontFamily="{StaticResource AnekLatin}"
         Background="#202020" ShowActivated="True" SizeToContent="WidthAndHeight">
     <Window.Resources>

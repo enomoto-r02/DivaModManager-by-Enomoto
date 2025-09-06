@@ -31,6 +31,9 @@ namespace DivaModManager
             Size,
             Note,
         }
+        public static string DMA_HOMEPAGE_URL_POSTS = "https://divamodarchive.com/posts/";
+        public static string DMA_API_URL_POSTS = "https://divamodarchive.com/api/v1/posts/";
+        public static string DMA_PAGE_URL_BASE = "https://divamodarchive.com/post/";
 
         public static void UpdateConfig()
         {

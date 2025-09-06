@@ -658,8 +658,9 @@
                         <Button Name="OpenModsButton" Margin="0,0,10,0" Height="35" VerticalAlignment="Center" HorizontalAlignment="Stretch" Grid.Column="6" Background="#181818" BorderBrush="#252525" Click="CreateMod_Click">
                             <TextBlock Text="Create Mod" TextTrimming="CharacterEllipsis" Foreground="#f2f2f2" FontFamily="{StaticResource AnekLatin}" FontSize="20" FontWeight="Medium"/>
                         </Button>
-                        <Button FontWeight="Medium" Name="UpdateCheckAllButton" Margin="0,0,10,0"  Height="34" VerticalAlignment="Center" Grid.Column="7" Background="#181818" BorderBrush="#252525"  Click="UpdateAll_Click">
-                            <TextBlock Text="Update DML" TextTrimming="CharacterEllipsis" Foreground="#f2f2f2" FontFamily="{StaticResource AnekLatin}" FontSize="20" FontWeight="Medium"/>
+                        <Button FontWeight="Medium" Name="UpdateCheckButton" Margin="0,0,10,0" Height="34" VerticalAlignment="Center" Grid.Column="7" Background="#181818" BorderBrush="#252525"  Click="Update_Check_Click"
+                                ToolTip="Check for updates to DivaModLoader and DivaModManager by Enomoto.">
+                            <TextBlock Text="Update Check" TextTrimming="CharacterEllipsis" Foreground="#f2f2f2" FontFamily="{StaticResource AnekLatin}" FontSize="20" FontWeight="Medium"/>
                         </Button>
                         <ComboBox Grid.Column="5" Margin="0,0,10,0" Height="35" FontSize="20" FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" Name="LauncherOptionsBox" SelectionChanged="LauncherOptionsBox_SelectionChanged"/>
                         <ComboBox Grid.Column="1" Margin="10,0,10,0" Height="35" FontSize="20" FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" Name="LoadoutBox" SelectionChanged="LoadoutsBox_SelectionChanged"/>
@@ -687,13 +688,13 @@
                         <Button Grid.Column="2" IsEnabled="True" Click="SearchClear_Click" x:Name="SearchClearButton" Grid.Row="1" Margin="127,8,10,8" HorizontalAlignment="Right">
                             <fa5:ImageAwesome Icon="Solid_TimesCircle" Foreground="#f2f2f2" Margin="3"/>
                         </Button>
-                        <ComboBox Name="SearchTargetComboBox" Grid.Column="3" Grid.Row="1" Text="Search" 
+                        <ComboBox Name="SearchTargetComboBox" Grid.Column="3" Grid.Row="1" Text="Search" ToolTip="Search Target Column"
                                    FontSize="20" FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" IsEditable="False" Margin="0,8,10,8">
                             <ComboBoxItem Content="ALL" IsSelected="True"/>
                             <ComboBoxItem Content="Name"/>
                             <ComboBoxItem Content="Note"/>
                         </ComboBox>
-                        <ComboBox x:Name="SearchCategoryComboBox" Grid.Column="4" Grid.Row="1" Text="" FontSize="20" 
+                        <ComboBox x:Name="SearchCategoryComboBox" Grid.Column="4" Grid.Row="1" Text="" FontSize="20" ToolTip="Category Filter"
                                 FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" IsEditable="False" Margin="0,8,10,8"
                                 SelectionChanged="SearchCategoryComboBox_SelectionChanged"/>
                         <ComboBox x:Name="VisibleColumnComboBox" Grid.Column="5" Grid.Row="1" Text="Visible" FontSize="20" 
@@ -799,7 +800,7 @@
                                         <MenuItem Name="RenameModFolder" Header="Rename Mod Folder" IsCheckable="False" Click="RenameMod_Click"/>
                                         <MenuItem Name="OpenModFolder" Header="Open Mod Folder" IsCheckable="False" Click="OpenItem_Click"/>
                                         <MenuItem Name="FetchMetadata" Header="Fetch Metadata" IsCheckable="False" Click="FetchItem_Click"/>
-                                        <MenuItem Name="UpdateMod" Header="Update Mod" IsCheckable="False" Click="Update_Click"/>
+                                        <MenuItem Name="UpdateMod" Header="Update Mod" IsCheckable="False" Click="UpdateItem_Click"/>
                                         <Separator />
                                         <MenuItem Name="DeleteMod" Header="Delete Mod" IsCheckable="False" Click="DeleteItem_Click"/>
                                         <Separator />

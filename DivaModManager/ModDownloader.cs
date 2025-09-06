@@ -118,6 +118,7 @@ namespace DivaModManager
                 }
             }
         }
+        // Called by OnStartup (One Click Install)
         public async void Download(string line, bool running)
         {
             if (String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].ModsFolder)
@@ -193,7 +194,7 @@ namespace DivaModManager
                 else if (URL.Contains("divamodarchive", StringComparison.CurrentCultureIgnoreCase))
                 {
                     string responseString = await client.GetStringAsync(URL);
-                    DMAresponse = JsonSerializer.Deserialize<DivaModArchivePost>(responseString                                          );
+                    DMAresponse = JsonSerializer.Deserialize<DivaModArchivePost>(responseString);
                     fileName = DMAresponse.FileNames[0];
                     return true;
                 }
@@ -241,7 +242,7 @@ namespace DivaModManager
                 else if (data.Length == 1)
                 {
                     MOD_ID = data[0].Replace("dma/", String.Empty);
-                    URL = $"https://divamodarchive.com/api/v1/posts/{MOD_ID}";
+                    URL = $"{Global.DMA_API_URL_POSTS}{MOD_ID}";
                     return true;
                 }
                 else
@@ -453,10 +454,10 @@ namespace DivaModManager
                 {
                     Metadata metadata = new Metadata();
                     metadata.id = post.ID;
-                    metadata.submitter = post.Authors[0].Name;
                     metadata.description = post.Text;
+                    metadata.submitter = post.Authors[0].Name;
                     metadata.preview = post.Images[0];
-                    metadata.homepage = post.Link;
+                    metadata.homepage = new Uri(Global.DMA_HOMEPAGE_URL_POSTS + post.ID);
                     metadata.avi = post.Authors[0].Avatar;
                     metadata.cat = post.PostType;
                     metadata.lastupdate = post.Time;

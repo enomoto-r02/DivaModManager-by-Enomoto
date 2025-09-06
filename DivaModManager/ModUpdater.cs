@@ -24,17 +24,7 @@ namespace DivaModManager
 
         public async static Task CheckForUpdatesInit(MainWindow main)
         {
-            main.GameBox.IsEnabled = true;
-            main.ModGrid.IsEnabled = true;
-            main.ConfigButton.IsEnabled = true;
-            main.LaunchButton.IsEnabled = true;
-            main.OpenModsButton.IsEnabled = true;
-            main.UpdateCheckAllButton.IsEnabled = true;
-            main.LauncherOptionsBox.IsEnabled = true;
-            main.LoadoutBox.IsEnabled = true;
-            main.EditLoadoutsButton.IsEnabled = true;
-            main.SearchModListTextBox.IsEnabled = true;
-            main.SearchModListButton.IsEnabled = true;
+            main.IsEnabledControls(true);
             main.Activate();
             return;
         }
@@ -44,23 +34,12 @@ namespace DivaModManager
             updateCounter = 0;
             if (!Directory.Exists(path) || (isSelectedUpdate && main.ModGrid.SelectedItems.Count == 0))
             {
-                main.GameBox.IsEnabled = true;
-                main.ModGrid.IsEnabled = true;
-                main.ConfigButton.IsEnabled = true;
-                main.LaunchButton.IsEnabled = true;
-                main.OpenModsButton.IsEnabled = true;
-                main.UpdateCheckAllButton.IsEnabled = true;
-                main.LauncherOptionsBox.IsEnabled = true;
-                main.LoadoutBox.IsEnabled = true;
-                main.EditLoadoutsButton.IsEnabled = true;
-                main.SearchModListTextBox.IsEnabled = true;
-                main.SearchModListButton.IsEnabled = true;
+                main.IsEnabledControls(true);
                 main.Activate();
                 return;
             }
             var cancellationToken = new CancellationTokenSource();
             var requestUrls = new Dictionary<string, List<string>>();
-            var DMArequestUrl = "https://divamodarchive.com/api/v1/posts/posts?";
             var mods = new List<string>();
             if (isSelectedUpdate)
             {
@@ -72,15 +51,22 @@ namespace DivaModManager
             }
             else
             {
+                // isSelectedUpdateがfalseの場合は現状ではこのロジックに入らないはずなので、そもそも不要か？
+                // 確実にmod.jsonがあるフォルダだけを対象にしてしまうのは問題がある（mod.jsonが無いことを認知できない）
+                // modフォルダ内を全てアップデートの対象にするため、レスポンスが返ってこない可能性がある
                 mods = Directory.GetDirectories(path).Where(x => File.Exists($"{x}{Global.s}mod.json")).ToList();
             }
-            var modList = new Dictionary<string, List<string>>();
-            var DMAmodList = new List<string>();
+            var GBmodList = new Dictionary<string, List<string>>();
+            var DMAmodList = new Dictionary<int?, string>();
+            var modInfoDict = new Dictionary<int?, ModInfo>();
             var urlCounts = new Dictionary<string, int>();
             foreach (var mod in mods)
             {
                 if (!File.Exists($"{mod}{Global.s}mod.json"))
+                {
+                    Global.logger.WriteLine($"mod.json is not found in \"{Path.GetFileName(mod)}\"", LoggerType.Warning);
                     continue;
+                }
                 Metadata metadata;
                 try
                 {
@@ -89,13 +75,14 @@ namespace DivaModManager
                 }
                 catch (Exception e)
                 {
-                    Global.logger.WriteLine($"Error occurred while getting metadata for {mod} ({e.Message})", LoggerType.Error);
+                    Global.logger.WriteLine($"Error occurred while getting metadata for {Path.GetFileName(mod)} ({e.Message})", LoggerType.Error);
                     continue;
                 }
                 Uri url = null;
                 if (metadata.homepage != null)
                 {
-                    url = CreateUri(metadata.homepage.ToString());
+                    url = CreateUriGB(metadata.homepage.ToString());
+                    // gamebanana update list
                     if (url != null)
                     {
                         var MOD_TYPE = char.ToUpper(url.Segments[1][0]) + url.Segments[1].Substring(1, url.Segments[1].Length - 3);
@@ -103,9 +90,10 @@ namespace DivaModManager
                         if (!urlCounts.ContainsKey(MOD_TYPE))
                             urlCounts.Add(MOD_TYPE, 0);
                         int index = urlCounts[MOD_TYPE];
-                        if (!modList.ContainsKey(MOD_TYPE))
-                            modList.Add(MOD_TYPE, new());
-                        modList[MOD_TYPE].Add(mod);
+                        if (!GBmodList.ContainsKey(MOD_TYPE))
+                            GBmodList.Add(MOD_TYPE, new());
+                        GBmodList[MOD_TYPE].Add(mod);
+
                         if (!requestUrls.ContainsKey(MOD_TYPE))
                             requestUrls.Add(MOD_TYPE, new string[] { $"https://gamebanana.com/apiv6/{MOD_TYPE}/Multi?_csvProperties=_sName,_aSubmitter,_aCategory,_aSuperCategory,_sProfileUrl,_sDescription,_bHasUpdates,_aLatestUpdates,_aFiles,_aPreviewMedia,_aAlternateFileSources,_tsDateUpdated&_csvRowIds=" }.ToList());
                         else if (requestUrls[MOD_TYPE].Count == index)
@@ -114,14 +102,23 @@ namespace DivaModManager
                         if (requestUrls[MOD_TYPE][index].Length > 1990)
                             urlCounts[MOD_TYPE]++;
                     }
+                    // divamodarchive update list
                     else if (metadata.id != null)
                     {
-                        DMArequestUrl += $"post_id={metadata.id}&";
-                        DMAmodList.Add(mod);
+                        var dma_url = Global.DMA_API_URL_POSTS + metadata.id;
+                        DMAmodList.Add(metadata.id, dma_url);
+                        var mod_name = Path.GetFileName(mod);
+                        ModInfo modInfo = new ModInfo(path+Global.s+mod_name, mod_name);
+                        modInfoDict.Add(metadata.id, modInfo);
+                    }
+                    else
+                    {
+                        Global.logger.WriteLine($"id is not found in mod.json of {Path.GetFileName(mod)}", LoggerType.Error);
+                        continue;
                     }
                 }
             }
-            // Remove extra comma
+            // Remove extra comma(gamebanana)
             foreach (var key in requestUrls.Keys)
             {
                 var counter = 0;
@@ -133,26 +130,18 @@ namespace DivaModManager
                 }
 
             }
-            if (requestUrls.Count == 0 && !DMArequestUrl.Contains("post_id"))
+            // none update gamebanana and divamodarchive
+            if (requestUrls.Count == 0 && DMAmodList.Count == 0)
             {
                 Global.logger.WriteLine("No mod updates available.", LoggerType.Info);
-                main.GameBox.IsEnabled = true;
-                main.ModGrid.IsEnabled = true;
-                main.ConfigButton.IsEnabled = true;
-                main.LaunchButton.IsEnabled = true;
-                main.OpenModsButton.IsEnabled = true;
-                main.UpdateCheckAllButton.IsEnabled = true;
-                main.LauncherOptionsBox.IsEnabled = true;
-                main.LoadoutBox.IsEnabled = true;
-                main.EditLoadoutsButton.IsEnabled = true;
-                main.SearchModListButton.IsEnabled = true;
-                main.SearchModListTextBox.IsEnabled = true;
+                main.IsEnabledControls(true);
                 return;
             }
             List<GameBananaAPIV4> response = new();
-            List<DivaModArchivePost> DMAresponse = new();
+            Dictionary<int?, DivaModArchivePost> DMAresponse = new();
             using (var client = new HttpClient())
             {
+                // gamebanana updates
                 foreach (var type in requestUrls)
                 {
                     foreach (var requestUrl in type.Value)
@@ -166,30 +155,31 @@ namespace DivaModManager
                         catch (Exception e)
                         {
                             Global.logger.WriteLine(e.Message, LoggerType.Error);
-                            main.GameBox.IsEnabled = true;
-                            main.ModGrid.IsEnabled = true;
-                            main.ConfigButton.IsEnabled = true;
-                            main.LaunchButton.IsEnabled = true;
-                            main.OpenModsButton.IsEnabled = true;
-                            main.UpdateCheckAllButton.IsEnabled = true;
-                            main.LauncherOptionsBox.IsEnabled = true;
-                            main.LoadoutBox.IsEnabled = true;
-                            main.EditLoadoutsButton.IsEnabled = true;
-                            main.SearchModListButton.IsEnabled = true;
-                            main.SearchModListTextBox.IsEnabled = true;
+                            main.IsEnabledControls(true);
                             return;
                         }
                     }
                 }
-                // DivaModArchive updates
-                if (DMArequestUrl.Contains("post_id"))
+                // divamodarchive updates
+                foreach (int? dma_id in DMAmodList.Keys)
                 {
-                    var responseString = await client.GetStringAsync(DMArequestUrl);
-                    DMAresponse = JsonSerializer.Deserialize<List<DivaModArchivePost>>(responseString);
+                    try
+                    {
+                        var url = DMAmodList[dma_id];
+                        var responseString = await client.GetStringAsync(DMAmodList[dma_id]);
+                        DivaModArchivePost res = JsonSerializer.Deserialize<DivaModArchivePost>(responseString);
+                        DMAresponse.Add(res.ID, res);
+                    }
+                    catch (System.Net.Http.HttpRequestException e)
+                    {
+                        Global.logger.WriteLine(e.Message, LoggerType.Error);
+                        continue;
+                    }
                 }
             }
+            // gamebanana update process
             var convertedModList = new List<string>();
-            foreach (var type in modList)
+            foreach (var type in GBmodList)
                 foreach (var mod in type.Value)
                     convertedModList.Add(mod);
             for (int i = 0; i < convertedModList.Count; i++)
@@ -204,28 +194,33 @@ namespace DivaModManager
                     Global.logger.WriteLine($"Error occurred while getting metadata for {convertedModList[i]} ({e.Message})", LoggerType.Error);
                     continue;
                 }
-                await ModUpdate(response[i], convertedModList[i], metadata, new Progress<DownloadProgress>(ReportUpdateProgress), CancellationTokenSource.CreateLinkedTokenSource(cancellationToken.Token));
+                await ModUpdateGB(response[i], convertedModList[i], metadata, new Progress<DownloadProgress>(ReportUpdateProgress), CancellationTokenSource.CreateLinkedTokenSource(cancellationToken.Token));
             }
-
+            //divamodarchive update process
             if (DMAresponse.Count > 0)
             {
-                foreach (var DMAmod in DMAmodList)
+                foreach (var dma_id in DMAresponse.Keys)
                 {
+                    var DMAmod = DMAresponse[dma_id];
                     Metadata metadata;
                     try
                     {
-                        metadata = JsonSerializer.Deserialize<Metadata>(File.ReadAllText($"{DMAmod}{Global.s}mod.json"));
+                        metadata = JsonSerializer.Deserialize<Metadata>(File.ReadAllText($"{modInfoDict[dma_id].modFullPath}{Global.s}mod.json"));
                     }
                     catch (Exception e)
                     {
-                        Global.logger.WriteLine($"Error occurred while getting metadata for {DMAmod} ({e.Message})", LoggerType.Error);
+                        Global.logger.WriteLine($"Error occurred while getting metadata for {path} ({e.Message})", LoggerType.Error);
                         continue;
                     }
-                    var index = DMAresponse.FindIndex(x => x.ID == metadata.id);
-                    if (index != -1)
-                        await ModUpdate(DMAresponse[index], DMAmod, metadata, new Progress<DownloadProgress>(ReportUpdateProgress), CancellationTokenSource.CreateLinkedTokenSource(cancellationToken.Token));
+                    if(DMAresponse.ContainsKey(metadata.id))
+                    { 
+                        var res = DMAresponse[metadata.id];
+                        await ModUpdateDMA(res, modInfoDict[metadata.id].modFullPath, metadata, new Progress<DownloadProgress>(ReportUpdateProgress), CancellationTokenSource.CreateLinkedTokenSource(cancellationToken.Token));
+                    }
                     else
-                        Global.logger.WriteLine($"{Path.GetFileName(DMAmod)} was most likely trashed by the creator and cannot receive anymore updates", LoggerType.Warning);
+                    { 
+                        Global.logger.WriteLine($"{Path.GetFileName(path)} was most likely trashed by the creator and cannot receive anymore updates", LoggerType.Warning);
+                    }
 
                 }
             }
@@ -235,17 +230,7 @@ namespace DivaModManager
             else
                 Global.logger.WriteLine("Done checking for mod updates!", LoggerType.Info);
 
-            main.GameBox.IsEnabled = true;
-            main.ModGrid.IsEnabled = true;
-            main.ConfigButton.IsEnabled = true;
-            main.LaunchButton.IsEnabled = true;
-            main.OpenModsButton.IsEnabled = true;
-            main.UpdateCheckAllButton.IsEnabled = true;
-            main.LauncherOptionsBox.IsEnabled = true;
-            main.LoadoutBox.IsEnabled = true;
-            main.EditLoadoutsButton.IsEnabled = true;
-            main.SearchModListButton.IsEnabled = true;
-            main.SearchModListTextBox.IsEnabled = true;
+            main.IsEnabledControls(true);
             main.Activate();
         }
         private static void ReportUpdateProgress(DownloadProgress progress)
@@ -260,7 +245,8 @@ namespace DivaModManager
             progressBox.progressText.Text = $"{Math.Round(progress.Percentage * 100, 2)}% " +
                 $"({StringConverters.FormatSize(progress.DownloadedBytes)} of {StringConverters.FormatSize(progress.TotalBytes)})";
         }
-        private static async Task ModUpdate(GameBananaAPIV4 item, string mod, Metadata metadata, Progress<DownloadProgress> progress, CancellationTokenSource cancellationToken)
+        // update for gamebanana
+        private static async Task ModUpdateGB(GameBananaAPIV4 item, string mod, Metadata metadata, Progress<DownloadProgress> progress, CancellationTokenSource cancellationToken)
         {
             // If lastupdate doesn't exist, add one
             if (metadata.lastupdate == null)
@@ -324,7 +310,7 @@ namespace DivaModManager
                     }
                     if (item.AlternateFileSources != null)
                     {
-                        var choice = MessageBox.Show($"Alternate file sources were found for {Path.GetFileName(mod)}! Would you like to manually update?", "Diva Mod Manager", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                        var choice = MessageBox.Show($"Alternate file sources were found for {Path.GetFileName(mod)}! Would you like to manually update?", "Diva Mod Manager by Enomoto", MessageBoxButton.YesNo, MessageBoxImage.Question);
                         if (choice == MessageBoxResult.Yes)
                         {
                             new AltLinkWindow(item.AlternateFileSources, Path.GetFileName(mod), Global.config.CurrentGame, metadata.homepage.AbsoluteUri, true).ShowDialog();
@@ -344,7 +330,8 @@ namespace DivaModManager
             else if (item.HasUpdates == null)
                 Global.logger.WriteLine($"{Path.GetFileName(mod)} was most likely trashed by the creator and cannot receive anymore updates", LoggerType.Warning);
         }
-        private static async Task ModUpdate(DivaModArchivePost item, string mod, Metadata metadata, Progress<DownloadProgress> progress, CancellationTokenSource cancellationToken)
+        // update for divamodarchive
+        private static async Task ModUpdateDMA(DivaModArchivePost item, string mod, Metadata metadata, Progress<DownloadProgress> progress, CancellationTokenSource cancellationToken)
         {
             // If lastupdate doesn't exist, add one
             if (metadata.lastupdate == null)
@@ -668,10 +655,10 @@ namespace DivaModManager
                 {
                     var metadata = JsonSerializer.Deserialize<Metadata>(File.ReadAllText($@"{output}{Global.s}mod.json"));
                     metadata.id = item.ID;
-                    metadata.submitter = item.Authors[0].Name;
                     metadata.description = item.Text;
+                    metadata.submitter = item.Authors[0].Name;
                     metadata.preview = item.Images[0];
-                    metadata.homepage = item.Link;
+                    metadata.homepage = new Uri(Global.DMA_PAGE_URL_BASE + item.ID);
                     metadata.avi = item.Authors[0].Avatar;
                     metadata.cat = item.PostType;
                     metadata.lastupdate = item.Time;
@@ -711,7 +698,7 @@ namespace DivaModManager
                 File.Copy(path, newPath, true);
             }
         }
-        private static Uri CreateUri(string url)
+        private static Uri CreateUriGB(string url)
         {
             Uri uri;
             if ((Uri.TryCreate(url, UriKind.Absolute, out uri) || Uri.TryCreate("http://" + url, UriKind.Absolute, out uri)) &&

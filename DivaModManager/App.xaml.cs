@@ -48,7 +48,7 @@ namespace DivaModManager
             if (e.Args.Length > 1 && e.Args[0] == "-download")
                 new ModDownloader().Download(e.Args[1], running);
             else if (running)
-                MessageBox.Show("Diva Mod Manager is already running", "Warning", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                MessageBox.Show("Diva Mod Manager by Enomoto is already running", "Warning", MessageBoxButton.OK, MessageBoxImage.Exclamation);
         }
         private static void App_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
         {
@@ -63,7 +63,7 @@ namespace DivaModManager
                 ((MainWindow)Current.MainWindow).ConfigButton.IsEnabled = true;
                 ((MainWindow)Current.MainWindow).LaunchButton.IsEnabled = true;
                 ((MainWindow)Current.MainWindow).OpenModsButton.IsEnabled = true;
-                ((MainWindow)Current.MainWindow).UpdateCheckAllButton.IsEnabled = true;
+                ((MainWindow)Current.MainWindow).UpdateCheckButton.IsEnabled = true;
                 ((MainWindow)Current.MainWindow).GameBox.IsEnabled = true;
                 ((MainWindow)Current.MainWindow).LoadoutBox.IsEnabled = true;
                 ((MainWindow)Current.MainWindow).EditLoadoutsButton.IsEnabled = true;

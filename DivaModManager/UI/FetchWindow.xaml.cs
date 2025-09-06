@@ -114,10 +114,10 @@ namespace DivaModManager
                 var post = JsonSerializer.Deserialize<DivaModArchivePost>(responseString);
                 var metadata = new Metadata();
                 metadata.id = post.ID;
-                metadata.submitter = post.Authors[0].Name;
                 metadata.description = post.Text;
+                metadata.submitter = post.Authors[0].Name;
                 metadata.preview = post.Images[0];
-                metadata.homepage = post.Link;
+                metadata.homepage = new Uri(Global.DMA_HOMEPAGE_URL_POSTS+post.ID);
                 metadata.avi = post.Authors[0].Avatar;
                 metadata.cat = post.PostType;
                 metadata.lastupdate = post.Time;
