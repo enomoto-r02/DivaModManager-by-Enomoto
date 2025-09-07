@@ -1051,7 +1051,7 @@
                             </DataTemplate>
                         </ComboBox.ItemTemplate>
                     </ComboBox>
-                    <TextBox Margin="5,0,35,0" Padding="4,0,0,0" Grid.Column="5" FontFamily="{StaticResource AnekLatin}" IsEnabled="False" KeyDown="SearchBar_KeyDown" Name="SearchBar" Height="35" MinWidth="200" HorizontalAlignment="Stretch" VerticalContentAlignment="Center"/>
+                    <TextBox Margin="5,0,35,0" Padding="4,0,0,0" Grid.Column="5" FontFamily="{StaticResource AnekLatin}" IsEnabled="False" KeyDown="GBSearchBar_KeyDown" Name="SearchBar" Height="35" MinWidth="200" HorizontalAlignment="Stretch" VerticalContentAlignment="Center"/>
                     <TextBlock Margin="5,0,35,0" Padding="7,8,3,3" Grid.Column="5" FontFamily="{StaticResource AnekLatin}" IsHitTestVisible="False" Height="35" MinWidth="200" HorizontalAlignment="Left" Text="Search..." VerticalAlignment="Center" Foreground="#303030">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">

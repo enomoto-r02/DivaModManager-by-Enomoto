@@ -2286,7 +2286,7 @@ namespace DivaModManager
                 try
                 {
                     byte[] imageBytes = File.ReadAllBytes(previewFiles[0].FullName);
-                    var stream = new MemoryStream(imageBytes);
+                    using var stream = new MemoryStream(imageBytes);
                     var img = new BitmapImage();
 
                     img.BeginInit();
@@ -3815,7 +3815,7 @@ namespace DivaModManager
 
         private void Search()
         {
-            if (!filterSelect && IsLoaded && !String.IsNullOrWhiteSpace(SearchBar.Text))
+            if (!filterSelect && IsLoaded)
             {
                 filterSelect = true;
                 FilterBox.ItemsSource = FilterBoxListWhenSearched;
@@ -3838,7 +3838,7 @@ namespace DivaModManager
                 RefreshFilter();
             }
         }
-        private void SearchBar_KeyDown(object sender, KeyEventArgs e)
+        private void GBSearchBar_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
                 Search();

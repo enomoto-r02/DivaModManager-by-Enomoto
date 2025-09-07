@@ -107,7 +107,7 @@ namespace DivaModManager
                     break;
             }
             // Different starting endpoint if requesting all mods instead of specific category
-            if (search != null)
+            if (!string.IsNullOrEmpty(search))
             {
                 url += $"ByName?_sName=*{search}*&_idGameRow=";
                 switch (game)
