@@ -22,20 +22,11 @@ namespace DivaModManager
         private static ProgressBox progressBox;
         private static int updateCounter;
 
-        public async static Task CheckForUpdatesInit(MainWindow main)
-        {
-            main.IsEnabledControls(true);
-            main.Activate();
-            return;
-        }
-
-        public async static Task CheckForUpdates(string path, MainWindow main, bool isSelectedUpdate)
+        public async static Task CheckForUpdates(string path, List<Mod> selectedMods, bool isSelectedUpdate)
         {
             updateCounter = 0;
-            if (!Directory.Exists(path) || (isSelectedUpdate && main.ModGrid.SelectedItems.Count == 0))
+            if (!Directory.Exists(path) || (isSelectedUpdate && selectedMods.Count == 0))
             {
-                main.IsEnabledControls(true);
-                main.Activate();
                 return;
             }
             var cancellationToken = new CancellationTokenSource();
@@ -43,7 +34,7 @@ namespace DivaModManager
             var mods = new List<string>();
             if (isSelectedUpdate)
             {
-                foreach (var mod in main.ModGrid.SelectedItems)
+                foreach (var mod in selectedMods)
                 {
                     var m = (Mod)mod;
                     mods.Add(path + Global.s.ToString() + m.name);
@@ -57,8 +48,8 @@ namespace DivaModManager
                 mods = Directory.GetDirectories(path).Where(x => File.Exists($"{x}{Global.s}mod.json")).ToList();
             }
             var GBmodList = new Dictionary<string, List<string>>();
-            var DMAmodList = new Dictionary<int?, string>();
-            var modInfoDict = new Dictionary<int?, ModInfo>();
+            var DMAmodList = new Dictionary<string, Metadata>();
+            var modInfoDict = new Dictionary<string, ModInfo>();
             var urlCounts = new Dictionary<string, int>();
             foreach (var mod in mods)
             {
@@ -105,11 +96,11 @@ namespace DivaModManager
                     // divamodarchive update list
                     else if (metadata.id != null)
                     {
-                        var dma_url = Global.DMA_API_URL_POSTS + metadata.id;
-                        DMAmodList.Add(metadata.id, dma_url);
                         var mod_name = Path.GetFileName(mod);
+                        var dma_url = Global.DMA_API_URL_POSTS + metadata.id;
+                        DMAmodList.Add(mod_name, metadata);
                         ModInfo modInfo = new ModInfo(path+Global.s+mod_name, mod_name);
-                        modInfoDict.Add(metadata.id, modInfo);
+                        modInfoDict.Add(mod_name, modInfo);
                     }
                     else
                     {
@@ -134,11 +125,10 @@ namespace DivaModManager
             if (requestUrls.Count == 0 && DMAmodList.Count == 0)
             {
                 Global.logger.WriteLine("No mod updates available.", LoggerType.Info);
-                main.IsEnabledControls(true);
                 return;
             }
             List<GameBananaAPIV4> response = new();
-            Dictionary<int?, DivaModArchivePost> DMAresponse = new();
+            Dictionary<string, DivaModArchivePost> DMAresponse = new();
             using (var client = new HttpClient())
             {
                 // gamebanana updates
@@ -155,20 +145,20 @@ namespace DivaModManager
                         catch (Exception e)
                         {
                             Global.logger.WriteLine(e.Message, LoggerType.Error);
-                            main.IsEnabledControls(true);
                             return;
                         }
                     }
                 }
                 // divamodarchive updates
-                foreach (int? dma_id in DMAmodList.Keys)
+                foreach (string mod_dir_name in DMAmodList.Keys)
                 {
+                    int? dma_id = DMAmodList[mod_dir_name].id;
                     try
                     {
-                        var url = DMAmodList[dma_id];
-                        var responseString = await client.GetStringAsync(DMAmodList[dma_id]);
+                        var dma_url = Global.DMA_API_URL_POSTS + dma_id;
+                        var responseString = await client.GetStringAsync(dma_url);
                         DivaModArchivePost res = JsonSerializer.Deserialize<DivaModArchivePost>(responseString);
-                        DMAresponse.Add(res.ID, res);
+                        DMAresponse.Add(mod_dir_name, res);
                     }
                     catch (System.Net.Http.HttpRequestException e)
                     {
@@ -199,29 +189,28 @@ namespace DivaModManager
             //divamodarchive update process
             if (DMAresponse.Count > 0)
             {
-                foreach (var dma_id in DMAresponse.Keys)
+                foreach (var mod_dir_name in DMAresponse.Keys)
                 {
-                    var DMAmod = DMAresponse[dma_id];
+                    var DMAmod = DMAresponse[mod_dir_name];
                     Metadata metadata;
                     try
                     {
-                        metadata = JsonSerializer.Deserialize<Metadata>(File.ReadAllText($"{modInfoDict[dma_id].modFullPath}{Global.s}mod.json"));
+                        metadata = JsonSerializer.Deserialize<Metadata>(File.ReadAllText($"{modInfoDict[mod_dir_name].modFullPath}{Global.s}mod.json"));
                     }
                     catch (Exception e)
                     {
                         Global.logger.WriteLine($"Error occurred while getting metadata for {path} ({e.Message})", LoggerType.Error);
                         continue;
                     }
-                    if(DMAresponse.ContainsKey(metadata.id))
+                    if(DMAresponse.ContainsKey(mod_dir_name))
                     { 
-                        var res = DMAresponse[metadata.id];
-                        await ModUpdateDMA(res, modInfoDict[metadata.id].modFullPath, metadata, new Progress<DownloadProgress>(ReportUpdateProgress), CancellationTokenSource.CreateLinkedTokenSource(cancellationToken.Token));
+                        var res = DMAresponse[mod_dir_name];
+                        await ModUpdateDMA(res, modInfoDict[mod_dir_name].modFullPath, metadata, new Progress<DownloadProgress>(ReportUpdateProgress), CancellationTokenSource.CreateLinkedTokenSource(cancellationToken.Token));
                     }
                     else
                     { 
                         Global.logger.WriteLine($"{Path.GetFileName(path)} was most likely trashed by the creator and cannot receive anymore updates", LoggerType.Warning);
                     }
-
                 }
             }
 
@@ -229,9 +218,6 @@ namespace DivaModManager
                 Global.logger.WriteLine("No mod updates available.", LoggerType.Info);
             else
                 Global.logger.WriteLine("Done checking for mod updates!", LoggerType.Info);
-
-            main.IsEnabledControls(true);
-            main.Activate();
         }
         private static void ReportUpdateProgress(DownloadProgress progress)
         {
@@ -367,9 +353,10 @@ namespace DivaModManager
                     return;
                 }
                 // Download the update
-                await DownloadFile(item.Files[0].ToString(), item.Files[0].ToString().Split('/').Last(), mod, item, progress, cancellationToken);
+                await DownloadFile(item.Files[0].ToString(), Path.GetFileName(mod), mod, item, progress, cancellationToken);
             }
         }
+        // Called by ModUpdateGB to download the file
         private static async Task DownloadFile(string uri, string fileName, string mod, GameBananaAPIV4 item, Progress<DownloadProgress> progress, CancellationTokenSource cancellationToken)
         {
             try

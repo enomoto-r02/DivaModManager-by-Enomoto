@@ -25,6 +25,7 @@ namespace DivaModManager
 
             return startDirectorySize;  //Return full Size of this Directory.
         }
+        // Download function Core ?
         public static async Task DownloadAsync(this HttpClient client, string requestUri, Stream destination, string fileName, IProgress<DownloadProgress> progress = null, CancellationToken cancellationToken = default)
         {
             // Get the http headers first to examine the content length

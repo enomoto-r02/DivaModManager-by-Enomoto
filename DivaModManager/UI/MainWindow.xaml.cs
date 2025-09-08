@@ -2043,7 +2043,11 @@ namespace DivaModManager
                 if (await AutoUpdater.CheckForDMMUpdate(new CancellationTokenSource()))
                     Close();
                 Global.logger.WriteLine("Checking for DivaModLoader update...", LoggerType.Info);
-                await Setup.CheckForDMLUpdate(new CancellationTokenSource());
+                if(!await Setup.CheckForDMLUpdate(new CancellationTokenSource()))
+                {
+                    IsEnabledControls(true);
+                    return;
+                }
                 IsEnabledControls(true);
 
                 await UpdateUIElementsAndBuildAsync();
@@ -2055,15 +2059,17 @@ namespace DivaModManager
             {
                 IsEnabledControls(false);
                 Global.logger.WriteLine("Checking for mod updates...", LoggerType.Info);
-                await ModUpdater.CheckForUpdates(Global.config.Configs[Global.config.CurrentGame].ModsFolder, this, true);
+                List<Mod> selectedMods = ModGrid.SelectedItems.OfType<Mod>().ToList();
+                await ModUpdater.CheckForUpdates(Global.config.Configs[Global.config.CurrentGame].ModsFolder, selectedMods, true);
                 //Global.logger.WriteLine("Checking for Diva Mod Manager by Enomoto update...", LoggerType.Info);
                 //if (await AutoUpdater.CheckForDMMUpdate(new CancellationTokenSource()))
                 //    Close();
                 //Global.logger.WriteLine("Checking for DivaModLoader update...", LoggerType.Info);
                 //await Setup.CheckForDMLUpdate(new CancellationTokenSource());
-                IsEnabledControls(true);
 
                 await UpdateUIElementsAndBuildAsync();
+                IsEnabledControls(true);
+                this.Activate();
             });
         }
 
@@ -2337,7 +2343,11 @@ namespace DivaModManager
         {
             Mod row = (Mod)ModGrid.SelectedItem;
             if (row != null)
+            {
                 ShowMetadata(row.name);
+                //List<Mod> selectedMods = ModGrid.SelectedItems.OfType<Mod>().ToList();
+                //Global.logger.WriteLine($"Selected {selectedMods.Count} mod(s).", LoggerType.Info);
+            }
         }
 
         private void Download_Click(object sender, RoutedEventArgs e)
@@ -2857,7 +2867,7 @@ namespace DivaModManager
         private void OnManagerTabSelected(object sender, RoutedEventArgs e)
         {
             // サーバーダウン等で別タブから戻ってきた時にも操作が続行できるよう、強制的にUIを有効化する
-            IsEnabledControls(true);
+            //IsEnabledControls(true);
         }
 
         private static int page = 1;
@@ -3610,7 +3620,7 @@ namespace DivaModManager
                 // 通常は LoadoutBox.SelectedItem の変更による LoadoutsBox_SelectionChanged 内で RefreshAsync が呼ばれるはず
             });
         }
-        // GameBoxを切り替えること、ある？
+        // GameBoxを切り替えること、ある？初回インストール時？
         private async void GameBox_DropDownClosed(object sender, EventArgs e)
         {
             if (handle)
@@ -3674,7 +3684,6 @@ namespace DivaModManager
                     // Global.logger.WriteLine("Checking for mod updates...", LoggerType.Info);
                     // CheckForUpdates が非同期なら await
                     // await ModUpdater.CheckForUpdates(Global.config.Configs[Global.config.CurrentGame].ModsFolder, this, true);
-                    await ModUpdater.CheckForUpdatesInit(this); // こちらを呼んでいる場合
 
                     Global.logger.WriteLine("Checking for Diva Mod Manager by Enomoto update...", LoggerType.Info);
                     if (await AutoUpdater.CheckForDMMUpdate(new CancellationTokenSource()))
