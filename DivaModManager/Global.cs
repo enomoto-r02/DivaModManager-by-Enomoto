@@ -14,6 +14,7 @@ namespace DivaModManager
         public static Logger logger;
         public static char s = Path.DirectorySeparatorChar;
         public static string assemblyLocation = AppDomain.CurrentDomain.BaseDirectory;
+        public static readonly string downloadBaseLocation = $@"{Global.assemblyLocation}Downloads{Global.s}";
         public static List<string> games;
         public static string selected_game;
         public static ObservableCollection<Mod> ModList;

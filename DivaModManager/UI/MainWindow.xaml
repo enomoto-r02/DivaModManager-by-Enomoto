@@ -690,14 +690,21 @@
                         </Button>
                         <ComboBox Name="SearchTargetComboBox" Grid.Column="3" Grid.Row="1" Text="Search" ToolTip="Search Target Column"
                                    FontSize="20" FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" IsEditable="False" Margin="0,8,10,8">
-                            <ComboBoxItem Content="ALL" IsSelected="True"/>
+                            <ComboBoxItem Content="Name or Note" IsSelected="True"/>
                             <ComboBoxItem Content="Name"/>
                             <ComboBoxItem Content="Note"/>
                         </ComboBox>
-                        <ComboBox x:Name="SearchCategoryComboBox" Grid.Column="4" Grid.Row="1" Text="" FontSize="20" ToolTip="Category Filter"
+                        <ComboBox x:Name="SearchEnabledComboBox" Grid.Column="4" Grid.Row="1" Text="ALL" FontSize="20" ToolTip="Enabled Filter"
+                            FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" IsEditable="False" Margin="0,8,10,8"
+                            SelectionChanged="SearchEnabledComboBox_SelectionChanged">
+                                <ComboBoxItem Content="Enabled" IsSelected="True"/>
+                                <ComboBoxItem Content="True"/>
+                                <ComboBoxItem Content="False"/>
+                            </ComboBox>
+                        <ComboBox x:Name="SearchCategoryComboBox" Grid.Column="5" Grid.Row="1" Text="" FontSize="20" ToolTip="Category Filter"
                                 FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" IsEditable="False" Margin="0,8,10,8"
                                 SelectionChanged="SearchCategoryComboBox_SelectionChanged"/>
-                        <ComboBox x:Name="VisibleColumnComboBox" Grid.Column="5" Grid.Row="1" Text="Visible" FontSize="20" 
+                        <ComboBox x:Name="VisibleColumnComboBox" Grid.Column="6" Grid.Row="1" Text="Visible" FontSize="20" 
                                 FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" IsEditable="False" Margin="0,8,10,8"
                                 SelectionChanged="VisibleColumnComboBox_SelectionChanged">
                             <ComboBoxItem Content="Visible Column" IsSelected="True"/>
@@ -708,6 +715,9 @@
                             <ComboBoxItem Content="Size"/>
                             <ComboBoxItem Content="Note"/>
                         </ComboBox>
+                        <Button FontWeight="Medium" Name="ModGirdScreenShotButton" Margin="0,0,10,0" Height="34" VerticalAlignment="Center" Grid.Row="1" Grid.Column="7" Background="#181818" BorderBrush="#252525" Click="ScreenShot_Click">
+                            <TextBlock Text="ScreenShot" Grid.Row="1" Grid.Column="7" TextTrimming="CharacterEllipsis" Foreground="#f2f2f2" FontFamily="{StaticResource AnekLatin}" FontSize="20" FontWeight="Medium"/>
+                        </Button>
                         <Grid x:Name="MiddleGrid" Grid.Row="2" Grid.ColumnSpan="8">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="1.8*"/>

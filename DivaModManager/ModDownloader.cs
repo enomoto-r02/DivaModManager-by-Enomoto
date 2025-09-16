@@ -1,4 +1,5 @@
 ﻿using DivaModManager.UI;
+using Microsoft.VisualBasic.FileIO;
 using SevenZipExtractor;
 using SharpCompress.Archives;
 using SharpCompress.Archives.SevenZip;
@@ -303,7 +304,7 @@ namespace DivaModManager
                 }
             }
 
-            foreach (var folder in Directory.GetDirectories(ArchiveDestination, "*", SearchOption.AllDirectories).Where(x => File.Exists($@"{x}{Global.s}config.toml")))
+            foreach (var folder in Directory.GetDirectories(ArchiveDestination, "*", System.IO.SearchOption.AllDirectories).Where(x => File.Exists($@"{x}{Global.s}config.toml")))
             {
                 string path = $@"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}{Path.GetFileName(folder)}";
                 int index = 2;
@@ -337,7 +338,7 @@ namespace DivaModManager
             }
             else
             {
-                var config_toml_cnt = Directory.GetFiles(ArchiveDestination, "config.toml", SearchOption.AllDirectories).Length;
+                var config_toml_cnt = Directory.GetFiles(ArchiveDestination, "config.toml", System.IO.SearchOption.AllDirectories).Length;
                 var file_size = new FileInfo(_ArchiveSource).Length;
                 if (config_toml_cnt == 0 && 1000 > file_size)  // 1MB
                 {
@@ -360,8 +361,8 @@ namespace DivaModManager
                     thread.Start();
                 }
 
-                File.Delete(_ArchiveSource);
-                Directory.Delete(ArchiveDestination, true);
+                FileSystem.DeleteFile(_ArchiveSource, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin, UICancelOption.DoNothing);
+                FileSystem.DeleteDirectory(ArchiveDestination, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin, UICancelOption.DoNothing);
             }
         }
 
@@ -432,7 +433,7 @@ namespace DivaModManager
 
             }
             // Check if the extracted file count matches the archive file count
-            extractedFileCount = Directory.EnumerateFiles(ArchiveDestination, "*", SearchOption.AllDirectories).Count();
+            extractedFileCount = Directory.EnumerateFiles(ArchiveDestination, "*", System.IO.SearchOption.AllDirectories).Count();
             if(archiveFileCount != extractedFileCount)
             {
                 string msg = $"Extracted file count ({extractedFileCount}) does not match archive file count ({archiveFileCount}).\nIt may not have been unzipped correctly.";
@@ -440,7 +441,7 @@ namespace DivaModManager
                 Global.logger.WriteLine(msg, LoggerType.Warning);
             }
 
-            foreach (var folder in Directory.GetDirectories(ArchiveDestination, "*", SearchOption.AllDirectories).Where(x => File.Exists($@"{x}{Global.s}config.toml")))
+            foreach (var folder in Directory.GetDirectories(ArchiveDestination, "*", System.IO.SearchOption.AllDirectories).Where(x => File.Exists($@"{x}{Global.s}config.toml")))
             {
                 string path = $@"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}{Path.GetFileName(folder)}";
                 int index = 2;
@@ -473,14 +474,14 @@ namespace DivaModManager
             else
             {
                 // Only delete if successfully extracted
-                File.Delete(_ArchiveSource);
-                Directory.Delete(ArchiveDestination, true);
+                FileSystem.DeleteFile(_ArchiveSource, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin, UICancelOption.DoNothing);
+                FileSystem.DeleteDirectory(ArchiveDestination, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin, UICancelOption.DoNothing);
             }
         }
         private static void MoveDirectory(string sourcePath, string targetPath)
         {
             //Copy all the files & Replaces any files with the same name
-            foreach (var path in Directory.GetFiles(sourcePath, "*.*", SearchOption.AllDirectories))
+            foreach (var path in Directory.GetFiles(sourcePath, "*.*", System.IO.SearchOption.AllDirectories))
             {
                 var newPath = path.Replace(sourcePath, targetPath);
                 Directory.CreateDirectory(Path.GetDirectoryName(newPath));
@@ -544,7 +545,7 @@ namespace DivaModManager
                     MessageBox.Show($"Couldn't extract {fileName}: {e.Message}", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
             }
-            foreach (var folder in Directory.GetDirectories(ArchiveDestination, "*", SearchOption.AllDirectories).Where(x => File.Exists($@"{x}{Global.s}config.toml")))
+            foreach (var folder in Directory.GetDirectories(ArchiveDestination, "*", System.IO.SearchOption.AllDirectories).Where(x => File.Exists($@"{x}{Global.s}config.toml")))
             {
                 string path = $@"{Global.config.Configs[game].ModsFolder}{Global.s}{Path.GetFileName(folder)}";
                 int index = 2;
@@ -578,8 +579,8 @@ namespace DivaModManager
             else
             {
                 // Only delete if successfully extracted
-                File.Delete(_ArchiveSource);
-                Directory.Delete(ArchiveDestination, true);
+                FileSystem.DeleteFile(_ArchiveSource, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin, UICancelOption.DoNothing);
+                FileSystem.DeleteDirectory(ArchiveDestination, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin, UICancelOption.DoNothing);
             }
         }
         // Download function Core ?
@@ -594,7 +595,7 @@ namespace DivaModManager
                 {
                     try
                     {
-                        File.Delete($@"{Global.assemblyLocation}{Global.s}Downloads{Global.s}{fileName}");
+                        FileSystem.DeleteFile($@"{Global.assemblyLocation}{Global.s}Downloads{Global.s}{fileName}", UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin, UICancelOption.DoNothing);
                     }
                     catch (Exception e)
                     {
@@ -620,7 +621,7 @@ namespace DivaModManager
             catch (OperationCanceledException)
             {
                 // Remove the file is it will be a partially downloaded one and close up
-                File.Delete($@"{Global.assemblyLocation}{Global.s}Downloads{Global.s}{fileName}");
+                FileSystem.DeleteFile($@"{Global.assemblyLocation}{Global.s}Downloads{Global.s}{fileName}", UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin, UICancelOption.DoNothing);
                 if (progressBox != null)
                 {
                     progressBox.finished = true;

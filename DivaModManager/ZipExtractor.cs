@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using SevenZipExtractor;
 using SharpCompress.Common;
 using SharpCompress.Readers;
+using Microsoft.VisualBasic.FileIO;
 
 namespace DivaModManager
 {
@@ -46,7 +47,7 @@ namespace DivaModManager
             {
                 Global.logger.WriteLine("Failed to extract update", LoggerType.Error);
             }
-            File.Delete(@$"{sourceFilePath}");
+            FileSystem.DeleteFile(@$"{sourceFilePath}", UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin, UICancelOption.DoNothing);
         }
 
     }

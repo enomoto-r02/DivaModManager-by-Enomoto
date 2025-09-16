@@ -21,6 +21,7 @@ using SharpCompress.Readers;
 using SharpCompress.Common;
 using Tomlyn;
 using Tomlyn.Model;
+using Microsoft.VisualBasic.FileIO;
 
 namespace DivaModManager
 {
@@ -110,7 +111,7 @@ namespace DivaModManager
                 {
                     try
                     {
-                        File.Delete(downloadName);
+                        FileSystem.DeleteFile(downloadName, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin, UICancelOption.DoNothing);
                     }
                     catch (Exception e)
                     {
@@ -140,7 +141,7 @@ namespace DivaModManager
             catch (OperationCanceledException)
             {
                 // Remove the file is it will be a partially downloaded one and close up
-                File.Delete(downloadName);
+                FileSystem.DeleteFile(downloadName, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin, UICancelOption.DoNothing);
                 if (progressBox != null)
                 {
                     progressBox.finished = true;
@@ -210,7 +211,7 @@ namespace DivaModManager
                     }
                     Global.config.Configs[Global.config.CurrentGame].ModLoaderVersion = version;
                     Global.UpdateConfig();
-                    File.Delete(_ArchiveSource);
+                    FileSystem.DeleteFile(_ArchiveSource, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin, UICancelOption.DoNothing);
                     Global.logger.WriteLine($"Finished updating DivaModLoader.", LoggerType.Info);
                 }
             });

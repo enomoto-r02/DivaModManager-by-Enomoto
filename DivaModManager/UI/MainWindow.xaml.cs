@@ -1,5 +1,6 @@
 ﻿using DivaModManager.UI;
 using GongSolutions.Wpf.DragDrop.Utilities;
+using Microsoft.VisualBasic.FileIO;
 using SharpCompress.Archives;
 using SharpCompress.Common;
 using SharpCompress.Readers;
@@ -12,6 +13,7 @@ using System.IO; // IOException, UnauthorizedAccessException など
 using System.Linq;
 using System.Net.Http; // HttpRequestException 用
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text.Json; // JsonException 用
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -22,6 +24,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
+using System.Windows.Shapes;
 using Tomlyn; // Tomlyn 例外用 (具体的な例外クラスがあれば指定)
 using Tomlyn.Model;
 using WpfAnimatedGif;
@@ -253,7 +256,7 @@ namespace DivaModManager
                 LoadoutBox.SelectedItem = Global.config.Configs[Global.config.CurrentGame].CurrentLoadout;
 
                 // --- FileSystemWatcher と Timer の初期化 ---
-                InitializeFileSystemWatcherAndTimer(); // 初期化処理をメソッドに分離
+                InitializeFileSystemWatcherAndTimer();
                 // ----------------------------------------
 
                 if (String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].ModsFolder)
@@ -454,8 +457,8 @@ namespace DivaModManager
                 await Application.Current?.Dispatcher.InvokeAsync(async () =>
                 {
                     // Activate() や InitSearchMod() は Refresh の前後どちらで行うか検討
-                    InitSearchMod(); // Mod検索状態をリセット
-                    RefreshAsync();
+                    //InitSearchMod(); // Mod検索状態をリセット
+                    await RefreshAsync();
                     // Activate(); // 必要であればウィンドウを前面に表示
                 });
             }
@@ -835,7 +838,7 @@ namespace DivaModManager
                     // これらの情報取得も重い場合は Task.Run でラップ
                     try
                     {
-                        totalFiles = await Task.Run(() => Directory.GetFiles(currentModDirectory, "*", SearchOption.AllDirectories).Length);
+                        totalFiles = await Task.Run(() => Directory.GetFiles(currentModDirectory, "*", System.IO.SearchOption.AllDirectories).Length);
                         // GetDirectorySize が拡張メソッドで非同期でない場合
                         totalSize = await Task.Run(() => new DirectoryInfo(currentModDirectory).GetDirectorySize());
                         // もし GetDirectorySize が非同期版を提供しているならそれを使う
@@ -1261,8 +1264,15 @@ namespace DivaModManager
                 }
                 // ------------------------------------
 
-                // Global.config の更新 (これは同期で良いか？)
-                Global.UpdateConfig();
+                // Global.config の更新
+                try
+                {
+                    await Task.Run(() => Global.UpdateConfig());
+                }
+                catch (Exception ex)
+                {
+                    Global.logger?.WriteLine($"Error during Global.UpdateConfig after CheckedCommon: {ex}", LoggerType.Error);
+                }
 
                 // ModLoader.Build (RefreshAsync 内でも呼ばれるが、即時反映が必要な場合)
                 try
@@ -1283,7 +1293,7 @@ namespace DivaModManager
                     try
                     {
                         var currentModDirectory = Global.config.Configs[Global.config.CurrentGame].ModsFolder;
-                        long totalFiles = Directory.Exists(currentModDirectory) ? Directory.GetFiles(currentModDirectory, "*", SearchOption.AllDirectories).Length : 0;
+                        long totalFiles = Directory.Exists(currentModDirectory) ? Directory.GetFiles(currentModDirectory, "*", System.IO.SearchOption.AllDirectories).Length : 0;
                         long totalSize = Directory.Exists(currentModDirectory) ? new DirectoryInfo(currentModDirectory).GetDirectorySize() : 0; // 同期処理注意
                         var enabledCount = Global.ModList.Count(x => x.enabled);
                         var totalCount = Global.ModList.Count;
@@ -1629,20 +1639,18 @@ namespace DivaModManager
                 // --- 監視を一時停止 ---
                 StopWatching();
 
-                foreach (var row in selectedMods)
+                var dialogResult = MessageBox.Show($@"Are you sure you want to trash {selectedMods.Count} mod(s)?", $@"Trashing {selectedMods.Count} mods: Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                if (dialogResult == MessageBoxResult.Yes)
                 {
-                    // 確認ダイアログ (これはUIスレッドで)
-                    var dialogResult = MessageBox.Show($@"Are you sure you want to delete {row.name}?" + Environment.NewLine + "This cannot be undone.", $@"Deleting {row.name}: Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Warning);
-
-                    if (dialogResult == MessageBoxResult.Yes)
+                    foreach (var row in selectedMods)
                     {
                         string modPath = System.IO.Path.Combine(Global.config.Configs[Global.config.CurrentGame].ModsFolder, row.name);
-                        Global.logger.WriteLine($@"Attempting to delete {row.name} at '{modPath}'.", LoggerType.Info);
+                        Global.logger.WriteLine($@"Attempting to trash {row.name} at '{modPath}'.", LoggerType.Info);
                         try
                         {
                             // Directory.Delete は時間がかかる可能性があるので Task.Run
-                            await Task.Run(() => Directory.Delete(modPath, true));
-                            Global.logger.WriteLine($"Successfully deleted '{modPath}'.", LoggerType.Info);
+                            await Task.Run(() => FileSystem.DeleteDirectory(modPath, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin, UICancelOption.DoNothing));
+                            Global.logger.WriteLine($"Successfully trash '{modPath}'.", LoggerType.Info);
                             // メタデータ表示をクリア (UI スレッドで)
                             await Dispatcher.InvokeAsync(() => ShowMetadata(null));
                             // ★注意: ModListからの削除はRefreshAsyncで行われるのを待つか、ここで手動で削除する必要がある
@@ -1650,18 +1658,18 @@ namespace DivaModManager
                         }
                         catch (IOException ex)
                         {
-                            Global.logger.WriteLine($@"IO error deleting '{modPath}': {ex.Message}", LoggerType.Error);
-                            await Dispatcher.InvokeAsync(() => MessageBox.Show($"Could not delete '{row.name}':\n{ex.Message}", "Delete Error", MessageBoxButton.OK, MessageBoxImage.Error));
+                            Global.logger.WriteLine($@"IO error trashing '{modPath}': {ex.Message}", LoggerType.Error);
+                            await Dispatcher.InvokeAsync(() => MessageBox.Show($"Could not trash '{row.name}':\n{ex.Message}", "Trash Error", MessageBoxButton.OK, MessageBoxImage.Error));
                         }
                         catch (UnauthorizedAccessException ex)
                         {
-                            Global.logger.WriteLine($@"Permission error deleting '{modPath}': {ex.Message}", LoggerType.Error);
-                            await Dispatcher.InvokeAsync(() => MessageBox.Show($"Permission denied while deleting '{row.name}':\n{ex.Message}", "Delete Error", MessageBoxButton.OK, MessageBoxImage.Error));
+                            Global.logger.WriteLine($@"Permission error trashing '{modPath}': {ex.Message}", LoggerType.Error);
+                            await Dispatcher.InvokeAsync(() => MessageBox.Show($"Permission denied while trashing '{row.name}':\n{ex.Message}", "Trash Error", MessageBoxButton.OK, MessageBoxImage.Error));
                         }
                         catch (Exception ex) // その他のエラー
                         {
-                            Global.logger.WriteLine($@"Unexpected error deleting '{modPath}': {ex}", LoggerType.Error);
-                            await Dispatcher.InvokeAsync(() => MessageBox.Show($"An unexpected error occurred while deleting '{row.name}':\n{ex.Message}", "Delete Error", MessageBoxButton.OK, MessageBoxImage.Error));
+                            Global.logger.WriteLine($@"Unexpected error trashing '{modPath}': {ex}", LoggerType.Error);
+                            await Dispatcher.InvokeAsync(() => MessageBox.Show($"An unexpected error occurred while deleting '{row.name}':\n{ex.Message}", "Trash Error", MessageBoxButton.OK, MessageBoxImage.Error));
                         }
                         finally
                         {
@@ -1856,7 +1864,7 @@ namespace DivaModManager
                 string[] fileList = (string[])e.Data.GetData(DataFormats.FileDrop, false);
                 foreach (var file in fileList)
                 {
-                    var filePath = Path.GetFileName(file);
+                    var filePath = System.IO.Path.GetFileName(file);
                     Global.logger.WriteLine($"Expanding the dropped file. [{filePath}]", LoggerType.Info);
                 }
                 await Task.Run(() => ExtractPackages(fileList));
@@ -1867,15 +1875,13 @@ namespace DivaModManager
         private async void ExtractPackages(string[] fileList)
         {
             Dispatcher.Invoke(() => IsEnabledControls(true)); // 展開中はUI無効化
-            string ArchiveDestination = $@"{Global.assemblyLocation}Downloads{Global.s}temp_{DateTime.Now:yyyyMMddHHmmssFFF}";
-            Directory.CreateDirectory(ArchiveDestination);
-
             try
             {
                 await Task.Run(() => // 全体を別スレッドで実行
                 {
                     foreach (var fileOrDir in fileList)
                     {
+                        string ArchiveDestination = $@"{Global.assemblyLocation}Downloads{Global.s}temp_{DateTime.Now:yyyyMMddHHmmssFFF}";
                         int archiveFileCount = 0;
                         int extractedFileCount = 0;
                         Directory.CreateDirectory(ArchiveDestination);
@@ -1891,7 +1897,7 @@ namespace DivaModManager
                                 index += 1;
                             }
                             // 必要なら重複チェックとリネーム
-                            // MoveDirectory(fileOrDir, destPath); // MoveDirectory内のエラーハンドリングも確認
+                            MoveDirectory(fileOrDir, destPath);
                         }
                         else if (File.Exists(fileOrDir)) // ファイルの場合
                         {
@@ -1945,7 +1951,7 @@ namespace DivaModManager
                         }
 
                         // Check if the extracted file count matches the archive file count
-                        extractedFileCount = Directory.EnumerateFiles(ArchiveDestination, "*", SearchOption.AllDirectories).Count();
+                        extractedFileCount = Directory.EnumerateFiles(ArchiveDestination, "*", System.IO.SearchOption.AllDirectories).Count();
                         if (archiveFileCount != extractedFileCount)
                         {
                             string msg = $"Extracted file count ({extractedFileCount}) does not match archive file count ({archiveFileCount}).\nIt may not have been unzipped correctly.";
@@ -1954,7 +1960,7 @@ namespace DivaModManager
                         }
                         // --- temp ディレクトリからの移動処理 ---
                         // GetDirectories も try-catch で囲む
-                        var extractedFolders = Directory.GetDirectories(ArchiveDestination, "*", SearchOption.AllDirectories)
+                        var extractedFolders = Directory.GetDirectories(ArchiveDestination, "*", System.IO.SearchOption.AllDirectories)
                                                         .Where(x => File.Exists(System.IO.Path.Combine(x, "config.toml"))); // File.Exists もエラー可能性あり
 
                         foreach (var folder in extractedFolders)
@@ -1966,14 +1972,10 @@ namespace DivaModManager
                                 path = $@"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}{System.IO.Path.GetFileName(folder)} ({index})";
                                 index += 1;
                             }
+                            // 元のフォルダは削除
                             MoveDirectory(folder, path);
                         }
-                        if (Directory.Exists(ArchiveDestination))
-                        {
-                            Directory.Delete(ArchiveDestination, true);
-                        }   
-                        // ドロップしたファイルを削除しないよう修正
-                        //File.Delete(_ArchiveSource);
+                        // ドロップしたファイルを削除しない
                     }
                 }); // end Task.Run
             }
@@ -1983,15 +1985,15 @@ namespace DivaModManager
                                          // 展開後は Refresh が必要 (Debounce により自動で呼ばれるはず)
             }
         }
-        // MoveDirectory も内部で try-catch を追加すべき
-        private void MoveDirectory(string sourcePath, string targetPath)
+        // MoveDirectory も内部で try-catch を追加すべき？
+        private void MoveDirectory(string sourcePath, string targetPath, bool deleteOriginal = false)
         {
             try
             {
                 StopWatching(); // 監視を一時停止
 
                 // File.Copy も IOException, UnauthorizedAccessException などを投げる可能性
-                foreach (var path in Directory.GetFiles(sourcePath, "*.*", SearchOption.AllDirectories))
+                foreach (var path in Directory.GetFiles(sourcePath, "*.*", System.IO.SearchOption.AllDirectories))
                 {
                     string newPath = path.Replace(sourcePath, targetPath); // Path.Combine を使う方が安全
                     try
@@ -2007,7 +2009,23 @@ namespace DivaModManager
                     }
                 }
                 // コピー成功後、元のディレクトリを削除？ (Move なので削除が必要)
-                // Directory.Delete(sourcePath, true); // これも try-catch
+                if (deleteOriginal)
+                {
+                    var parentDir = Directory.GetParent(sourcePath);
+                    var parentDir_2 = Directory.GetParent(parentDir.FullName);
+                    // Downloads/temp_xxxxディレクトリであることを確認(念のためtemp_xxxxの親がDownloadsであることも確認)
+                    if (!string.IsNullOrEmpty(parentDir.Name) && !string.IsNullOrEmpty(parentDir_2.Name) && 
+                        parentDir.Name.StartsWith("temp_") && parentDir_2.Name == "Downloads")
+                    {
+                        // temp_フォルダ以下を削除
+                        FileSystem.DeleteDirectory(parentDir.FullName, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin, UICancelOption.DoNothing);
+                    }
+                    else
+                    {
+                        Global.logger.WriteLine($"Failed to delete temporary folder after extraction.{parentDir.FullName}", LoggerType.Warning);
+                    }
+                }
+
             }
             catch (Exception ex) // GetFiles などでのエラー
             {
@@ -2350,17 +2368,25 @@ namespace DivaModManager
             }
         }
 
-        private void Download_Click(object sender, RoutedEventArgs e)
+        private async void Download_Click(object sender, RoutedEventArgs e)
         {
             Button button = sender as Button;
             var item = button.DataContext as GameBananaRecord;
             new ModDownloader().BrowserDownload(Global.games[GameFilterBox.SelectedIndex], item);
+            await Application.Current?.Dispatcher.InvokeAsync(async () =>
+            {
+                await RefreshAsync();
+            });
         }
-        private void DMADownload_Click(object sender, RoutedEventArgs e)
+        private async void DMADownload_Click(object sender, RoutedEventArgs e)
         {
             Button button = sender as Button;
             var item = button.DataContext as DivaModArchivePost;
             new ModDownloader().DMABrowserDownload(Global.games[GameBox.SelectedIndex], item);
+            await Application.Current?.Dispatcher.InvokeAsync(async () =>
+            {
+                await RefreshAsync();
+            });
         }
         private void AltDownload_Click(object sender, RoutedEventArgs e)
         {
@@ -3986,34 +4012,29 @@ namespace DivaModManager
         {
             ModGrid.ClearSelectedItems();
 
+            // Name or Note Filter
             switch (SearchTargetComboBox.Text)
             {
-                case "ALL":
-                    Global.ModList = new ObservableCollection<Mod>(Global.ModList_All.ToList()
-                        .Where(
-                        x => x.name.ToLower().Contains(searchModName.ToLower())
-                        || x.note.ToLower().Contains(searchModName.ToLower())
-                        ).ToList());
-                    break;
                 case "Name":
                     Global.ModList = new ObservableCollection<Mod>(Global.ModList_All.ToList()
-                        .Where(x => x.name.ToLower().Contains(searchModName.ToLower())).ToList());
+                        .Where(x => x.name.ToLower().Contains(searchModName.ToLower())));
                     break;
                 case "Note":
                     Global.ModList = new ObservableCollection<Mod>(Global.ModList_All.ToList()
-                        .Where(x => x.note.ToLower().Contains(searchModName.ToLower())).ToList());
+                        .Where(x => x.note.ToLower().Contains(searchModName.ToLower())));
+                    break;
+                default:
+                    Global.ModList = new ObservableCollection<Mod>(Global.ModList_All.ToList()
+                        .Where(
+                        x => x.name.ToLower().Contains(searchModName.ToLower())
+                        || x.note.ToLower().Contains(searchModName.ToLower())));
                     break;
             }
 
+            // Category Filter
             switch (categoryName)
             {
-                case "ALL":
-                    if (SearchCategoryComboBox.SelectedIndex != 0)
-                    {
-                        Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList()
-                            .Where(x => x.category == categoryName).ToList());
-                        break;
-                    }
+                case "Category":
                     break;
                 case "Unspecified":
                     Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList()
@@ -4024,6 +4045,25 @@ namespace DivaModManager
                         .Where(x => x.category == categoryName).ToList());
                     break;
             }
+
+            // Enabled Filter
+            var item = SearchEnabledComboBox.SelectedItem as ComboBoxItem;
+            switch (item.Content)
+            {
+                case "Enabled":
+                    break;
+                case "True":
+                    Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList()
+                        .Where(x => x.enabled == true));
+                    break;
+                case "False":
+                    Global.ModList = new ObservableCollection<Mod>(Global.ModList.ToList()
+                        .Where(x => x.enabled == false));
+                    break;
+                default:
+                    break;
+            }
+
             Global.SearchModListFlg = true;
 
             ModGrid.ItemsSource = Global.ModList;
@@ -4229,7 +4269,7 @@ namespace DivaModManager
         {
             List<Mod> CategoryItems = Global.ModList_All.DistinctBy(x => x.category).OrderBy(x => x.category).ToList();
             Global.CategoryItems = new ObservableCollection<string>();
-            Global.CategoryItems.Add("ALL");
+            Global.CategoryItems.Add("Category");
             foreach (var CategoryItem in CategoryItems)
             {
                 if (!string.IsNullOrEmpty(CategoryItem.category))
@@ -4242,6 +4282,14 @@ namespace DivaModManager
             if (selected != null)
             {
                 SearchCategoryComboBox.SelectedIndex = (int)selected;
+            }
+        }
+
+        private void SearchEnabledComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (sender is ComboBox checkBox && checkBox.IsKeyboardFocusWithin)
+            {
+                SearchModList(SearchModListTextBox.Text, SearchCategoryComboBox.Text);
             }
         }
 
@@ -4405,7 +4453,9 @@ namespace DivaModManager
             SearchClearButton.IsEnabled = isEnabled;
             SearchTargetComboBox.IsEnabled = isEnabled;
             SearchCategoryComboBox.IsEnabled = isEnabled;
+            SearchEnabledComboBox.IsEnabled = isEnabled;
             VisibleColumnComboBox.IsEnabled = isEnabled;
+            ModGirdScreenShotButton.IsEnabled = isEnabled;
 
             // Modグリッド
             ModGrid.IsEnabled = isEnabled;
@@ -4531,5 +4581,29 @@ namespace DivaModManager
 
 
         #endregion
+
+        // Screenshot
+        private async void ScreenShot_Click(object sender, RoutedEventArgs e)
+        {
+            Global.logger.WriteLine($"ScreenShot making...", LoggerType.Info);
+
+            var path = $"{Global.downloadBaseLocation}ModGrid_{DateTime.Now:yyyyMMdd_HHmmss}.png";
+
+            // この呼び出しならUIスレッドを止めない
+            try
+            {
+                await Application.Current?.Dispatcher.InvokeAsync(() =>
+                {
+                    DataGridCaptureHelper.SaveStyledDataGridAsPng(ModGrid, path);
+                });
+                Global.logger.WriteLine($"ScreenShot making Complete! {path}", LoggerType.Info);
+
+                Global.TryStartProcess($"\"{System.IO.Path.GetDirectoryName(path)}\"");
+            }
+            catch (Exception exception)
+            {
+                Global.logger.WriteLine($"Error ScreenShot making is failed.\nMessage: {exception.Message}\nPath:{path}", LoggerType.Error);
+            }
+        }
     }
 }

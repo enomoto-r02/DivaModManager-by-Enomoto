@@ -1,4 +1,5 @@
 ﻿using DivaModManager.UI;
+using Microsoft.VisualBasic.FileIO;
 using SevenZipExtractor;
 using SharpCompress.Archives.SevenZip;
 using SharpCompress.Common;
@@ -353,7 +354,7 @@ namespace DivaModManager
                     return;
                 }
                 // Download the update
-                await DownloadFile(item.Files[0].ToString(), Path.GetFileName(mod), mod, item, progress, cancellationToken);
+                await DownloadFile(item.Files[0].ToString(), item.FileNames[0], mod, item, progress, cancellationToken);
             }
         }
         // Called by ModUpdateGB to download the file
@@ -368,7 +369,7 @@ namespace DivaModManager
                 {
                     try
                     {
-                        File.Delete($@"{Global.assemblyLocation}{Global.s}Downloads{Global.s}{fileName}");
+                        FileSystem.DeleteFile($@"{Global.assemblyLocation}{Global.s}Downloads{Global.s}{fileName}", UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin, UICancelOption.DoNothing);
                     }
                     catch (Exception e)
                     {
@@ -400,7 +401,7 @@ namespace DivaModManager
             catch (OperationCanceledException)
             {
                 // Remove the file is it will be a partially downloaded one and close up
-                File.Delete($@"{Global.assemblyLocation}{Global.s}Downloads{Global.s}{fileName}");
+                FileSystem.DeleteFile($@"{Global.assemblyLocation}{Global.s}Downloads{Global.s}{fileName}", UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin, UICancelOption.DoNothing);
                 if (progressBox != null)
                 {
                     progressBox.finished = true;
@@ -430,7 +431,7 @@ namespace DivaModManager
                 {
                     try
                     {
-                        File.Delete($@"{Global.assemblyLocation}{Global.s}Downloads{Global.s}{fileName}");
+                        FileSystem.DeleteFile($@"{Global.assemblyLocation}{Global.s}Downloads{Global.s}{fileName}", UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin, UICancelOption.DoNothing);
                     }
                     catch (Exception e)
                     {
@@ -462,7 +463,7 @@ namespace DivaModManager
             catch (OperationCanceledException)
             {
                 // Remove the file is it will be a partially downloaded one and close up
-                File.Delete($@"{Global.assemblyLocation}{Global.s}Downloads{Global.s}{fileName}");
+                FileSystem.DeleteFile($@"{Global.assemblyLocation}{Global.s}Downloads{Global.s}{fileName}", UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin, UICancelOption.DoNothing);
                 if (progressBox != null)
                 {
                     progressBox.finished = true;
@@ -487,7 +488,10 @@ namespace DivaModManager
 
             foreach (FileInfo fi in dir.GetFiles())
             {
-                if (fi.Name.ToLowerInvariant() != "mod.json" && fi.Name.ToLowerInvariant() != "config.toml" && !fi.Name.ToLowerInvariant().StartsWith("preview."))
+                if (fi.Name.ToLowerInvariant() != "mod.json" 
+                    && fi.Name.ToLowerInvariant() != "config.toml" 
+                    && fi.Name.ToLowerInvariant() != "config_e.toml" 
+                    && !fi.Name.ToLowerInvariant().StartsWith("preview."))
                     fi.Delete();
             }
 
@@ -539,7 +543,7 @@ namespace DivaModManager
                 TomlTable oldConfig = null;
                 if (File.Exists($@"{output}{Global.s}config.toml"))
                     Toml.TryToModel(File.ReadAllText($@"{output}{Global.s}config.toml"), out oldConfig, out var diagnostics);
-                foreach (var folder in Directory.GetDirectories(ArchiveDestination, "*", SearchOption.AllDirectories).Where(x => File.Exists($@"{x}{Global.s}config.toml")))
+                foreach (var folder in Directory.GetDirectories(ArchiveDestination, "*", System.IO.SearchOption.AllDirectories).Where(x => File.Exists($@"{x}{Global.s}config.toml")))
                 {
                     MoveDirectory(folder, output);
                 }
@@ -577,8 +581,8 @@ namespace DivaModManager
                     var configString = Toml.FromModel(newConfig);
                     File.WriteAllText($@"{output}{Global.s}config.toml", configString);
                 }
-                File.Delete(_ArchiveSource);
-                Directory.Delete(ArchiveDestination, true);
+                FileSystem.DeleteFile(_ArchiveSource, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin, UICancelOption.DoNothing);
+                FileSystem.DeleteDirectory(ArchiveDestination, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin, UICancelOption.DoNothing);
             }
         }
         // Called by DownloadFile after downloading to extract the file
@@ -634,7 +638,7 @@ namespace DivaModManager
                 TomlTable oldConfig = null;
                 if (File.Exists($@"{output}{Global.s}config.toml"))
                     Toml.TryToModel(File.ReadAllText($@"{output}{Global.s}config.toml"), out oldConfig, out var diagnostics);
-                foreach (var folder in Directory.GetDirectories(ArchiveDestination, "*", SearchOption.AllDirectories).Where(x => File.Exists($@"{x}{Global.s}config.toml")))
+                foreach (var folder in Directory.GetDirectories(ArchiveDestination, "*", System.IO.SearchOption.AllDirectories).Where(x => File.Exists($@"{x}{Global.s}config.toml")))
                 {
                     MoveDirectory(folder, output);
                 }
@@ -671,14 +675,14 @@ namespace DivaModManager
                     var configString = Toml.FromModel(newConfig);
                     File.WriteAllText($@"{output}{Global.s}config.toml", configString);
                 }
-                File.Delete(_ArchiveSource);
-                Directory.Delete(ArchiveDestination, true);
+                FileSystem.DeleteFile(_ArchiveSource, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin, UICancelOption.DoNothing);
+                FileSystem.DeleteDirectory(ArchiveDestination, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin, UICancelOption.DoNothing);
             }
         }
         private static void MoveDirectory(string sourcePath, string targetPath)
         {
             //Copy all the files & Replaces any files with the same name
-            foreach (var path in Directory.GetFiles(sourcePath, "*.*", SearchOption.AllDirectories))
+            foreach (var path in Directory.GetFiles(sourcePath, "*.*", System.IO.SearchOption.AllDirectories))
             {
                 var newPath = path.Replace(sourcePath, targetPath);
                 Directory.CreateDirectory(Path.GetDirectoryName(newPath));

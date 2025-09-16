@@ -1,4 +1,5 @@
 ﻿using DivaModManager.UI;
+using Microsoft.VisualBasic.FileIO;
 using Octokit;
 using Onova;
 using Onova.Models;
@@ -104,7 +105,7 @@ namespace DivaModManager
             catch (OperationCanceledException)
             {
                 // Remove the file is it will be a partially downloaded one and close up
-                File.Delete(@$"{Global.assemblyLocation}{Global.s}Downloads{Global.s}DMMeUpdate{Global.s}{fileName}");
+                FileSystem.DeleteFile(@$"{Global.assemblyLocation}{Global.s}Downloads{Global.s}DMMeUpdate{Global.s}{fileName}", UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin, UICancelOption.DoNothing);
                 if (progressBox != null)
                 {
                     progressBox.finished = true;
