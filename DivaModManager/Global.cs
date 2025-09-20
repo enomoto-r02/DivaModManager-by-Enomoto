@@ -15,6 +15,7 @@ namespace DivaModManager
         public static char s = Path.DirectorySeparatorChar;
         public static string assemblyLocation = AppDomain.CurrentDomain.BaseDirectory;
         public static readonly string downloadBaseLocation = $@"{Global.assemblyLocation}Downloads{Global.s}";
+        public static readonly string textLogLocation = $@"{Global.assemblyLocation}{Process.GetCurrentProcess().ProcessName}.log";
         public static List<string> games;
         public static string selected_game;
         public static ObservableCollection<Mod> ModList;
@@ -35,6 +36,11 @@ namespace DivaModManager
         public static string DMA_HOMEPAGE_URL_POSTS = "https://divamodarchive.com/posts/";
         public static string DMA_API_URL_POSTS = "https://divamodarchive.com/api/v1/posts/";
         public static string DMA_PAGE_URL_BASE = "https://divamodarchive.com/post/";
+
+        public static readonly int BIT_OS = Environment.Is64BitOperatingSystem ? 64 : 32;
+        public static readonly string BIT_OS_DIR_NAME = Environment.Is64BitOperatingSystem ? "x64" : "x86";
+        public static readonly string SevenZipDlllPath = $@"{Global.assemblyLocation}{Global.BIT_OS_DIR_NAME}{Global.s}7z.dll";
+        public static bool SevenZipDlllExist = false;
 
         public static void UpdateConfig()
         {
@@ -92,7 +98,7 @@ namespace DivaModManager
                 }
 
                 Process.Start(psi);
-                Global.logger?.WriteLine($"Successfully started process for target: '{target}'.", LoggerType.Info);
+                Global.logger?.WriteLine($"Successfully started process for target: '{target}'.", LoggerType.Debug);
                 return true;
             }
             catch (Win32Exception ex) // プロセス開始時の一般的なエラー

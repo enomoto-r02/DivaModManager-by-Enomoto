@@ -1,9 +1,8 @@
 ﻿using System;
 using System.IO;
 using System.Windows.Data;
-using System.Windows.Media;
 
-namespace DivaModManager.UI
+namespace DivaModManager
 {
     public class FileNameConverter : IValueConverter
     {

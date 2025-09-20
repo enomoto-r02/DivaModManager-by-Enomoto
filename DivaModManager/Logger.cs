@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
-using System.Windows;
+using System.Windows.Shapes;
 
 namespace DivaModManager
 {
@@ -50,6 +52,23 @@ namespace DivaModManager
             {
                 outputWindow.AppendText($"[{DateTime.Now}] [{header}] {text}\n", color);
             });
+        }
+    }
+
+    public static class FileLogger
+    {
+        public static void FileOpenAndWrite(string value)
+        {
+            if (File.Exists(Global.textLogLocation))
+            {
+                File.Delete(Global.textLogLocation);
+            }
+            using (var fs = new FileStream(
+                    Global.textLogLocation, FileMode.Create, FileAccess.Write, FileShare.Read))
+            {
+                byte[] info = new UTF8Encoding(true).GetBytes(value);
+                fs.Write(info, 0, info.Length);
+            }
         }
     }
 

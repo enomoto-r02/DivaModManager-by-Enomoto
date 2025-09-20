@@ -1,12 +1,12 @@
-﻿using Onova.Services;
+﻿using Microsoft.VisualBasic.FileIO;
+using Onova.Services;
+using SevenZip;
+using SharpCompress.Common;
+using SharpCompress.Readers;
 using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using SevenZipExtractor;
-using SharpCompress.Common;
-using SharpCompress.Readers;
-using Microsoft.VisualBasic.FileIO;
 
 namespace DivaModManager
 {
@@ -17,12 +17,25 @@ namespace DivaModManager
         {
             try
             {
-                if (Path.GetExtension(sourceFilePath).Equals(".7z", StringComparison.InvariantCultureIgnoreCase))
+                //if (Path.GetExtension(sourceFilePath).Equals(".7z", StringComparison.InvariantCultureIgnoreCase))
+                //{
+                //    using (var archive = new ArchiveFile(sourceFilePath))
+                //    {
+                //        archive.Extract(destDirPath);
+                //    }
+                //}
+                string extension = Path.GetExtension(sourceFilePath).ToLowerInvariant();
+                // アーカイブ内のファイル数をカウント
+                if (extension == ".7z")
                 {
-                    using (var archive = new ArchiveFile(sourceFilePath))
+                    if (!Global.SevenZipDlllExist)
                     {
-                        archive.Extract(destDirPath);
+                        Global.logger.WriteLine($"Extraction failed because 7z.dll does not exist. Please re-download DivaModManager by Enomoto.,", LoggerType.Error);
+                        return;
                     }
+                    // 展開(処理速度向上のためSevenZipSharp.Interopを使用)
+                    using var extractor = new SevenZipExtractor(sourceFilePath);
+                    extractor.ExtractArchive(destDirPath);
                 }
                 else
                 {
