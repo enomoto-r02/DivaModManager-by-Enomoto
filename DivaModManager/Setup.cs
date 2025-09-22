@@ -152,6 +152,8 @@ namespace DivaModManager
                 Global.logger.WriteLine($"Error whilst downloading DivaModLoader ({e.Message})", LoggerType.Error);
             }
         }
+
+        // Call by DownloadDML
         private static async Task ExtractFile(string fileName, string output, string version)
         {
             await Task.Run(() =>

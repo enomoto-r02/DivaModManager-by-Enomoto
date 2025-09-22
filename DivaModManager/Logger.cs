@@ -1,14 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
-using System.Windows.Shapes;
+using static DivaModManager.Debug;
 
 namespace DivaModManager
 {
@@ -17,13 +12,15 @@ namespace DivaModManager
         Info,
         Warning,
         Error,
-        Debug,
         Critical,
+        Debug,
+        Developer,
     }
-    public class Logger
+
+    public partial class WindowLogger
     {
         RichTextBox outputWindow;
-        public Logger(RichTextBox textBox)
+        public WindowLogger(RichTextBox textBox)
         {
             outputWindow = textBox;
         }
@@ -46,29 +43,33 @@ namespace DivaModManager
                     color = "#FFB0B0";
                     header = "ERROR";
                     break;
+                case LoggerType.Critical:
+                    color = "#FFB0B0";
+                    header = "CRITICAL";
+                    break;
+                case LoggerType.Debug:
+                    color = "#F2F2F2";
+                    header = "DEBUG";
+                    break;
+                case LoggerType.Developer:
+                    color = "#F2F2F2";
+                    header = "DEVELOPER";
+                    break;
             }
             // Call on UI thread
             Application.Current.Dispatcher.Invoke(() =>
             {
-                outputWindow.AppendText($"[{DateTime.Now}] [{header}] {text}\n", color);
-            });
-        }
-    }
+                var value = $"[{DateTime.Now}] [{header}] {text}\n";
+                TextLogger.Log += value;
 
-    public static class FileLogger
-    {
-        public static void FileOpenAndWrite(string value)
-        {
-            if (File.Exists(Global.textLogLocation))
-            {
-                File.Delete(Global.textLogLocation);
-            }
-            using (var fs = new FileStream(
-                    Global.textLogLocation, FileMode.Create, FileAccess.Write, FileShare.Read))
-            {
-                byte[] info = new UTF8Encoding(true).GetBytes(value);
-                fs.Write(info, 0, info.Length);
-            }
+                // 画面出力はGlobal.DEBUG_MODE、LoggerTypeどちらもDEBUGまで
+                if (type != LoggerType.Developer
+                    && (DEBUG_MODE.DEBUG >= Global.DEBUG_MODE)
+                    || type != LoggerType.Debug)
+                {
+                    outputWindow.AppendText(value, color);
+                }
+            });
         }
     }
 
@@ -78,12 +79,12 @@ namespace DivaModManager
         public static void AppendText(this RichTextBox box, string text, string color)
         {
             BrushConverter bc = new BrushConverter();
+
             TextRange tr = new TextRange(box.Document.ContentEnd, box.Document.ContentEnd);
             tr.Text = text;
             try
             {
-                tr.ApplyPropertyValue(TextElement.ForegroundProperty,
-                    bc.ConvertFromString(color));
+                tr.ApplyPropertyValue(TextElement.ForegroundProperty, bc.ConvertFromString(color));
             }
             catch (FormatException) { }
         }

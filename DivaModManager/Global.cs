@@ -8,10 +8,10 @@ using System.Text.Json;
 
 namespace DivaModManager
 {
-    public static class Global
+    public static partial class Global
     {
         public static Config config;
-        public static Logger logger;
+        public static WindowLogger logger;
         public static char s = Path.DirectorySeparatorChar;
         public static string assemblyLocation = AppDomain.CurrentDomain.BaseDirectory;
         public static readonly string downloadBaseLocation = $@"{Global.assemblyLocation}Downloads{Global.s}";
@@ -71,9 +71,9 @@ namespace DivaModManager
         /// <summary>
         /// 指定されたターゲット（URLまたはファイル/フォルダパス）を外部プロセスで安全に開きます。
         /// </summary>
-        /// <param name="target">開くURLまたはパス。</param>
-        /// <param name="workingDirectory">プロセスの作業ディレクトリ（オプション）。</param>
-        /// <returns>プロセスが正常に開始された場合は true、それ以外は false。</returns>
+        /// <param name="target">開くURLまたはパス</param>
+        /// <param name="workingDirectory">プロセスの作業ディレクトリ（オプション）</param>
+        /// <returns>プロセスが正常に開始された場合は true、それ以外は false</returns>
         public static bool TryStartProcess(string target, string workingDirectory = null)
         {
             if (string.IsNullOrWhiteSpace(target))

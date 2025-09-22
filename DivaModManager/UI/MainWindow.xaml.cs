@@ -1,5 +1,4 @@
-﻿using DivaModManager.UI;
-using GongSolutions.Wpf.DragDrop.Utilities;
+﻿using GongSolutions.Wpf.DragDrop.Utilities;
 using Microsoft.VisualBasic.FileIO;
 using SevenZip;
 using SharpCompress.Archives;
@@ -27,9 +26,8 @@ using System.Windows.Media.Imaging;
 using Tomlyn; // Tomlyn 例外用 (具体的な例外クラスがあれば指定)
 using Tomlyn.Model;
 using WpfAnimatedGif;
-using System.Runtime.CompilerServices;
 
-namespace DivaModManager
+namespace DivaModManager.UI
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
@@ -101,12 +99,10 @@ namespace DivaModManager
         public MainWindow()
         {
             InitializeComponent();
+            Global.logger = new(ConsoleWindow);
             // Global logger/config 初期化は try の外でも良い場合がある
             try
             {
-                Global.logger = new Logger(ConsoleWindow);
-                Global.config = new();
-
                 // Get Version Number
                 var DMMVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
                 version = DMMVersion;
@@ -151,7 +147,7 @@ namespace DivaModManager
                         }
                     }
                     catch (JsonException ex)
-                        {
+                    {
                         Global.logger.WriteLine($"Error parsing Config.json: {ex.Message}. Using default config.", LoggerType.Error);
                         // 破損したファイルをリネームするなどの措置も検討可能
                         // MessageBox.Show($"Configuration file (Config.json) is corrupted:\n{ex.Message}\n\nDiva Mod Manager by Enomoto will start with default settings.", "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -174,7 +170,7 @@ namespace DivaModManager
                 }
                 else
                 {
-                     Global.logger.WriteLine($"Config.json not found. Creating default config.", LoggerType.Info);
+                    Global.logger.WriteLine($"Config.json not found. Creating default config.", LoggerType.Info);
                 }
                 // ----------------------------------------------------
 
@@ -276,7 +272,7 @@ namespace DivaModManager
                 }
 
                 CategoryComboInit(0);
-                if(!InitSevenZipExtraction())
+                if (!InitSevenZipExtraction())
                 {
                     MessageBox.Show($"Extraction failed because 7z.dll does not exist. Please re-download DivaModManager by Enomoto.", "Error");
                     Environment.Exit(1);
@@ -544,7 +540,8 @@ namespace DivaModManager
             // Global.ModList は UI スレッドでアクセスする必要がある場合があるため注意
             // FindIndex などは読み取りなので大丈夫かもしれないが、安全のためコピーを使うかUIスレッドで行う
             Mod modEntry = null;
-            await Application.Current.Dispatcher.InvokeAsync(() => {
+            await Application.Current.Dispatcher.InvokeAsync(() =>
+            {
                 modEntry = Global.ModList.FirstOrDefault(x => x.name == modName);
             });
 
@@ -1559,7 +1556,7 @@ namespace DivaModManager
                 }
             }
         }
-        
+
         #region その他のメソッドのエラーハンドリング改善例
 
         private async void DeleteItem_Click(object sender, RoutedEventArgs e)
@@ -1615,7 +1612,6 @@ namespace DivaModManager
             {
                 // --- 監視を再開 ---
                 StartWatching();
-                await RefreshAsync();
                 // 削除操作後にリストをリフレッシュ（推奨）
                 // Debounce 処理があるので、少し待てば RefreshAsync が呼ばれるはず
                 // 必要なら手動でタイマーをトリガー: _debounceTimer?.Change(0, Timeout.Infinite);
@@ -1670,6 +1666,8 @@ namespace DivaModManager
                     Global.logger?.WriteLine($"Directory not found: '{folderName}'. Cannot open.", LoggerType.Warning);
                 }
             }
+
+            TextLogger.Log += ObjectDumper.Dump(selectedMods, "selectedMods");
         }
         // RenameMod_Click での一時停止処理を変更
         private async void RenameMod_Click(object sender, RoutedEventArgs e)
@@ -1702,7 +1700,6 @@ namespace DivaModManager
             await Task.Run(() => ModLoader.Build()); // 非同期化推奨
             ModGrid.Focus();
         }
-
 
         private void ConfigureModItem_Click(object sender, RoutedEventArgs e)
         {
@@ -1800,7 +1797,7 @@ namespace DivaModManager
                 {
                     var fileName = System.IO.Path.GetFileName(filePath);
                     Global.logger.WriteLine($"Expanding the dropped file. [{fileName}]", LoggerType.Info);
-                    var apiBase = new DownloadApiBase();
+                    var apiBase = new DownloadApiBase(DownloadApiBase.TARGET_TO.LOCAL, DownloadApiBase.CALL_TYPE.DROP);
                     apiBase.ArchiveFilePath = filePath;
                     await Task.Run(() => Extractor.ExtractLogicAsync(apiBase));
                 }
@@ -1920,7 +1917,7 @@ namespace DivaModManager
             finally
             {
                 Dispatcher.Invoke(() => IsEnabledControls(true)); // 展開完了またはエラー後、UI有効化
-                                         // 展開後は Refresh が必要 (Debounce により自動で呼ばれるはず)
+                                                                  // 展開後は Refresh が必要 (Debounce により自動で呼ばれるはず)
             }
         }
         //// MoveDirectory も内部で try-catch を追加すべき？
@@ -1999,7 +1996,7 @@ namespace DivaModManager
                 if (await AutoUpdater.CheckForDMMUpdate(new CancellationTokenSource()))
                     Close();
                 Global.logger.WriteLine("Checking for DivaModLoader update...", LoggerType.Info);
-                if(!await Setup.CheckForDMLUpdate(new CancellationTokenSource()))
+                if (!await Setup.CheckForDMLUpdate(new CancellationTokenSource()))
                 {
                     IsEnabledControls(true);
                     return;
@@ -2014,6 +2011,7 @@ namespace DivaModManager
             App.Current.Dispatcher.Invoke(async () =>
             {
                 IsEnabledControls(false);
+                StopWatching();
                 Global.logger.WriteLine("Checking for mod updates...", LoggerType.Info);
                 List<Mod> selectedMods = ModGrid.SelectedItems.OfType<Mod>().ToList();
                 await ModUpdater.CheckForUpdates(Global.config.Configs[Global.config.CurrentGame].ModsFolder, selectedMods, true);
@@ -2024,6 +2022,7 @@ namespace DivaModManager
                 //await Setup.CheckForDMLUpdate(new CancellationTokenSource());
 
                 await UpdateUIElementsAndBuildAsync();
+                StartWatching();
                 IsEnabledControls(true);
                 this.Activate();
             });
@@ -2181,7 +2180,8 @@ namespace DivaModManager
                         // ----------------------------------------------------
 
                         // UI 要素への設定 (Dispatcher経由がより安全)
-                        await Dispatcher.InvokeAsync(() => {
+                        await Dispatcher.InvokeAsync(() =>
+                        {
                             // WpfAnimatedGif を使う場合
                             ImageBehavior.SetAnimatedSource(Preview, img);
                             ImageBehavior.SetAnimatedSource(PreviewBG, img);
@@ -2282,17 +2282,20 @@ namespace DivaModManager
         // --- デフォルトプレビュー画像設定の共通化 ---
         private void SetDefaultPreviewImage()
         {
-             try {
+            try
+            {
                 var bitmap = new BitmapImage(new Uri("pack://application:,,,/DivaModManager;component/Assets/preview_enomoto.png"));
                 // if (bitmap.CanFreeze) bitmap.Freeze();
                 ImageBehavior.SetAnimatedSource(Preview, bitmap);
                 ImageBehavior.SetAnimatedSource(PreviewBG, null); // BG はクリア
-            } catch (Exception ex) {
-                  Global.logger?.WriteLine($"Error loading default preview image: {ex.Message}", LoggerType.Error);
-                  // デフォルト画像すら読み込めない場合のフォールバック？
-                  ImageBehavior.SetAnimatedSource(Preview, null);
-                  ImageBehavior.SetAnimatedSource(PreviewBG, null);
-             }
+            }
+            catch (Exception ex)
+            {
+                Global.logger?.WriteLine($"Error loading default preview image: {ex.Message}", LoggerType.Error);
+                // デフォルト画像すら読み込めない場合のフォールバック？
+                ImageBehavior.SetAnimatedSource(Preview, null);
+                ImageBehavior.SetAnimatedSource(PreviewBG, null);
+            }
         }
         // -----------------------------------------
         private void ModGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -2347,7 +2350,7 @@ namespace DivaModManager
         {
             if (sender is Button button && button.DataContext is DivaModArchivePost item)
             {
-                Global.TryStartProcess(Global.DMA_HOMEPAGE_URL_POSTS+item.ID);
+                Global.TryStartProcess(Global.DMA_HOMEPAGE_URL_POSTS + item.ID);
             }
         }
 
@@ -2567,7 +2570,8 @@ namespace DivaModManager
         private async void InitializeBrowser()
         {
             // --- UI 要素の操作は Dispatcher を介して行う ---
-            await Dispatcher.InvokeAsync(() => {
+            await Dispatcher.InvokeAsync(() =>
+            {
                 LoadingBar.Visibility = Visibility.Visible; // 開始時に表示
                 ErrorPanel.Visibility = Visibility.Collapsed;
                 BrowserRefreshButton.Visibility = Visibility.Collapsed; // リフレッシュボタンはエラー時に表示
@@ -2711,7 +2715,8 @@ namespace DivaModManager
 
 
                     // --- 成功時のUI更新 ---
-                    await Dispatcher.InvokeAsync(() => {
+                    await Dispatcher.InvokeAsync(() =>
+                    {
                         filterSelect = true;
                         GameFilterBox.SelectedIndex = GameBox.SelectedIndex;
                         FilterBox.ItemsSource = FilterBoxList;
@@ -2734,7 +2739,8 @@ namespace DivaModManager
                 finally
                 {
                     // finally でも LoadingBar を非表示にする（エラー時など）
-                    await Dispatcher.InvokeAsync(() => {
+                    await Dispatcher.InvokeAsync(() =>
+                    {
                         if (LoadingBar.Visibility == Visibility.Visible) LoadingBar.Visibility = Visibility.Collapsed;
                     });
                 }
@@ -2796,7 +2802,8 @@ namespace DivaModManager
         private void ShowBrowserError(string message)
         {
             // UI スレッドで実行
-            Dispatcher.InvokeAsync(() => {
+            Dispatcher.InvokeAsync(() =>
+            {
                 LoadingBar.Visibility = Visibility.Collapsed;
                 ErrorPanel.Visibility = Visibility.Visible;
                 BrowserRefreshButton.Visibility = Visibility.Visible; // 再試行できるように
@@ -2807,7 +2814,8 @@ namespace DivaModManager
         }
         private void ShowDMAError(string message)
         {
-            Dispatcher.InvokeAsync(() => {
+            Dispatcher.InvokeAsync(() =>
+            {
                 DMALoadingBar.Visibility = Visibility.Collapsed;
                 DMAErrorPanel.Visibility = Visibility.Visible;
                 DMABrowserRefreshButton.Visibility = Visibility.Visible;
@@ -2885,7 +2893,8 @@ namespace DivaModManager
             // --- UI 無効化 (共通メソッドを使用) ---
             IsEnabledControls(false); // ★ 共通メソッド呼び出しに変更
                                       // LoadingBar など個別の設定は残す
-            await Dispatcher.InvokeAsync(() => {
+            await Dispatcher.InvokeAsync(() =>
+            {
                 ErrorPanel.Visibility = Visibility.Collapsed;
                 LoadingBar.Visibility = Visibility.Visible;
                 FeedBox.Visibility = Visibility.Collapsed;
@@ -2975,7 +2984,8 @@ namespace DivaModManager
                 }
                 PageBox.ItemsSource = Enumerable.Range(1, (int)(FeedGenerator.CurrentFeed.TotalPages));
                 // --- UI 更新 (UI スレッド) ---
-                await Dispatcher.InvokeAsync(() => {
+                await Dispatcher.InvokeAsync(() =>
+                {
                     FeedBox.ItemsSource = FeedGenerator.CurrentFeed?.Records; // Nullチェック
 
                     if (FeedGenerator.CurrentFeed?.Records != null && FeedGenerator.CurrentFeed.Records.Any())
@@ -3014,7 +3024,8 @@ namespace DivaModManager
                 // --- UI 有効化 (共通メソッドを使用) ---
                 IsEnabledControls(true); // ★ 共通メソッド呼び出しに変更
                                          // 念のため LoadingBar を隠す
-                await Dispatcher.InvokeAsync(() => {
+                await Dispatcher.InvokeAsync(() =>
+                {
                     if (LoadingBar.Visibility == Visibility.Visible) LoadingBar.Visibility = Visibility.Collapsed;
                 });
                 // ----------------------------------
@@ -3025,7 +3036,8 @@ namespace DivaModManager
         {
             // --- UI 無効化 (共通メソッドを使用) ---
             IsEnabledControls(false); // ★ 共通メソッド呼び出しに変更
-            await Dispatcher.InvokeAsync(() => {
+            await Dispatcher.InvokeAsync(() =>
+            {
                 DMAErrorPanel.Visibility = Visibility.Collapsed;
                 DMALoadingBar.Visibility = Visibility.Visible;
                 DMAFeedBox.Visibility = Visibility.Collapsed;
@@ -3064,7 +3076,8 @@ namespace DivaModManager
                 }
 
                 // --- UI 更新 (UI スレッド) ---
-                await Dispatcher.InvokeAsync(() => {
+                await Dispatcher.InvokeAsync(() =>
+                {
                     DMAFeedBox.ItemsSource = DMAFeedGenerator.CurrentFeed.Posts;
                     if (DMAFeedGenerator.error)
                     {
@@ -3121,7 +3134,8 @@ namespace DivaModManager
             {
                 // --- UI 有効化 (共通メソッドを使用) ---
                 IsEnabledControls(true); // ★ 共通メソッド呼び出しに変更
-                await Dispatcher.InvokeAsync(() => {
+                await Dispatcher.InvokeAsync(() =>
+                {
                     if (DMALoadingBar.Visibility == Visibility.Visible) DMALoadingBar.Visibility = Visibility.Collapsed;
                 });
                 // ----------------------------------
@@ -3290,7 +3304,7 @@ namespace DivaModManager
         {
             if (!DMAFilterSelect && IsLoaded)
             {
-                DMApage = DMAPageBox.SelectedValue  == null ? 1 : (int)DMAPageBox.SelectedValue;
+                DMApage = DMAPageBox.SelectedValue == null ? 1 : (int)DMAPageBox.SelectedValue;
                 // DMApage = (int)DMAPageBox.SelectedValue;
                 DMARefreshFilter();
             }
@@ -3878,9 +3892,9 @@ namespace DivaModManager
                 if (ModGrid.Columns[(int)Global.Col.Enabled].GetCellContent(item) is CheckBox checkbox)
                 {
                     // Enabledの値は最初にチェックを行ったMODに合わせる
-                    if(!callCheckedCommon)
+                    if (!callCheckedCommon)
                         setEnabled = (bool)!checkbox.IsChecked;
-                        //checkbox.IsChecked = !checkbox.IsChecked;
+                    //checkbox.IsChecked = !checkbox.IsChecked;
                     checkbox.IsChecked = setEnabled;
                     callCheckedCommon = true;
                 }
@@ -4248,7 +4262,7 @@ namespace DivaModManager
 
         private void SetColumnDisplayIndex()
         {
-            foreach(var col in ModGrid.Columns)
+            foreach (var col in ModGrid.Columns)
             {
                 string headerName = col.Header.ToString();
                 switch (headerName)
@@ -4354,7 +4368,7 @@ namespace DivaModManager
 
         private DataGridColumn GetDataGridColumnByName(DataGrid grid, string headerName)
         {
-            if(grid == null || string.IsNullOrEmpty(headerName))
+            if (grid == null || string.IsNullOrEmpty(headerName))
             {
                 return null;
             }

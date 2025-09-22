@@ -2,295 +2,89 @@
 using SharpCompress.Archives;
 using SharpCompress.Common;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Shapes;
+using Tomlyn;
+using Tomlyn.Model;
 
 namespace DivaModManager
 {
     public static class Extractor
     {
         /// <summary>
-        /// ディレクトリのサイズを読み込む
-        /// </summary>
-        public static async Task TryLoadDirectorySizeAsync(Mod mod, string modDirectoryPath)
-        {
-            bool isDirectoryPath = await DirectoryExistsAsync(modDirectoryPath);
-            if (!isDirectoryPath) return; // ファイルがなければ何もしない
-
-            try
-            {
-                mod._directorySize = await GetDirectoriesSizeAsync(modDirectoryPath);
-            }
-            catch (Exception ex) // その他の予期せぬエラー
-            {
-                Global.logger.WriteLine($"Unexpected error processing in TryLoadDirectorySizeAsync at {modDirectoryPath}: {ex.Message}", LoggerType.Error);
-            }
-        }
-
-        private static async Task<long> GetDirectorySizeAsync(string path)
-        {
-            var dirInfo = new DirectoryInfo(path);
-
-            long DirectorySize = 0;
-            foreach (FileInfo fi in dirInfo.GetFiles())//フォルダ内の全ファイルを取得
-                DirectorySize += fi.Length;//フォルダ内の全ファイルのサイズを加算
-            foreach (DirectoryInfo di in dirInfo.GetDirectories())//サブフォルダを取得
-                DirectorySize += await GetDirectorySizeAsync(di.FullName);//サブフォルダのサイズを合算
-            return DirectorySize;
-        }
-
-        public static async Task<bool> DirectoryExistsAsync(string path)
-        {
-            try
-            {
-                return await Task.Run(() => Directory.Exists(path));
-            }
-            catch (Exception ex)
-            {
-                Global.logger.WriteLine($"Error checking directory existence for '{path}': {ex.Message}", LoggerType.Warning);
-                return false;
-            }
-        }
-
-        public static async Task<string[]> GetDirectoriesAsync(string path)
-        {
-            try
-            {
-                return await Task.Run(() => Directory.GetDirectories(path));
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                Global.logger.WriteLine($"Permission error getting directories in '{path}': {ex.Message}", LoggerType.Error);
-                return Array.Empty<string>();
-            }
-            catch (IOException ex)
-            {
-                Global.logger.WriteLine($"IO error getting directories in '{path}': {ex.Message}", LoggerType.Error);
-                return Array.Empty<string>();
-            }
-            catch (Exception ex) // その他の予期せぬエラー
-            {
-                Global.logger.WriteLine($"Unexpected error getting directories in '{path}': {ex.Message}", LoggerType.Error);
-                return Array.Empty<string>();
-            }
-        }
-
-        private static async Task<long> GetDirectoriesSizeAsync(string path)
-        {
-            try
-            {
-                return await Task.Run(() => GetDirectorySizeAsync(path));
-            }
-            catch (Exception ex)
-            {
-                Global.logger.WriteLine($"Error getting directories size in {path}: {ex.Message}", LoggerType.Error);
-                return -1; // -1を返すことでエラーを示す
-            }
-        }
-
-        /// <summary>
         /// 圧縮ファイルまたはディレクトリを解凍し、Modsフォルダに移動する
         /// </summary>
-        /// <param name="ArchiveSourcePath">圧縮ファイルまたはディレクトリのフルパス</param>
-        /// <param name="type"></param>
+        /// <param name="apiBase"></param>
         /// <returns>移動後のMODフォルダパス</returns>
         public static async Task<string> ExtractLogicAsync(DownloadApiBase apiBase)
         {
+            TextLogger.Log += ObjectDumper.Dump(apiBase, "apiBase");
+
+            if (apiBase == null || !apiBase.SetSkipPathList())
+            {
+                Global.logger.WriteLine("ExtractLogicAsync Called but Invalid argument return!", LoggerType.Debug);
+                return string.Empty;
+            }
+
             // --- 解凍処理 ---
-            // 解凍後のModルートパスを取得
             await Extractor.ExtractAsync(apiBase);
+            // 解凍後のModルートパスを取得
             if (string.IsNullOrEmpty(apiBase.TemporaryDirectoryRootPath))
             {
                 return string.Empty;
             }
 
             // --- 移動先パス取得 ---
-            apiBase.MoveDirectoryRootPath = GetMoveDirectoryName(apiBase.TemporaryDirectoryRootPath);
+            GetMoveDirectoryName(apiBase);
 
-            Extractor.MoveDirectory(apiBase.TemporaryDirectoryRootPath, apiBase.MoveDirectoryRootPath);
+            // config.toml更新
+            UpdateModFolderConfigToml(apiBase);
+
+            DeleteDirectory(apiBase);
+            MoveDirectory(apiBase);
 
             // サイズチェック
-            bool directoryExists = await DirectorySizeMatchAsync(apiBase.TemporaryDirectoryRootPath, apiBase.MoveDirectoryRootPath);
+            bool directoryExists = await DirectorySizeMatchAsync(apiBase);
             if (!directoryExists)
             {
                 string msg = $"Extracted directory size does not match moved directory size.\nIt may not be processed correctly.";
                 MessageBox.Show(msg, "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
                 Global.logger.WriteLine(msg, LoggerType.Warning);
             }
-            
+
             DeleteTemporaryFile(apiBase.ArchiveFilePath);
             DeleteTemporaryDirectory(apiBase.TemporaryDirectoryPath);
 
+            TextLogger.Log += ObjectDumper.Dump(apiBase, "apiBase");
             return apiBase.MoveDirectoryRootPath;
-        }
-
-        private static async Task<bool> DirectorySizeMatchAsync(string extractDirectoryPath, string moveDirectoryPath)
-        {
-            var extractDirectorySize = await Extractor.GetDirectorySizeAsync(extractDirectoryPath);
-            var moveDirectorySize = await Extractor.GetDirectorySizeAsync(moveDirectoryPath);
-
-            return !extractDirectorySize.Equals("0") && extractDirectorySize == moveDirectorySize;
-        }
-
-        public static bool DeleteTemporaryDirectory(string tempPath)
-        {
-            var ret = false;
-            try
-            {
-                if (!string.IsNullOrEmpty(tempPath)
-                    && Directory.Exists(tempPath)
-                    && tempPath.StartsWith($@"{Global.downloadBaseLocation}temp_"))
-                {
-                    Directory.Delete(tempPath, true);
-                    ret = true;
-                }
-            }
-            catch (Exception ex)
-            {
-                ret = false;
-                Global.logger.WriteLine($"Error deleting temporary directory '{tempPath}': {ex.Message}", LoggerType.Error);
-            }
-            return ret;
-        }
-
-        public static bool DeleteTemporaryFile(string tempPath)
-        {
-            var ret = false;
-            try
-            {
-                if (!string.IsNullOrEmpty(tempPath)
-                    && File.Exists(tempPath)
-                    && tempPath.StartsWith($@"{Global.downloadBaseLocation}"))
-                {
-                    File.Delete(tempPath);
-                    ret = true;
-                }
-            }
-            catch (Exception ex)
-            {
-                ret = false;
-                Global.logger.WriteLine($"Error deleting temporary directory '{tempPath}': {ex.Message}", LoggerType.Error);
-            }
-            return ret;
-        }
-
-        /// <summary>
-        /// CopyDirectoryRecursionを呼び出す(ログ出力用)
-        /// </summary>
-        /// <param name="extractDirectoryPath">コピー元ルートディレクトリパス</param>
-        /// <param name="moveDirectoryPath">コピー先ルートディレクトリパス</param>
-        public static void MoveDirectory(string extractDirectoryPath, string moveDirectoryPath)
-        {
-            Global.logger.WriteLine($"Directory Copying...'", LoggerType.Info);
-            MoveDirectoryRecursion(extractDirectoryPath, moveDirectoryPath);
-            Global.logger.WriteLine($"Directory Copy Complete!", LoggerType.Info);
-        }
-
-        /// <summary>
-        /// ディレクトリにあるファイルのコピー(子フォルダ含む)
-        /// </summary>
-        /// <param name="extractDirectoryPath">コピー元ルートディレクトリ</param>
-        /// <param name="moveDirectoryPath">コピー先ルートディレクトリ</param>
-        private static void MoveDirectoryRecursion(string extractDirectoryPath, string moveDirectoryPath)
-        {
-            try
-            {
-                var moveRootDirectory = $"{extractDirectoryPath.Replace(extractDirectoryPath, moveDirectoryPath)}";
-                Directory.CreateDirectory(moveRootDirectory);
-                var inExtractDirectoryFileNames = Directory.GetFiles(extractDirectoryPath, "*", System.IO.SearchOption.TopDirectoryOnly);
-                foreach (var inExtractDirectoryFileName in inExtractDirectoryFileNames)
-                {
-                    var moveFilePath = $"{inExtractDirectoryFileName.Replace(extractDirectoryPath, moveDirectoryPath)}";
-                    File.Copy(inExtractDirectoryFileName, moveFilePath);
-                }
-                foreach (var childDirectorie in Directory.GetDirectories(extractDirectoryPath, "*", System.IO.SearchOption.TopDirectoryOnly))
-                {
-                    var moveRootDirectoryChild = $"{childDirectorie.Replace(childDirectorie, moveDirectoryPath)}{Global.s}{System.IO.Path.GetFileName(childDirectorie)}";
-                    MoveDirectoryRecursion(childDirectorie, moveRootDirectoryChild);
-                }
-            }
-            catch (Exception ex)
-            {
-                // 個々のフォルダ移動エラーログ
-                Global.logger?.WriteLine($"Error moving Directory '{extractDirectoryPath}' to '{moveDirectoryPath}': {ex.Message}", LoggerType.Error);
-                // Global.logger が null の可能性？ static method なので注意
-                // エラーがあっても続行するか、中断するか？
-            }
-        }
-
-        /// <summary>
-        /// CopyDirectoryRecursionを呼び出す(ログ出力用)
-        /// </summary>
-        /// <param name="extractDirectoryPath">コピー元ルートディレクトリパス</param>
-        /// <param name="moveDirectoryPath">コピー先ルートディレクトリパス</param>
-        public static void _MoveDirectory(string extractDirectoryPath, string moveDirectoryPath)
-        {
-            _MoveDirectoryRecursion(extractDirectoryPath, moveDirectoryPath);
-        }
-
-        /// <summary>
-        /// ディレクトリにあるファイルの移動(子フォルダ含む)
-        /// </summary>
-        /// <param name="extractDirectoryPath">移動元ルートディレクトリパス</param>
-        /// <param name="moveDirectoryRootPath">移動先ルートディレクトリパス</param>
-        private static void _MoveDirectoryRecursion(string extractDirectoryRootPath, string moveDirectoryRootPath)
-        {
-            try
-            {
-                var inExtractDirectoryFileNames = Directory.GetFiles(extractDirectoryRootPath, "*", System.IO.SearchOption.TopDirectoryOnly);
-                foreach (var inExtractDirectoryFileName in inExtractDirectoryFileNames)
-                {
-                    var moveFilePath = $"{extractDirectoryRootPath.Replace(extractDirectoryRootPath, $"{moveDirectoryRootPath}{Global.s}")}";
-                    File.Move(
-                        $"{inExtractDirectoryFileName}",
-                        $"{moveFilePath}{System.IO.Path.GetFileName(inExtractDirectoryFileName)}"
-                    );
-                }
-                foreach (var childDirectorie in Directory.GetDirectories(extractDirectoryRootPath, "*", System.IO.SearchOption.TopDirectoryOnly))
-                {
-                    var childDirectoryName = System.IO.Path.GetFileName(childDirectorie);
-                    if (!childDirectoryName.StartsWith("temp_") && childDirectorie != moveDirectoryRootPath)
-                    {
-                        var moveNextDirectoryPath = $"{extractDirectoryRootPath.Replace(extractDirectoryRootPath, $"{moveDirectoryRootPath}{Global.s}{childDirectoryName}")}";
-                        Directory.CreateDirectory($"{moveNextDirectoryPath}");
-                        _MoveDirectoryRecursion($"{childDirectorie}{Global.s}", moveNextDirectoryPath);
-                    }
-
-                }
-            }
-            catch (Exception ex)
-            {
-                // 個々のフォルダ移動エラーログ
-                Global.logger?.WriteLine($"Error moving Directory '{extractDirectoryRootPath}' to '{moveDirectoryRootPath}': {ex.Message}", LoggerType.Error);
-                // Global.logger が null の可能性？ static method なので注意
-                // エラーがあっても続行するか、中断するか？
-            }
         }
 
         /// <summary>
         /// 圧縮ファイルを展開する
         /// </summary>
-        /// <param name="archiveSourcePath">圧縮ファイルパス</param>
-        /// <param name="type"></param>
+        /// <param name="apiBase"></param>
         /// <returns>展開後のMODフォルダのルートパス(C:/....../temp_xxxx/MOD_NAME)</returns>
         public static async Task<string> ExtractAsync(DownloadApiBase apiBase)
         {
+            Global.logger.WriteLine("ExtractAsync Start.", LoggerType.Debug);
+
+            var ret = string.Empty;
+
             // ディレクトリが指定された場合
             if (Directory.Exists(apiBase.ArchiveFilePath))
             {
                 // config.tomlが存在するフォルダパスを確認
-                return await GetRootFolderAsync(apiBase.ArchiveFilePath);
+                ret = apiBase.TemporaryDirectoryRootPath = GetRootFolderAsync(apiBase.ArchiveFilePath).Result;
+                Global.logger.WriteLine("ExtractAsync End. (ディレクトリが指定された)", LoggerType.Debug);
+                return ret;
             }
 
-#if DEBUG
-            var sw = new System.Diagnostics.Stopwatch();
-            sw.Start();
-#endif
-            string ret = string.Empty;
+            //var sw = new System.Diagnostics.Stopwatch();
+            //sw.Start();
+
             string _ArchiveType = System.IO.Path.GetExtension(apiBase.ArchiveFilePath);
             apiBase.TemporaryDirectoryPath = $@"{Global.assemblyLocation}Downloads{Global.s}temp_{DateTime.Now:yyyyMMddHHmmssfff}";
             int archiveFileCount = 0;
@@ -318,11 +112,11 @@ namespace DivaModManager
                     extractedFileCount = Directory.EnumerateFiles(apiBase.TemporaryDirectoryPath, "*", System.IO.SearchOption.AllDirectories).Count()
                         + Directory.EnumerateDirectories(apiBase.TemporaryDirectoryPath, "*", System.IO.SearchOption.AllDirectories).Count();
                 }
-                else if(extension == ".zip" || extension == ".rar")
+                else if (extension == ".zip" || extension == ".rar")
                 {
                     Directory.CreateDirectory(apiBase.TemporaryDirectoryPath);
 
-                    using var extractor = ArchiveFactory.Open(apiBase.ArchiveFilePath) ;
+                    using var extractor = ArchiveFactory.Open(apiBase.ArchiveFilePath);
                     archiveFileCount = extractor.Entries.Count(entry => !entry.IsDirectory);
                     extractor.WriteToDirectory(apiBase.TemporaryDirectoryPath,
                         new ExtractionOptions() { Overwrite = true, ExtractFullPath = true, PreserveFileTime = true, PreserveAttributes = false });
@@ -380,16 +174,269 @@ namespace DivaModManager
 
             DeleteTemporaryFile(apiBase.ArchiveFilePath);
 
-#if DEBUG
-            sw.Stop();
-            TimeSpan ts = sw.Elapsed;
-            Global.logger.WriteLine($"{ts.Hours}時間 {ts.Minutes}分 {ts.Seconds}秒 {ts.Milliseconds}ミリ秒", LoggerType.Info);
-#endif
+            //sw.Stop();
+            //TimeSpan ts = sw.Elapsed;
+            //Global.logger.WriteLine($"{ts.Hours}時間 {ts.Minutes}分 {ts.Seconds}秒 {ts.Milliseconds}ミリ秒", LoggerType.Debug);
+            
+            Global.logger.WriteLine("ExtractAsync End.", LoggerType.Debug);
             return apiBase.TemporaryDirectoryRootPath;
+        }
+
+        /// <summary>
+        /// ディレクトリのサイズを読み込む
+        /// </summary>
+        public static async Task TryLoadDirectorySizeAsync(Mod mod, string modDirectoryPath)
+        {
+            bool isDirectoryPath = await DirectoryExistsAsync(modDirectoryPath);
+            if (!isDirectoryPath)
+            {
+                return; // ファイルがなければ何もしない
+            }
+
+            try
+            {
+                mod._directorySize = await GetDirectoriesSizeAsync(modDirectoryPath);
+            }
+            catch (Exception ex) // その他の予期せぬエラー
+            {
+                Global.logger.WriteLine($"Unexpected error processing in TryLoadDirectorySizeAsync at {modDirectoryPath}: {ex.Message}", LoggerType.Error);
+            }
+        }
+
+        private static async Task<long> GetDirectorySizeAsync(string path, List<string> skipFilePathList = null)
+        {
+            var dirInfo = new DirectoryInfo(path);
+
+            long DirectorySize = 0;
+            var sumFlg = true;
+            foreach (FileInfo fi in dirInfo.GetFiles())
+            {
+                if (skipFilePathList != null)
+                    foreach (var skipFilePath in skipFilePathList)
+                        if (!skipFilePath.StartsWith(fi.FullName))
+                            sumFlg = false;
+                if (sumFlg)
+                    DirectorySize += fi.Length;
+            }
+            foreach (DirectoryInfo di in dirInfo.GetDirectories())
+                DirectorySize += await GetDirectorySizeAsync(di.FullName, skipFilePathList);
+            return DirectorySize;
+        }
+
+        public static async Task<bool> DirectoryExistsAsync(string path)
+        {
+            try
+            {
+                return await Task.Run(() => Directory.Exists(path));
+            }
+            catch (Exception ex)
+            {
+                Global.logger.WriteLine($"Error checking directory existence for '{path}': {ex.Message}", LoggerType.Warning);
+                return false;
+            }
+        }
+
+        public static async Task<string[]> GetDirectoriesAsync(string path)
+        {
+            try
+            {
+                return await Task.Run(() => Directory.GetDirectories(path));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                Global.logger.WriteLine($"Permission error getting directories in '{path}': {ex.Message}", LoggerType.Error);
+                return Array.Empty<string>();
+            }
+            catch (IOException ex)
+            {
+                Global.logger.WriteLine($"IO error getting directories in '{path}': {ex.Message}", LoggerType.Error);
+                return Array.Empty<string>();
+            }
+            catch (Exception ex) // その他の予期せぬエラー
+            {
+                Global.logger.WriteLine($"Unexpected error getting directories in '{path}': {ex.Message}", LoggerType.Error);
+                return Array.Empty<string>();
+            }
+        }
+
+        private static async Task<long> GetDirectoriesSizeAsync(string path)
+        {
+            try
+            {
+                return await Task.Run(() => GetDirectorySizeAsync(path));
+            }
+            catch (Exception ex)
+            {
+                Global.logger.WriteLine($"Error getting directories size in {path}: {ex.Message}", LoggerType.Error);
+                return -1; // -1を返すことでエラーを示す
+            }
+        }
+
+        private static async Task<bool> DirectorySizeMatchAsync(DownloadApiBase apiBase)
+        {
+            var extractDirectoryPath = apiBase.TemporaryDirectoryRootPath;
+            var moveDirectoryPath = apiBase.MoveDirectoryRootPath;
+            apiBase.TemporaryDirectoryRootSize = await Extractor.GetDirectorySizeAsync(extractDirectoryPath, apiBase.SkipFilePathList);
+            apiBase.MoveDirectoryRootSize = await Extractor.GetDirectorySizeAsync(moveDirectoryPath, apiBase.SkipFilePathList);
+
+            return !apiBase.TemporaryDirectoryRootSize.Equals("0") && apiBase.TemporaryDirectoryRootSize == apiBase.MoveDirectoryRootSize;
+        }
+
+        public static bool DeleteTemporaryDirectory(string tempPath)
+        {
+            var ret = false;
+            try
+            {
+                if (!string.IsNullOrEmpty(tempPath)
+                    && Directory.Exists(tempPath)
+                    && tempPath.StartsWith($@"{Global.downloadBaseLocation}temp_"))
+                {
+                    Directory.Delete(tempPath, true);
+                    ret = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                ret = false;
+                Global.logger.WriteLine($"Error deleting temporary directory '{tempPath}': {ex.Message}", LoggerType.Error);
+            }
+            return ret;
+        }
+
+        public static bool DeleteTemporaryFile(string tempPath)
+        {
+            var ret = false;
+            try
+            {
+                if (!string.IsNullOrEmpty(tempPath)
+                    && File.Exists(tempPath)
+                    && tempPath.StartsWith($@"{Global.downloadBaseLocation}"))
+                {
+                    File.Delete(tempPath);
+                    ret = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                ret = false;
+                Global.logger.WriteLine($"Error deleting temporary directory '{tempPath}': {ex.Message}", LoggerType.Error);
+            }
+            return ret;
+        }
+
+        /// <summary>
+        /// CopyDirectoryRecursionを呼び出す(ログ出力用)
+        /// </summary>
+        /// <param name="extractDirectoryPath">コピー元ルートディレクトリパス</param>
+        /// <param name="moveDirectoryPath">コピー先ルートディレクトリパス</param>
+        public static void MoveDirectory(DownloadApiBase apiBase)
+        {
+            Global.logger.WriteLine($"Directory Copying... Path:{apiBase.TemporaryDirectoryRootPath}", LoggerType.Debug);
+            if (apiBase.TYPE == DownloadApiBase.CALL_TYPE.NONE)
+            {
+                return;
+            }
+            MoveDirectoryRecursion(apiBase.TemporaryDirectoryRootPath, apiBase.MoveDirectoryRootPath, apiBase.SkipFilePathList);
+            Global.logger.WriteLine($"Directory Copy Complete! Path:{apiBase.MoveDirectoryRootPath}", LoggerType.Debug);
+        }
+
+        /// <summary>
+        /// ディレクトリにあるファイルのコピー(子フォルダ含む)
+        /// </summary>
+        /// <param name="extractDirectoryPath">コピー元ルートディレクトリ</param>
+        /// <param name="moveDirectoryPath">コピー先ルートディレクトリ</param>
+        private static void MoveDirectoryRecursion(string extractDirectoryPath, string moveDirectoryPath, List<string> moveSkipPathList = null)
+        {
+            try
+            {
+                var moveRootDirectory = $"{extractDirectoryPath.Replace(extractDirectoryPath, moveDirectoryPath)}";
+                Directory.CreateDirectory(moveRootDirectory);
+                var inExtractDirectoryFilePathList = Directory.GetFiles(extractDirectoryPath, "*", System.IO.SearchOption.TopDirectoryOnly);
+                foreach (var inExtractDirectoryFilePath in inExtractDirectoryFilePathList)
+                {
+                    var moveFilePath = $"{inExtractDirectoryFilePath.Replace(extractDirectoryPath, moveDirectoryPath)}";
+                    var skip = false;
+                    if (moveSkipPathList != null)
+                    {
+                        foreach (var moveSkipPath in moveSkipPathList)
+                        {
+                            if (moveFilePath.StartsWith(moveSkipPath))
+                            {
+                                skip = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (skip)
+                        continue;
+                    File.Copy(inExtractDirectoryFilePath, moveFilePath);
+                }
+                foreach (var childDirectorie in Directory.GetDirectories(extractDirectoryPath, "*", System.IO.SearchOption.TopDirectoryOnly))
+                {
+                    var moveRootDirectoryChild = $"{childDirectorie.Replace(childDirectorie, moveDirectoryPath)}{Global.s}{System.IO.Path.GetFileName(childDirectorie)}";
+                    MoveDirectoryRecursion(childDirectorie, moveRootDirectoryChild);
+                }
+            }
+            catch (Exception ex)
+            {
+                // 個々のフォルダ移動エラーログ
+                Global.logger?.WriteLine($"Error moving Directory '{extractDirectoryPath}' to '{moveDirectoryPath}': {ex.Message}", LoggerType.Error);
+                // Global.logger が null の可能性？ static method なので注意
+                // エラーがあっても続行するか、中断するか？
+            }
+        }
+
+        /// <summary>
+        /// CopyDirectoryRecursionを呼び出す(ログ出力用)
+        /// </summary>
+        /// <param name="extractDirectoryPath">コピー元ルートディレクトリパス</param>
+        /// <param name="moveDirectoryPath">コピー先ルートディレクトリパス</param>
+        public static void MoveDirectoryInTemporary(string extractDirectoryPath, string moveDirectoryPath)
+        {
+            MoveDirectoryInTemporaryRecursion(extractDirectoryPath, moveDirectoryPath);
+        }
+
+        /// <summary>
+        /// ディレクトリにあるファイルの移動(子フォルダ含む)
+        /// </summary>
+        /// <param name="extractDirectoryPath">移動元ルートディレクトリパス</param>
+        /// <param name="moveDirectoryRootPath">移動先ルートディレクトリパス</param>
+        private static void MoveDirectoryInTemporaryRecursion(string extractDirectoryRootPath, string moveDirectoryRootPath)
+        {
+            try
+            {
+                var inExtractDirectoryFileNames = Directory.GetFiles(extractDirectoryRootPath, "*", System.IO.SearchOption.TopDirectoryOnly);
+                foreach (var inExtractDirectoryFileName in inExtractDirectoryFileNames)
+                {
+                    var moveFilePath = $"{extractDirectoryRootPath.Replace(extractDirectoryRootPath, $"{moveDirectoryRootPath}{Global.s}")}";
+                    File.Move(
+                        $"{inExtractDirectoryFileName}",
+                        $"{moveFilePath}{System.IO.Path.GetFileName(inExtractDirectoryFileName)}"
+                    );
+                }
+                foreach (var childDirectorie in Directory.GetDirectories(extractDirectoryRootPath, "*", System.IO.SearchOption.TopDirectoryOnly))
+                {
+                    var childDirectoryName = System.IO.Path.GetFileName(childDirectorie);
+                    if (!childDirectoryName.StartsWith("temp_") && childDirectorie != moveDirectoryRootPath)
+                    {
+                        var moveNextDirectoryPath = $"{extractDirectoryRootPath.Replace(extractDirectoryRootPath, $"{moveDirectoryRootPath}{Global.s}{childDirectoryName}")}";
+                        Directory.CreateDirectory($"{moveNextDirectoryPath}");
+                        MoveDirectoryInTemporaryRecursion($"{childDirectorie}{Global.s}", moveNextDirectoryPath);
+                    }
+
+                }
+            }
+            catch (Exception ex)
+            {
+                // 個々のフォルダ移動エラーログ
+                Global.logger?.WriteLine($"Error moving Directory '{extractDirectoryRootPath}' to '{moveDirectoryRootPath}': {ex.Message}", LoggerType.Error);
+                // エラーがあっても続行
+            }
         }
 
         private static void CreateModJson(DownloadApiBase apiBase)
         {
+            // ダウンロード、アップデートの場合は処理を継続
             if ((apiBase.TYPE != DownloadApiBase.CALL_TYPE.DOWNLOAD && apiBase.TYPE != DownloadApiBase.CALL_TYPE.UPDATE)
                 || string.IsNullOrEmpty(apiBase.TemporaryDirectoryRootPath))
             {
@@ -464,7 +511,7 @@ namespace DivaModManager
                     // ファイル名からフォルダを作成し、そこをルートフォルダとする
                     var newDir = $@"{ArchiveDestination}{Global.s}{System.IO.Path.GetFileNameWithoutExtension(_ArchiveSourcePath)}";
                     Directory.CreateDirectory(newDir);
-                    _MoveDirectory(ArchiveDestination, newDir);
+                    MoveDirectoryInTemporary(ArchiveDestination, newDir);
                     ret = newDir;
                 }
                 // フォルダを圧縮している圧縮ファイル
@@ -519,14 +566,20 @@ namespace DivaModManager
         /// </summary>
         /// <param name="modDirectoryRootPath">MODフォルダパス(MOD_NAME)</param>
         /// <returns>移動先ディレクトリパス</returns>
-        private static string GetMoveDirectoryName(string modDirectoryRootPath)
+        private static void GetMoveDirectoryName(DownloadApiBase apiBase)
         {
-            string directoryRootPath = modDirectoryRootPath;
+            // すでに移動先パスが設定されている場合(UPDATE時)
+            if (!string.IsNullOrEmpty(apiBase.MoveDirectoryRootPath))
+            {
+                return;
+            }
+
+            string directoryRootPath = apiBase.TemporaryDirectoryRootPath;
 
             if (!Directory.Exists(directoryRootPath))
             {
                 Global.logger.WriteLine($"The extracted directory '{directoryRootPath}' does not exist.", LoggerType.Error);
-                return string.Empty;
+                return;
             }
 
             var directoryName = System.IO.Path.GetFileName(directoryRootPath);
@@ -535,13 +588,153 @@ namespace DivaModManager
             // Modsフォルダ直下に同名フォルダが存在する場合、連番を付与
             string moveDirNameBase = $@"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}{directoryName}";
             string moveDirNameCopyedName = moveDirNameBase;
-            int index = 1;
-            while (Directory.Exists(moveDirNameCopyedName))
+
+            if (apiBase.TYPE != DownloadApiBase.CALL_TYPE.UPDATE)
             {
-                moveDirNameCopyedName = $@"{moveDirNameBase} ({index})";
-                index += 1;
+                int index = 1;
+                while (Directory.Exists(moveDirNameCopyedName))
+                {
+                    moveDirNameCopyedName = $@"{moveDirNameBase} ({index})";
+                    index += 1;
+                }
             }
-            return moveDirNameCopyedName;
+            
+            apiBase.MoveDirectoryRootPath = moveDirNameCopyedName;
+        }
+
+        private static string UpdateModFolderConfigToml(DownloadApiBase apiBase)
+        {
+            string ret = string.Empty;
+            bool updateConfigToml = false;
+
+            string temporaryDirectoryModRootPath = apiBase.TemporaryDirectoryRootPath;
+            string modDirectoryRootPath = apiBase.MoveDirectoryRootPath;
+
+            // アップデート時かつ新旧のconfig.tomlが存在する場合のみ続行
+            if (apiBase == null 
+                || apiBase.TYPE != DownloadApiBase.CALL_TYPE.UPDATE
+                || string.IsNullOrEmpty(temporaryDirectoryModRootPath)
+                || string.IsNullOrEmpty(modDirectoryRootPath))
+            {
+                return ret;
+            }
+            var oldConfigPath = $@"{modDirectoryRootPath}{Global.s}config.toml";
+            var newConfigPath = $@"{temporaryDirectoryModRootPath}{Global.s}config.toml";
+
+            TomlTable oldConfig = null;
+            if (File.Exists(oldConfigPath))
+            {
+                Toml.TryToModel(File.ReadAllText(oldConfigPath), out oldConfig, out var diagnostics);
+            }
+            else
+            {
+                Global.logger.WriteLine($"config.toml in the Mods folder is missing or has an incorrect format. Please download the latest version instead of updating. Path:{oldConfigPath}", LoggerType.Error);
+                return ret;
+            }
+                TomlTable newConfig = null;
+            if (File.Exists(newConfigPath))
+            {
+                Toml.TryToModel(File.ReadAllText(newConfigPath), out newConfig, out var diagnostics);
+            }
+            else
+            {
+                Global.logger.WriteLine($"The downloaded mod's config.toml is missing or malformed. Please contact the mod creator. Path:{oldConfigPath}", LoggerType.Error);
+                return ret;
+            }
+
+            // Use all old config values that aren't metadata to be shown
+            if (oldConfig != null && newConfig != null)
+            {
+                foreach (var key in oldConfig.Keys)
+                {
+                    // これらの項目以外は旧config.tomlの記載を引き継ぐ
+                    if (newConfig.ContainsKey(key)
+                        && key.ToLowerInvariant() != "name"
+                        && key.ToLowerInvariant() != "description"
+                        && key.ToLowerInvariant() != "version"
+                        && key.ToLowerInvariant() != "date"
+                        && key.ToLowerInvariant() != "author"
+                        && key.ToLowerInvariant() != "include"  // 追加
+                    )
+                    {
+                        newConfig[key] = oldConfig[key];
+                        updateConfigToml = true;
+                    }
+                }
+                if (updateConfigToml)
+                {
+                    File.WriteAllText(newConfigPath, Toml.FromModel(newConfig));
+                    ret = newConfigPath;
+                }
+            }
+            return ret;
+        }
+
+        /// <summary>
+        /// DeleteDirectoryRecursionを呼び出す(ログ出力用)
+        /// </summary>
+        /// <param name="extractDirectoryPath">コピー元ルートディレクトリパス</param>
+        /// <param name="moveDirectoryPath">コピー先ルートディレクトリパス</param>
+        public static void DeleteDirectory(DownloadApiBase apiBase)
+        {
+            if (apiBase.TYPE == DownloadApiBase.CALL_TYPE.UPDATE
+                && !string.IsNullOrEmpty(apiBase.MoveDirectoryRootPath)
+                // Modsフォルダが設定されている
+                && apiBase.MoveDirectoryRootPath.StartsWith($"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}")
+                // Modsフォルダ以降のフォルダ
+                && !string.IsNullOrEmpty(apiBase.MoveDirectoryRootPath.Replace($"{Global.config.Configs[Global.config.CurrentGame].ModsFolder}{Global.s}", ""))
+            )
+            {
+                Global.logger.WriteLine($"Directory Deleting... Path:{apiBase.MoveDirectoryRootPath}", LoggerType.Debug);
+                DeleteDirectoryRecursion(apiBase.MoveDirectoryRootPath, apiBase.SkipFilePathList);
+                Global.logger.WriteLine($"Directory Deleting Complete! Path:{apiBase.MoveDirectoryRootPath}", LoggerType.Info);
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="deleteDirectoryPath">削除先ルートディレクトリ</param>
+        private static void DeleteDirectoryRecursion(string deleteDirectoryPath, List<string> skipPathList = null)
+        {
+            try
+            {
+                var inDirectoryFilePathList = Directory.GetFiles(deleteDirectoryPath, "*", System.IO.SearchOption.TopDirectoryOnly);
+                foreach (var childDirectorie in Directory.GetDirectories(deleteDirectoryPath, "*", System.IO.SearchOption.TopDirectoryOnly))
+                {
+                    DeleteDirectoryRecursion(childDirectorie, skipPathList);
+                }
+                foreach (var inDirectoryFilePath in inDirectoryFilePathList)
+                {
+                    var skip = false;
+                    if (skipPathList != null)
+                    {
+                        foreach (var moveSkipPath in skipPathList)
+                        {
+                            if (inDirectoryFilePath.StartsWith(moveSkipPath))
+                            {
+                                skip = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (skip)
+                        continue;
+                    File.Delete(inDirectoryFilePath);
+                }
+                try
+                {
+                    Directory.Delete(deleteDirectoryPath);
+                }
+                catch(IOException)
+                {
+                    // IOExceptionは表示しない(ディレクトリは空ではない場合を想定)
+                }
+            }
+            catch (Exception ex)
+            {
+                Global.logger?.WriteLine($"Error deleting Directory  '{deleteDirectoryPath}': {ex.Message}", LoggerType.Error);
+            }
         }
     }
 }

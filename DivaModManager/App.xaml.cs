@@ -1,14 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Security.Policy;
-using System.Text;
-using System.Threading;
 using System.Windows;
 using System.Windows.Threading;
+using DivaModManager;
 
 namespace DivaModManager
 {
@@ -28,15 +25,26 @@ namespace DivaModManager
 
         protected override void OnStartup(StartupEventArgs e)
         {
+            if (e.Args.ToList().Contains("-debug"))
+                Global.DEBUG_MODE = Debug.DEBUG_MODE.DEBUG;
+            else if (e.Args.ToList().Contains("-developer"))
+                Global.DEBUG_MODE = Debug.DEBUG_MODE.DEVELOPER;
+            this.Exit += App_Exit;
+            Global.config = new();
+
+            TextLogger.Log += ObjectDumper.Dump(e.Args, "e.Args");
+            TextLogger.Log += ObjectDumper.Dump(Global.config, "Global.config");
+
             ShutdownMode = ShutdownMode.OnMainWindowClose;
 
             DispatcherUnhandledException += App_DispatcherUnhandledException;
             RegistryConfig.InstallGBHandler();
+
             bool noneOtherProcess = IsNoneOrKilledAlreadyRunningOtherProcess();
 
             if (noneOtherProcess)
             {
-                MainWindow mw = new();
+                DivaModManager.UI.MainWindow mw = new(e);
 
                 // check arguments
                 var argsIndex = e.Args.ToList().IndexOf("-download");
@@ -70,14 +78,10 @@ namespace DivaModManager
                 {
                     if (p.ProcessName.Equals(currentProcess.ProcessName))
                     {
-#if DEBUG
-                        otherProsessList.Add(p);
-#else
                         if (p.MainModule.FileName.Equals(currentProcess.MainModule.FileName))
                         {
-                            ret.Add(p);
+                            otherProsessList.Add(p);
                         }
-#endif
                     }
                 }
             }
@@ -121,9 +125,14 @@ namespace DivaModManager
 
             if (mainWindowHandle != IntPtr.Zero)
             {
+                //p.WaitForInputIdle();
+                using DivaModManager.UI.MainWindow mainWindow = new();
+                var x = (SystemParameters.PrimaryScreenWidth / 2) - (mainWindow.MinWidth / 2);
+                var y = (SystemParameters.PrimaryScreenHeight / 2) - (mainWindow.MinHeight / 2);
+
                 // ウィンドウを最前面に移動し、表示状態にする
                 // IntPtr.Zero後の引数が座標X、Y
-                SetWindowPos(mainWindowHandle, IntPtr.Zero, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
+                SetWindowPos(mainWindowHandle, IntPtr.Zero, (int)x, (int)y, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
             }
         }
 
@@ -131,31 +140,24 @@ namespace DivaModManager
         {
             var message = $"Unhandled exception occured:\n{e.Exception.Message}\n\nInner Exception:\n{e.Exception.InnerException}" +
                 $"\n\nStack Trace:\n{e.Exception.StackTrace}\n";
-            MessageBox.Show(message, "Error", MessageBoxButton.OK,
-                             MessageBoxImage.Error);
-            FileLogger.FileOpenAndWrite($"[{DateTime.Now.ToShortTimeString()}] {message}");
-            Environment.Exit(0);
+
+            if (Global.DEBUG_MODE == Debug.DEBUG_MODE.NORMAL)
+            {
+                // 画面上にメッセージを出力して続行
+                Global.logger.WriteLine(message, LoggerType.Critical);
+                e.Handled = true;
+                App.Current.Dispatcher.Invoke((Action)delegate
+                {
+                    ((DivaModManager.UI.MainWindow)Current.MainWindow).IsEnabled = true;
+                });
+            }
+            else
+            {
+                // メッセージを表示して終了
+                MessageBox.Show(message, "Critical", MessageBoxButton.OK, MessageBoxImage.Error);
+                TextLogger.Log += message;
+                Environment.Exit(0);
+            }
         }
-
-        //private static void App_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
-        //{
-        //    MessageBox.Show($"Unhandled exception occured:\n{e.Exception.Message}\n\nInner Exception:\n{e.Exception.InnerException}" +
-        //        $"\n\nStack Trace:\n{e.Exception.StackTrace}", "Error", MessageBoxButton.OK,
-        //                     MessageBoxImage.Error);
-
-        //    e.Handled = true;
-        //    App.Current.Dispatcher.Invoke((Action)delegate
-        //    {
-        //        ((MainWindow)Current.MainWindow).ModGrid.IsEnabled = true;
-        //        ((MainWindow)Current.MainWindow).ConfigButton.IsEnabled = true;
-        //        ((MainWindow)Current.MainWindow).LaunchButton.IsEnabled = true;
-        //        ((MainWindow)Current.MainWindow).OpenModsButton.IsEnabled = true;
-        //        ((MainWindow)Current.MainWindow).UpdateCheckButton.IsEnabled = true;
-        //        ((MainWindow)Current.MainWindow).GameBox.IsEnabled = true;
-        //        ((MainWindow)Current.MainWindow).LoadoutBox.IsEnabled = true;
-        //        ((MainWindow)Current.MainWindow).EditLoadoutsButton.IsEnabled = true;
-        //        ((MainWindow)Current.MainWindow).DropBox.Visibility = Visibility.Collapsed;
-        //    });
-        //}
     }
 }

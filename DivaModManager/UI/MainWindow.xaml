@@ -1,4 +1,4 @@
-﻿<Window x:Class="DivaModManager.MainWindow"
+﻿<Window x:Class="DivaModManager.UI.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -6,6 +6,7 @@
         xmlns:dd="urn:gong-wpf-dragdrop"
         xmlns:fa5="http://schemas.fontawesome.com/icons/"
         xmlns:gif="http://wpfanimatedgif.codeplex.com"
+        xmlns:dev="clr-namespace:DivaModManager.UI"
         Background="#131313"
         Title="Diva Mod Manager by Enomoto"
         SizeChanged="OnResize"
@@ -1382,7 +1383,9 @@
                     </Border>
                 </Grid>
             </TabItem>
+            <TabItem Name="DeveloperTabItem" Selector.Selected="DeveloperTab_TabSelected" FontSize="20" HorizontalAlignment="Center" Header="Debug" Height="30" VerticalAlignment="Bottom" Visibility="Visible">
+                <dev:DeveloperTab/>
+            </TabItem>
         </TabControl>
     </Grid>
-
 </Window>

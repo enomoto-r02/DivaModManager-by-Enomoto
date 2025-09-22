@@ -64,7 +64,6 @@ namespace DivaModManager
                                 CancellationTokenSource.CreateLinkedTokenSource(cancellationToken.Token));
                     if (!cancelled)
                     {
-                        //await Task.Run(() => ExtractFile(filePath, game, record));
                         record.Url = downloadUrl;
                         record.ArchiveFilePath = filePath;
                         record.TYPE = DownloadApiBase.CALL_TYPE.DOWNLOAD;
@@ -154,7 +153,6 @@ namespace DivaModManager
                                 CancellationTokenSource.CreateLinkedTokenSource(cancellationToken.Token));
                             if (!cancelled)
                             {
-                                //await Task.Run(() => ExtractFile(fileName, response.Game.Name, response));
                                 response.Url = URL_TO_ARCHIVE;
                                 response.ArchiveFilePath = $"{Global.downloadBaseLocation}{fileName}";
                                 response.TYPE = DownloadApiBase.CALL_TYPE.DOWNLOAD;
@@ -189,7 +187,6 @@ namespace DivaModManager
                                             CancellationTokenSource.CreateLinkedTokenSource(cancellationToken.Token));
                                 if (!cancelled)
                                 {
-                                    //await Task.Run(() => ExtractFile(fileName, Global.selected_game, DMAresponse));
                                     DMAresponse.Url = downloadUrl;
                                     DMAresponse.ArchiveFilePath = $"{Global.downloadBaseLocation}{fileName}";
                                     DMAresponse.TYPE = DownloadApiBase.CALL_TYPE.DOWNLOAD;
@@ -292,7 +289,6 @@ namespace DivaModManager
                 {
                     try
                     {
-                        //FileSystem.DeleteFile($@"{Global.assemblyLocation}{Global.s}Downloads{Global.s}{fileName}", UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin, UICancelOption.DoNothing);
                         Extractor.DeleteTemporaryFile(ret);
                     }
                     catch (Exception e)
@@ -319,7 +315,6 @@ namespace DivaModManager
             catch (OperationCanceledException)
             {
                 // Remove the file is it will be a partially downloaded one and close up
-                //FileSystem.DeleteFile($@"{Global.assemblyLocation}{Global.s}Downloads{Global.s}{fileName}", UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin, UICancelOption.DoNothing);
                 Extractor.DeleteTemporaryFile(ret);
                 if (progressBox != null)
                 {
