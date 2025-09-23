@@ -1,4 +1,9 @@
 # DivaModManager-by-Enomoto  
+### Note
+For those attempting to download the source code:
+This may not be the intended use of GitHub, but we push source code to the main repository even while it is still in development and undergoing testing.
+If you are running the source code, be sure to download and run it from the latest release on the releases page.
+
 ### Overview  
 This tool is based on [Tekka's Diva Mod Manager](https://github.com/TekkaGB/DivaModManager) v1.3.1, with bug fixes and minor feature additions made by Enomoto.
 Please note that this is not an official successor to DMM.
