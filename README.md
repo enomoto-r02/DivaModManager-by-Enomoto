@@ -1,5 +1,5 @@
 # DivaModManager-by-Enomoto  
-### Note
+### Warning.
 For those attempting to download the source code:
 This may not be the intended use of GitHub, but we push source code to the main repository even while it is still in development and undergoing testing.
 If you are running the source code, be sure to download and run it from the latest release on the releases page.
