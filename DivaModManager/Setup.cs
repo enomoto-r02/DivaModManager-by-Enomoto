@@ -1,27 +1,34 @@
-﻿using DivaModManager.UI;
-using Microsoft.VisualBasic.FileIO;
-using Microsoft.Win32;
-using Octokit;
-using SharpCompress.Archives.SevenZip;
-using SharpCompress.Common;
-using SharpCompress.Readers;
+﻿using Microsoft.Win32;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net.Http;
-using System.Text.RegularExpressions;
-using System.Threading;
+using System.Reflection;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using Octokit;
+using System.Net.Http;
+using System.Diagnostics;
+using System.Threading;
+using System.Text.RegularExpressions;
+using DivaModManager.UI;
+using Onova;
+using Onova.Services;
+using SharpCompress.Archives.SevenZip;
+using SharpCompress.Readers;
+using SharpCompress.Common;
 using Tomlyn;
 using Tomlyn.Model;
+using Microsoft.VisualBasic.FileIO;
 
 namespace DivaModManager
 {
     public static class Setup
     {
         private static ProgressBox progressBox;
-        private static GitHubClient client = new GitHubClient(new ProductHeaderValue("DivaModManager-by-Enomoto"));
+        private static GitHubClient client = new GitHubClient(new ProductHeaderValue("DivaModManager"));
         public static async Task<bool> CheckForDMLUpdate(CancellationTokenSource cancellationToken)
         {
             var gameFolder = Path.GetDirectoryName(Global.config.Configs[Global.config.CurrentGame].Launcher);
@@ -152,8 +159,6 @@ namespace DivaModManager
                 Global.logger.WriteLine($"Error whilst downloading DivaModLoader ({e.Message})", LoggerType.Error);
             }
         }
-
-        // Call by DownloadDML
         private static async Task ExtractFile(string fileName, string output, string version)
         {
             await Task.Run(() =>

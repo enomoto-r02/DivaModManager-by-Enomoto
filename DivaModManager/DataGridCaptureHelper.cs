@@ -16,6 +16,7 @@ namespace DivaModManager
             var parent = VisualTreeHelper.GetParent(dataGrid) as Panel;
             int index = parent.Children.IndexOf(dataGrid);
 
+            //await Task.Factory.StartNew(() =>
             // 一時退避
             parent.Children.Remove(dataGrid);
 

@@ -10,7 +10,6 @@ namespace DivaModManager
     public partial class DmmMessageWindow : Window
     {
         public bool YesNo = false;
-
         public DmmMessageWindow(string strInfo, string strText, string title)
         {
             InitializeComponent();
@@ -23,17 +22,15 @@ namespace DivaModManager
             //bitmap.UriSource = record.Image;
             //bitmap.EndInit();
             //Preview.Source = bitmap;
-
-            this.Activate();
         }
         private void Yes_Click(object sender, RoutedEventArgs e)
         {
             YesNo = true;
+            
             Close();
         }
         private void No_Click(object sender, RoutedEventArgs e)
         {
-            YesNo = false;
             Close();
         }
     }

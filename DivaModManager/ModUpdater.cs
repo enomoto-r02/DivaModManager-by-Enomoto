@@ -1,6 +1,7 @@
 ﻿using DivaModManager.UI;
 using Microsoft.VisualBasic.FileIO;
-using SevenZip;
+using SevenZipExtractor;
+using SharpCompress.Archives.SevenZip;
 using SharpCompress.Common;
 using SharpCompress.Readers;
 using System;
@@ -384,19 +385,18 @@ namespace DivaModManager
                 progressBox.Show();
                 progressBox.Activate();
                 // Write and download the file
-                var filePath = $@"{Global.assemblyLocation}{Global.s}Downloads{Global.s}{fileName}";
                 using (var fs = new FileStream(
-                    filePath, FileMode.Create, FileAccess.Write, FileShare.None))
+                    $@"{Global.assemblyLocation}{Global.s}Downloads{Global.s}{fileName}", FileMode.Create, FileAccess.Write, FileShare.None))
                 {
                     var client = new HttpClient();
                     await client.DownloadAsync(uri, fs, fileName, progress, cancellationToken.Token);
                 }
                 progressBox.Close();
-                item.Url = uri;
-                item.ArchiveFilePath = filePath;
-                item.TYPE = DownloadApiBase.CALL_TYPE.UPDATE;
-                item.MoveDirectoryRootPath = mod;
-                await Task.Run(() => Extractor.ExtractLogicAsync(item));
+                await Task.Run(() =>
+                {
+                    ClearDirectory(mod);
+                    ExtractFile(fileName, mod, item);
+                });
             }
             catch (OperationCanceledException)
             {
@@ -446,20 +446,19 @@ namespace DivaModManager
                 progressBox.Title = $"Download Progress";
                 progressBox.Show();
                 progressBox.Activate();
-                var filePath = $@"{Global.assemblyLocation}{Global.s}Downloads{Global.s}{fileName}";
                 // Write and download the file
                 using (var fs = new FileStream(
-                    filePath, FileMode.Create, FileAccess.Write, FileShare.None))
+                    $@"{Global.assemblyLocation}{Global.s}Downloads{Global.s}{fileName}", FileMode.Create, FileAccess.Write, FileShare.None))
                 {
                     var client = new HttpClient();
                     await client.DownloadAsync(uri, fs, fileName, progress, cancellationToken.Token);
                 }
                 progressBox.Close();
-                item.TYPE = DownloadApiBase.CALL_TYPE.UPDATE;
-                item.SITE = DownloadApiBase.TARGET_TO.DIVAMODARCHIVE_API;
-                item.ArchiveFilePath = filePath;
-                item.MoveDirectoryRootPath = mod;
-                await Task.Run(() => Extractor.ExtractLogicAsync(item));
+                await Task.Run(() =>
+                {
+                    ClearDirectory(mod);
+                    ExtractFile(fileName, mod, item);
+                });
             }
             catch (OperationCanceledException)
             {
@@ -483,6 +482,213 @@ namespace DivaModManager
             }
         }
 
+        private static void ClearDirectory(string path)
+        {
+            DirectoryInfo dir = new DirectoryInfo(path);
+
+            foreach (FileInfo fi in dir.GetFiles())
+            {
+                if (fi.Name.ToLowerInvariant() != "mod.json" 
+                    && fi.Name.ToLowerInvariant() != "config.toml" 
+                    && fi.Name.ToLowerInvariant() != "config_e.toml" 
+                    && !fi.Name.ToLowerInvariant().StartsWith("preview."))
+                    fi.Delete();
+            }
+
+            foreach (DirectoryInfo di in dir.GetDirectories())
+            {
+                ClearDirectory(di.FullName);
+                di.Delete();
+            }
+        }
+        // Called by DownloadFile after downloading to extract the file
+        private static void ExtractFile(string fileName, string output, GameBananaAPIV4 item)
+        {
+            string _ArchiveSource = $@"{Global.assemblyLocation}{Global.s}Downloads{Global.s}{fileName}";
+            string ArchiveDestination = $@"{Global.assemblyLocation}Downloads{Global.s}temp_{DateTime.Now:yyyyMMddHHmmssFFF}";
+            Directory.CreateDirectory(ArchiveDestination);
+            if (File.Exists(_ArchiveSource))
+            {
+                try
+                {
+                    if (Path.GetExtension(_ArchiveSource).Equals(".7z", StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        using (var archive = new ArchiveFile(_ArchiveSource))
+                        {
+                            archive.Extract(ArchiveDestination);
+                        }
+                    }
+                    else
+                    {
+                        using Stream stream = File.OpenRead(_ArchiveSource);
+                        using var reader = ReaderFactory.Open(stream);
+                        while (reader.MoveToNextEntry())
+                        {
+                            if (!reader.Entry.IsDirectory)
+                            {
+                                reader.WriteEntryToDirectory(ArchiveDestination, new ExtractionOptions()
+                                {
+                                    ExtractFullPath = true,
+                                    Overwrite = true
+                                });
+                            }
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Global.logger.WriteLine($"Couldn't extract {fileName}. ({e.Message})", LoggerType.Error);
+                    return;
+                }
+                TomlTable oldConfig = null;
+                if (File.Exists($@"{output}{Global.s}config.toml"))
+                    Toml.TryToModel(File.ReadAllText($@"{output}{Global.s}config.toml"), out oldConfig, out var diagnostics);
+                foreach (var folder in Directory.GetDirectories(ArchiveDestination, "*", System.IO.SearchOption.AllDirectories).Where(x => File.Exists($@"{x}{Global.s}config.toml")))
+                {
+                    MoveDirectory(folder, output);
+                }
+                if (File.Exists($@"{output}{Global.s}mod.json"))
+                {
+                    var metadata = JsonSerializer.Deserialize<Metadata>(File.ReadAllText($@"{output}{Global.s}mod.json"));
+                    metadata.submitter = item.Owner.Name;
+                    metadata.description = item.Description;
+                    metadata.preview = item.Image;
+                    metadata.homepage = item.Link;
+                    metadata.avi = item.Owner.Avatar;
+                    metadata.upic = item.Owner.Upic;
+                    metadata.cat = item.CategoryName;
+                    metadata.caticon = item.Category.Icon;
+                    metadata.lastupdate = item.DateUpdated;
+                    string metadataString = JsonSerializer.Serialize(metadata, new JsonSerializerOptions { WriteIndented = true });
+                    File.WriteAllText($@"{output}{Global.s}mod.json", metadataString);
+                }
+                // Use all old config values that aren't metadata to be shown
+                if (oldConfig != null && File.Exists($@"{output}{Global.s}config.toml"))
+                {
+                    if (Toml.TryToModel(File.ReadAllText($@"{output}{Global.s}config.toml"), out TomlTable newConfig, out var diagnostics))
+                        foreach (var key in oldConfig.Keys)
+                        {
+                            if (key.ToLowerInvariant() != "name" && key.ToLowerInvariant() != "author" && key.ToLowerInvariant() != "version" &&
+                                key.ToLowerInvariant() != "date" && key.ToLowerInvariant() != "description" && newConfig.ContainsKey(key))
+                                newConfig[key] = oldConfig[key];
+                        }
+                    else
+                    {
+                        Global.logger.WriteLine($"{diagnostics[0].Message} for {Path.GetFileName(output)}'s updated config.toml. Reusing former config.toml", LoggerType.Warning);
+                        // Reuse old config if new config failed to parse
+                        newConfig = oldConfig;
+                    }
+                    var configString = Toml.FromModel(newConfig);
+                    File.WriteAllText($@"{output}{Global.s}config.toml", configString);
+                }
+                FileSystem.DeleteFile(_ArchiveSource, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin, UICancelOption.DoNothing);
+                FileSystem.DeleteDirectory(ArchiveDestination, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin, UICancelOption.DoNothing);
+            }
+        }
+        // Called by DownloadFile after downloading to extract the file
+        private static void ExtractFile(string fileName, string output, DivaModArchivePost item)
+        {
+            string _ArchiveSource = $@"{Global.assemblyLocation}{Global.s}Downloads{Global.s}{fileName}";
+            string ArchiveDestination = $@"{Global.assemblyLocation}Downloads{Global.s}temp_{DateTime.Now:yyyyMMddHHmmssFFF}";
+            Directory.CreateDirectory(ArchiveDestination);
+            if (File.Exists(_ArchiveSource))
+            {
+                try
+                {
+                    if (Path.GetExtension(_ArchiveSource).Equals(".7z", StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        using (var archive = SevenZipArchive.Open(_ArchiveSource))
+                        {
+                            var reader = archive.ExtractAllEntries();
+                            while (reader.MoveToNextEntry())
+                            {
+                                if (!reader.Entry.IsDirectory)
+                                    reader.WriteEntryToDirectory(ArchiveDestination, new ExtractionOptions()
+                                    {
+                                        ExtractFullPath = true,
+                                        Overwrite = true
+                                    });
+                            }
+                        }
+                    }
+                    else
+                    {
+                        using (Stream stream = File.OpenRead(_ArchiveSource))
+                        using (var reader = ReaderFactory.Open(stream))
+                        {
+                            while (reader.MoveToNextEntry())
+                            {
+                                if (!reader.Entry.IsDirectory)
+                                {
+                                    reader.WriteEntryToDirectory(ArchiveDestination, new ExtractionOptions()
+                                    {
+                                        ExtractFullPath = true,
+                                        Overwrite = true
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Global.logger.WriteLine($"Couldn't extract {fileName}. ({e.Message})", LoggerType.Error);
+                    return;
+                }
+                TomlTable oldConfig = null;
+                if (File.Exists($@"{output}{Global.s}config.toml"))
+                    Toml.TryToModel(File.ReadAllText($@"{output}{Global.s}config.toml"), out oldConfig, out var diagnostics);
+                foreach (var folder in Directory.GetDirectories(ArchiveDestination, "*", System.IO.SearchOption.AllDirectories).Where(x => File.Exists($@"{x}{Global.s}config.toml")))
+                {
+                    MoveDirectory(folder, output);
+                }
+                if (File.Exists($@"{output}{Global.s}mod.json"))
+                {
+                    var metadata = JsonSerializer.Deserialize<Metadata>(File.ReadAllText($@"{output}{Global.s}mod.json"));
+                    metadata.id = item.ID;
+                    metadata.description = item.Text;
+                    metadata.submitter = item.Authors[0].Name;
+                    metadata.preview = item.Images[0];
+                    metadata.homepage = new Uri(Global.DMA_PAGE_URL_BASE + item.ID);
+                    metadata.avi = item.Authors[0].Avatar;
+                    metadata.cat = item.PostType;
+                    metadata.lastupdate = item.Time;
+                    string metadataString = JsonSerializer.Serialize(metadata, new JsonSerializerOptions { WriteIndented = true });
+                    File.WriteAllText($@"{output}{Global.s}mod.json", metadataString);
+                }
+                // Use all old config values that aren't metadata to be shown
+                if (oldConfig != null && File.Exists($@"{output}{Global.s}config.toml"))
+                {
+                    if (Toml.TryToModel(File.ReadAllText($@"{output}{Global.s}config.toml"), out TomlTable newConfig, out var diagnostics))
+                        foreach (var key in oldConfig.Keys)
+                        {
+                            if (key.ToLowerInvariant() != "name" && key.ToLowerInvariant() != "author" && key.ToLowerInvariant() != "version" &&
+                                key.ToLowerInvariant() != "date" && key.ToLowerInvariant() != "description" && newConfig.ContainsKey(key))
+                                newConfig[key] = oldConfig[key];
+                        }
+                    else
+                    {
+                        Global.logger.WriteLine($"{diagnostics[0].Message} for {Path.GetFileName(output)}'s updated config.toml. Reusing former config.toml", LoggerType.Warning);
+                        // Reuse old config if new config failed to parse
+                        newConfig = oldConfig;
+                    }
+                    var configString = Toml.FromModel(newConfig);
+                    File.WriteAllText($@"{output}{Global.s}config.toml", configString);
+                }
+                FileSystem.DeleteFile(_ArchiveSource, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin, UICancelOption.DoNothing);
+                FileSystem.DeleteDirectory(ArchiveDestination, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin, UICancelOption.DoNothing);
+            }
+        }
+        private static void MoveDirectory(string sourcePath, string targetPath)
+        {
+            //Copy all the files & Replaces any files with the same name
+            foreach (var path in Directory.GetFiles(sourcePath, "*.*", System.IO.SearchOption.AllDirectories))
+            {
+                var newPath = path.Replace(sourcePath, targetPath);
+                Directory.CreateDirectory(Path.GetDirectoryName(newPath));
+                File.Copy(path, newPath, true);
+            }
+        }
         private static Uri CreateUriGB(string url)
         {
             Uri uri;

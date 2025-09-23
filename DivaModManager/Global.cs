@@ -8,14 +8,13 @@ using System.Text.Json;
 
 namespace DivaModManager
 {
-    public static partial class Global
+    public static class Global
     {
         public static Config config;
-        public static WindowLogger logger;
+        public static Logger logger;
         public static char s = Path.DirectorySeparatorChar;
         public static string assemblyLocation = AppDomain.CurrentDomain.BaseDirectory;
         public static readonly string downloadBaseLocation = $@"{Global.assemblyLocation}Downloads{Global.s}";
-        public static readonly string textLogLocation = $@"{Global.assemblyLocation}{Process.GetCurrentProcess().ProcessName}.log";
         public static List<string> games;
         public static string selected_game;
         public static ObservableCollection<Mod> ModList;
@@ -36,11 +35,6 @@ namespace DivaModManager
         public static string DMA_HOMEPAGE_URL_POSTS = "https://divamodarchive.com/posts/";
         public static string DMA_API_URL_POSTS = "https://divamodarchive.com/api/v1/posts/";
         public static string DMA_PAGE_URL_BASE = "https://divamodarchive.com/post/";
-
-        public static readonly int BIT_OS = Environment.Is64BitOperatingSystem ? 64 : 32;
-        public static readonly string BIT_OS_DIR_NAME = Environment.Is64BitOperatingSystem ? "x64" : "x86";
-        public static readonly string SevenZipDlllPath = $@"{Global.assemblyLocation}{Global.BIT_OS_DIR_NAME}{Global.s}7z.dll";
-        public static bool SevenZipDlllExist = false;
 
         public static void UpdateConfig()
         {
@@ -71,9 +65,9 @@ namespace DivaModManager
         /// <summary>
         /// 指定されたターゲット（URLまたはファイル/フォルダパス）を外部プロセスで安全に開きます。
         /// </summary>
-        /// <param name="target">開くURLまたはパス</param>
-        /// <param name="workingDirectory">プロセスの作業ディレクトリ（オプション）</param>
-        /// <returns>プロセスが正常に開始された場合は true、それ以外は false</returns>
+        /// <param name="target">開くURLまたはパス。</param>
+        /// <param name="workingDirectory">プロセスの作業ディレクトリ（オプション）。</param>
+        /// <returns>プロセスが正常に開始された場合は true、それ以外は false。</returns>
         public static bool TryStartProcess(string target, string workingDirectory = null)
         {
             if (string.IsNullOrWhiteSpace(target))
@@ -98,7 +92,7 @@ namespace DivaModManager
                 }
 
                 Process.Start(psi);
-                Global.logger?.WriteLine($"Successfully started process for target: '{target}'.", LoggerType.Debug);
+                Global.logger?.WriteLine($"Successfully started process for target: '{target}'.", LoggerType.Info);
                 return true;
             }
             catch (Win32Exception ex) // プロセス開始時の一般的なエラー

@@ -77,13 +77,8 @@ namespace DivaModManager
         [JsonPropertyName("_sName")]
         public string Name { get; set; }
     }
-    public class GameBananaAPIV4 : DownloadApiBase
+    public class GameBananaAPIV4
     {
-        public GameBananaAPIV4()
-        {
-            base.SITE = TARGET_TO.GAMEBANANA_API;
-        }
-
         [JsonPropertyName("_sName")]
         public string Title { get; set; }
         [JsonPropertyName("_aGame")]
@@ -120,8 +115,6 @@ namespace DivaModManager
         public bool? HasUpdates { get; set; }
         [JsonPropertyName("_aLatestUpdates")]
         public GameBananaItemUpdate[] Updates { get; set; }
-        [JsonIgnore]
-        public int ChosenFileIndex { get; set; } = -1;
     }
     public class GameBananaInstallerIntegration
     {
@@ -182,13 +175,8 @@ namespace DivaModManager
         [JsonPropertyName("text")]
         public string Text { get; set; }
     }
-    public class GameBananaRecord : DownloadApiBase
+    public class GameBananaRecord
     {
-        public GameBananaRecord()
-        {
-            base.SITE = TARGET_TO.GAMEBANANA_BROWSER;
-        }
-
         [JsonPropertyName("_sName")]
         public string Title { get; set; }
         [JsonIgnore]
@@ -200,7 +188,7 @@ namespace DivaModManager
         [JsonIgnore]
         public bool HasAltLinks => AlternateFileSources != null;
         [JsonIgnore]
-        public Uri Image => Media.Where(x => x.Type == "image").ToList().Count > 0 ? new Uri($"{Media[0].Base}/{Media[0].File}")
+        public Uri Image => Media.Where(x => x.Type == "image").ToList().Count > 0 ? new Uri($"{Media[0].Base}/{Media[0].File}") 
             : new Uri("https://images.gamebanana.com/static/img/DefaultEmbeddables/Sound.jpg");
         [JsonPropertyName("_aPreviewMedia")]
         public List<GameBananaImage> Media { get; set; }

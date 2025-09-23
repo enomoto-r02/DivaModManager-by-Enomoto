@@ -7,12 +7,8 @@ using System.Text.RegularExpressions;
 
 namespace DivaModManager
 {
-    public class DivaModArchivePost : DownloadApiBase
+    public class DivaModArchivePost
     {
-        public DivaModArchivePost() : base()
-        {
-            base.SITE = TARGET_TO.DIVAMODARCHIVE_API;
-        }
         [JsonPropertyName("id")]
         public int ID { get; set; }
         [JsonPropertyName("name")]
