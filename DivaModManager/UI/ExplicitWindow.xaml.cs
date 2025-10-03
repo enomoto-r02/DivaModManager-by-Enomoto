@@ -16,6 +16,11 @@ namespace DivaModManager
             InitializeComponent();
             ExplicitReasonText.Text = ViewStr(post.Explicit_Reason, 1000);
         }
+        public ExplicitWindow(string text)
+        {
+            InitializeComponent();
+            ExplicitReasonText.Text = text;
+        }
         private void Yes_Click(object sender, RoutedEventArgs e)
         {
             YesNo = true;

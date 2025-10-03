@@ -10,6 +10,12 @@ namespace DivaModManager
 {
     public static class Global
     {
+        // v.33用警告
+        public static string ConflictWarning = "There is a bug that occurs when multiple files downloaded through DivaModManager are extracted simultaneously,\n" +
+                "resulting in content conflicts and unexpected extractions to the mod folder\n" +
+                "(this issue has not been fixed since the original version).\n\nManual download and extraction via a browser is recommended,\n" +
+                "but do you want to continue downloading anyway?\n(This warning will not appear once the extraction function is fixed.)";
+
         public static Config config;
         public static Logger logger;
         public static char s = Path.DirectorySeparatorChar;

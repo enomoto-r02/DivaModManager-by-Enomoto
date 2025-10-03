@@ -1851,6 +1851,14 @@ namespace DivaModManager
         }
         private async void Add_Drop(object sender, DragEventArgs e)
         {
+            // ----- Download when Warning -------------------------
+            ExplicitWindow msgWnd = new ExplicitWindow(Global.ConflictWarning);
+            msgWnd.MaxWidth = 1000;
+            msgWnd.ShowDialog();
+            msgWnd.Activate();
+            if (!msgWnd.YesNo) { DropBox.Visibility = Visibility.Collapsed; return; }
+            // -----------------------------------------------------
+
             e.Handled = true;
             if (String.IsNullOrEmpty(Global.config.Configs[Global.config.CurrentGame].ModsFolder)
                 || !Directory.Exists(Global.config.Configs[Global.config.CurrentGame].ModsFolder))
@@ -2073,6 +2081,14 @@ namespace DivaModManager
         }
         private void UpdateItem_Click(object sender, RoutedEventArgs e)
         {
+            // ----- Download when Warning -------------------------
+            ExplicitWindow msgWnd = new ExplicitWindow(Global.ConflictWarning);
+            msgWnd.MaxWidth = 1000;
+            msgWnd.ShowDialog();
+            msgWnd.Activate();
+            if (!msgWnd.YesNo) { return; }
+            // -----------------------------------------------------
+
             App.Current.Dispatcher.Invoke(async () =>
             {
                 IsEnabledControls(false);
@@ -2372,6 +2388,15 @@ namespace DivaModManager
         {
             Button button = sender as Button;
             var item = button.DataContext as GameBananaRecord;
+
+            // ----- Download when Warning -------------------------
+            ExplicitWindow msgWnd = new ExplicitWindow(Global.ConflictWarning);
+            msgWnd.MaxWidth = 1000;
+            msgWnd.ShowDialog();
+            msgWnd.Activate();
+            if (!msgWnd.YesNo) { return; }
+            // -----------------------------------------------------
+
             new ModDownloader().BrowserDownload(Global.games[GameFilterBox.SelectedIndex], item);
             await Application.Current?.Dispatcher.InvokeAsync(async () =>
             {
@@ -2382,6 +2407,15 @@ namespace DivaModManager
         {
             Button button = sender as Button;
             var item = button.DataContext as DivaModArchivePost;
+
+            // ----- Download when Warning -------------------------
+            ExplicitWindow msgWnd = new ExplicitWindow(Global.ConflictWarning);
+            msgWnd.MaxWidth = 1000;
+            msgWnd.ShowDialog();
+            msgWnd.Activate();
+            if (!msgWnd.YesNo) { return; }
+            // -----------------------------------------------------
+
             new ModDownloader().DMABrowserDownload(Global.games[GameBox.SelectedIndex], item);
             await Application.Current?.Dispatcher.InvokeAsync(async () =>
             {

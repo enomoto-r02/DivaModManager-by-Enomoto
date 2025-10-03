@@ -46,7 +46,16 @@ namespace DivaModManager
             if (!running)
                 mw.Show();
             if (e.Args.Length > 1 && e.Args[0] == "-download")
+            {
+                // ----- Download when Warning -------------------------
+                ExplicitWindow msgWnd = new(Global.ConflictWarning);
+                msgWnd.MaxWidth = 1000;
+                msgWnd.ShowDialog();
+                msgWnd.Activate();
+                if (!msgWnd.YesNo) { return; }
+                // -----------------------------------------------------
                 new ModDownloader().Download(e.Args[1], running);
+            }
             else if (running)
                 MessageBox.Show("Diva Mod Manager by Enomoto is already running", "Warning", MessageBoxButton.OK, MessageBoxImage.Exclamation);
         }
