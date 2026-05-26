@@ -11,9 +11,9 @@
                     <FontFamily x:Key="Monospace">../Assets/#Roboto Mono</FontFamily>
                     <FontFamily x:Key="AnekLatin">../Assets/#Anek Latin</FontFamily>
                 </ResourceDictionary>
-                <ResourceDictionary Source="Controls/Button.xaml"/>
-                <ResourceDictionary Source="Controls/ComboBox.xaml"/>
-                <ResourceDictionary Source="Controls/ScrollViewer.xaml"/>
+                <ResourceDictionary Source="/Common/Style/Button.xaml"/>
+                <ResourceDictionary Source="/Common/Style/ComboBox.xaml"/>
+                <ResourceDictionary Source="/Common/Style/ScrollViewer.xaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

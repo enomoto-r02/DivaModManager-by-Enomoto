@@ -1,0 +1,100 @@
+
+To avoid unintended translations by translation software, I am only writing in Japanese.
+
+This software is unofficial software that has not been licensed by SEGA Corporation.
+Please refrain from contacting SEGA Corporation with any inquiries.
+
+
+(JP)
+
+----- ベースとなったオリジナルのDivaModManager -------------------------
+
+・DivaModManager (1.3.1)
+    HomePage : https://github.com/TekkaGB/DivaModManager
+    GameBanana : https://gamebanana.com/tools/9712
+    License(DivaModManager GPL-3.0 license) : https://github.com/TekkaGB/DivaModManager#GPL-3.0-1-ov-file
+    License(Local File)  : GPL-3.0 license (DivaModManager).txt
+
+導入方法などは上記URLを参照してください。
+本ソフトウェアの設定ファイルの主要な部分は上記ソフトウェアと同じものであり、後方互換性を有しております。
+しかし今後のアップデートにて互換性が無くなる場合がありますのでご注意ください。
+必要に応じて適時、設定ファイルや実行ファイルのバックアップをお願いいたします。
+
+----- 同梱しているファイル -------------------------
+
+・7-Zip および 7z.exe(26.01)
+    HomePage : https://www.7-zip.org/
+    HomePage(JP) : https://7-zip.opensource.jp/
+    License(7-Zip GNU LGPL License) : https://7-zip.opensource.jp/license.txt
+    License(Local File)  : GNU LGPL License (7-Zip).txt
+
+本ソフトウェアは7z形式のアーカイブ解凍時に、同梱している 7-Zip および 7z.exe(26.01) を外部プロセスとして使用しています。
+7-Zipはオープンソースのフリーソフトウェアです。
+本ソフトウェアは7-ZipのGNU LGPLライセンスに基づき、再配布を行っております。
+また本ソフトウェアで動作確認をしているのは上記に記載しているバージョンのみで、例えば異なるバージョンを使用した場合の動作については保証しません。
+また今後のアップデートにて同梱するバージョンなどを変更する場合がありますが、本ソフトウェア内ではバージョンアップの確認は行いません。
+
+----- 関連するソフトウェア -------------------------
+
+・DivaModLoader
+    HomePage : https://github.com/blueskythlikesclouds/DivaModLoader
+
+本ソフトウェアは起動時にユーザーがインストール済みのDivaModLoaderのファイルを確認し
+必要に応じてユーザーに確認した上でGitHub上のアップデートファイルをダウンロードおよびインストールを行います。
+また本ソフトウェアの実行中は上記ソフトウェアの設定ファイルを適時編集しております。
+このアップデートファイルのチェック等に関しては本ソフトウェアと同じディレクトリにあるtomlファイルにて、設定の変更が可能です。
+
+----- 参照する外部ファイル -------------------------
+
+・WinRAR および Rar.exe (7.22以上)
+    HomePage : https://www.rarlab.com/
+    HomePage(JP) : https://www.winrarjapan.com/
+
+本ソフトウェアはRAR形式のアーカイブ解凍時に、ユーザーがインストール済みの WinRAR（Rar.exe） を外部プロセスとして利用する場合があります。
+本ソフトウェアはWinRARを同梱しておらず、またWinRARの再配布を行いません。
+WinRARは RARLAB 社 (または株式会社 KOMODO) の製品であり、各ユーザーが正規ライセンスに基づき使用するものとします。
+利用時にはバージョンとインストールディレクトリを確認し、ユーザーの明示的な許可を求めます。
+また本ソフトウェアで動作確認をしているのは上記に記載しているバージョンのみで、例えば異なるバージョンを使用した場合の動作については保証しません。
+
+----- 本ツールで使用しているライブラリの一覧 -------------------------
+
+・Ben.Demystifier (0.4.1)
+    HomePage  : https://github.com/benaadams/Ben.Demystifier
+    License(Apache-2.0 License) : https://licenses.nuget.org/Apache-2.0
+    License(Local File)  : Apache-2.0 license.txt
+
+・FontAwesome5 (2.1.11)
+    HomePage  : https://github.com/MartinTopfstedt/FontAwesome5
+    License(MIT License) : https://licenses.nuget.org/MIT
+    License(Local File)  : MIT License.txt
+
+・gong-wpf-dragdrop(4.0.0)
+    HomePage  : https://github.com/punker76/gong-wpf-dragdrop
+    License(BSD 3-Clause License) : https://www.nuget.org/packages/gong-wpf-dragdrop/4.0.0/license
+    License(Local File)  : BSD 3-Clause License.txt
+
+・Octokit (14.0.0)
+    HomePage : https://github.com/octokit/octokit.net
+    License(MIT License) : https://licenses.nuget.org/MIT
+    License(Local File)  : MIT License.txt
+
+・Onova (2.6.13)
+    HomePage : https://github.com/Tyrrrz/Onova
+    License(MIT License) : https://licenses.nuget.org/MIT
+    License(Local File)  : MIT License.txt
+
+・SharpCompress (0.48.1)
+    HomePage : https://github.com/adamhathcock/sharpcompress
+    License(MIT License) : https://licenses.nuget.org/MIT
+    License(Local File)  : MIT License.txt
+
+・Tomlyn (0.19.0)
+    HomePage : https://github.com/xoofx/Tomlyn
+    License(BSD 2-Clause license) : https://licenses.nuget.org/BSD-2-Clause
+    License(Local File)  : BSD 2-Clause license
+
+・WpfAnimatedGif (2.0.2)
+    HomePage : https://github.com/XamlAnimatedGif/WpfAnimatedGif
+    License(Apache-2.0 license) : https://licenses.nuget.org/Apache-2.0
+    License(Local File)  : Apache-2.0 license.txt
+
