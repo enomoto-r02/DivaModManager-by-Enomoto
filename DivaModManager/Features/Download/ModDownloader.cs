@@ -278,9 +278,9 @@ namespace DivaModManager.Features.Download
                                         response.Type = ExtractInfo.TYPE.DOWNLOAD;
                                         MoveInfoData moveInfo = new()
                                         {
-                                            FullPath = $"{Global.downloadBaseLocation}{fileName}",
+                                            FullPath = Path.Combine(Global.downloadBaseLocation, fileName),
                                             Status = ExtractInfo.EXTRACT_STATUS.DOWNLOAD_FILE,
-                                            FullPathResult = $@"{Global.downloadBaseLocation}{fileName}"
+                                            FullPathResult = Path.Combine(Global.downloadBaseLocation, fileName)
                                         };
                                         response.MoveInfoList.Add(moveInfo);
                                         await App.Current.Dispatcher.Invoke(async () => await Extractor.ExtractMain(response));
@@ -319,9 +319,9 @@ namespace DivaModManager.Features.Download
                                             DMAresponse.Type = ExtractInfo.TYPE.DOWNLOAD;
                                             MoveInfoData moveInfo = new()
                                             {
-                                                FullPath = $"{Global.downloadBaseLocation}{fileName}",
+                                                FullPath = Path.Combine(Global.downloadBaseLocation, fileName),
                                                 Status = ExtractInfo.EXTRACT_STATUS.DOWNLOAD_FILE,
-                                                FullPathResult = $@"{Global.downloadBaseLocation}{fileName}"
+                                                FullPathResult = Path.Combine(Global.downloadBaseLocation, fileName)
                                             };
                                             DMAresponse.MoveInfoList.Add(moveInfo);
                                             await App.Current.Dispatcher.Invoke(async () => await Extractor.ExtractMain(DMAresponse));
@@ -438,10 +438,10 @@ namespace DivaModManager.Features.Download
             try
             {
                 // Create the downloads folder if necessary
-                if (!Directory.Exists($@"{Global.downloadBaseLocation}"))
-                    Directory.CreateDirectory($@"{Global.downloadBaseLocation}");
+                if (!Directory.Exists(Global.downloadBaseLocation))
+                    Directory.CreateDirectory(Global.downloadBaseLocation);
                 // Download the file if it doesn't already exist
-                ret = $@"{Global.downloadBaseLocation}{fileName}";
+                ret = Path.Combine(Global.downloadBaseLocation, fileName);
                 if (File.Exists(ret))
                 {
                     try
@@ -463,7 +463,7 @@ namespace DivaModManager.Features.Download
                 progressBox.Activate();
                 // Write and download the file
                 using (var fs = new FileStream(
-                    $@"{Global.assemblyLocation}{Global.s}Downloads{Global.s}{fileName}", FileMode.Create, FileAccess.Write, FileShare.None))
+                    Path.Combine(Global.assemblyLocation, "Downloads", fileName), FileMode.Create, FileAccess.Write, FileShare.None))
                 {
                     client = new HttpClient()
                     {

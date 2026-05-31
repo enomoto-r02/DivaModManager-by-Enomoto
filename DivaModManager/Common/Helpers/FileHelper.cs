@@ -295,7 +295,7 @@ namespace DivaModManager.Common.Helpers
             {
                 if (FileExists(filePath))
                 {
-                    var directoryFullPath = new DirectoryInfo(filePath).Parent + Global.s.ToString();
+                    var directoryFullPath = Path.GetDirectoryName(filePath) + Path.DirectorySeparatorChar;
                     var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(filePath);
                     var extension = Path.GetExtension(filePath);
                     var version = string.IsNullOrEmpty(oldVersion) ? string.Empty : $"_v{oldVersion}";
@@ -398,12 +398,12 @@ namespace DivaModManager.Common.Helpers
             }
 
             // tmp directory
-            var checkTmpDirectoryPath = Path.GetFullPath($"{Global.assemblyLocation}Downloads{Global.s}temp_").ToLowerInvariant();
+            var checkTmpDirectoryPath = Path.GetFullPath(Path.Combine(Global.assemblyLocation, "Downloads", "temp_")).ToLowerInvariant();
             checkTmpDirectoryResult =
                 _targetFullPath.StartsWith(checkTmpDirectoryPath.ToLowerInvariant());
 
             // download file
-            var checkDownloadFilePath = $"{Global.assemblyLocation}Downloads{Global.s}";
+            var checkDownloadFilePath = Path.Combine(Global.assemblyLocation, "Downloads");
             checkDownloadFileResult =
                 _targetFullPath.StartsWith(Path.GetFullPath(checkDownloadFilePath).ToLowerInvariant());
 
@@ -664,20 +664,6 @@ namespace DivaModManager.Common.Helpers
         {
             string MeInfo = Logger.GetMeInfo(new StackFrame());
             string ParamInfo = $"caller:{caller}, id:{Thread.CurrentThread.ManagedThreadId}";
-
-            string dir = System.IO.Path.GetDirectoryName(path);
-            try
-            {
-                if (!Directory.Exists(dir))
-                {
-                    Directory.CreateDirectory(dir);
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.WriteLine(string.Join(" ", MeInfo, $"Failed to create directory '{dir} for '{path}': {ex.Message}"), LoggerType.Error, param: ParamInfo);
-                return false;
-            }
 
             for (int i = 0; i < retries; i++)
             {

@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -19,7 +20,7 @@ namespace DivaModManager.Features.AltLink
                 $"select one to manually download.\nTo update, delete the previous files from and extract the downloaded archive into:"
                 : $"Links from the Alternate File Sources section were found. You can " +
                 $"select one to manually download.\nTo install, extract the downloaded archive into:";
-            PathText.Text = update ? $"{Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].ModsFolder}{Global.s}{packageName}"
+            PathText.Text = update ? Path.Combine(Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].ModsFolder, packageName)
                 : Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].ModsFolder;
             FetchDescription.Text = update ? $"To fetch GameBanana metadata for the manual update, Right click {packageName} > " +
                 $"Fetch GameBanana Metadata, and use the link:"

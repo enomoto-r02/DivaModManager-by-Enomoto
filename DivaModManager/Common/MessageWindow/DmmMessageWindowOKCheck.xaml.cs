@@ -23,6 +23,8 @@ namespace DivaModManager.Common.MessageWindow
             Title = title;
 
             OK = ok;
+
+            Activate();
         }
         private void OK_Click(object sender, RoutedEventArgs e)
         {
@@ -30,6 +32,10 @@ namespace DivaModManager.Common.MessageWindow
             Checked = (bool)Check_1.IsChecked;
             IsCancel = false;
             Close();
+        }
+        private void Check_Click(object sender, RoutedEventArgs e)
+        {
+            UpdateLayout();
         }
         private void Window_KeyDown(object sender, KeyEventArgs e)
         {

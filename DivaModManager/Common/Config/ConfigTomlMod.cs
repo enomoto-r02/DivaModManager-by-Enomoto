@@ -89,7 +89,7 @@ namespace DivaModManager.Common.Config
             var ret = false;
             var modName = mod.name;
             var directoryPath = mod.directory_path;
-            var configETomlFilePath = $"{directoryPath}{Global.s}{ConfigETomlFileName}";
+            var configETomlFilePath = Path.Combine(directoryPath, ConfigETomlFileName);
             if (FileHelper.FileExists(configETomlFilePath))
             {
                 try
@@ -123,7 +123,7 @@ namespace DivaModManager.Common.Config
 
             var modName = mod.name;
             var directoryPath = mod.directory_path;
-            var configETomlFilePath = $"{directoryPath}{Global.s}{ConfigETomlFileName}";
+            var configETomlFilePath = Path.Combine(directoryPath, ConfigETomlFileName);
 
             try
             {

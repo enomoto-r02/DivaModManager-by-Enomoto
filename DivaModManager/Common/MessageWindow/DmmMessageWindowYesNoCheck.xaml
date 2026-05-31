@@ -22,6 +22,6 @@
         <TextBlock Name="MessageText" HorizontalAlignment="Center" Grid.ColumnSpan="2" Grid.Row="1" VerticalAlignment="Center" Text="Message Text" Foreground="#f2f2f2" FontSize="16" FontWeight="SemiBold" TextAlignment="Center" Margin="50,8,50,8"/>
         <Button Name="Button_1" Grid.Row="2" Grid.Column="0" Content="Yes" MinWidth="120" MinHeight="35" FontSize="16" FontWeight="SemiBold" Foreground="#f2f2f2" Background="#494949" Margin="30,5,30,5" Click="Yes_Click"/>
         <Button Name="Button_2" Grid.Row="2" Grid.Column="1" Content="No" MinWidth="120" MinHeight="35" FontSize="16" FontWeight="SemiBold" Foreground="#f2f2f2" Background="#494949" Margin="30,5,30,5" Click="No_Click"/>
-        <CheckBox Name="Check_1" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Content="Don't show this message again" FontSize="14" FontWeight="SemiBold" Foreground="#f2f2f2" Background="#f2f2f2" Margin="30,5,30,5"/>
+        <CheckBox Name="Check_1" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Content="Don't show this message again" FontSize="14" FontWeight="SemiBold" Foreground="#f2f2f2" Background="#f2f2f2" Margin="30,5,30,5" Click="Check_Click"/>
     </Grid>
 </Window>

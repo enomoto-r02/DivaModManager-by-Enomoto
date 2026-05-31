@@ -21,7 +21,7 @@ namespace DivaModManager.Common.Config
     public class ConfigJson
     {
         public static readonly string CONFIG_JSON_NAME = "Config.json";
-        public static readonly string CONFIG_JSON_PATH = $"{Global.assemblyLocation}{CONFIG_JSON_NAME}";
+        public static readonly string CONFIG_JSON_PATH = Path.Combine(Global.assemblyLocation, CONFIG_JSON_NAME);
         public static readonly string CURRENT_GAME = "Project DIVA Mega Mix\u002B";
         public static readonly string CURRENT_LOADOUT = "Default";
 
@@ -104,7 +104,7 @@ namespace DivaModManager.Common.Config
             ConfigJson config = new() { IsNew = true };
 
             // --- Config.json 読み込みのエラーハンドリング改善 ---
-            string configFilePath = $"{Global.assemblyLocation}{CONFIG_JSON_NAME}";
+            string configFilePath = Path.Combine(Global.assemblyLocation, CONFIG_JSON_NAME);
             if (FileHelper.FileExists(configFilePath))
             {
                 try
@@ -186,7 +186,7 @@ namespace DivaModManager.Common.Config
 
         public string GetGameLocation()
         {
-            return new DirectoryInfo(CurrentConfig?.Launcher).Parent.ToString() + Global.s;
+            return Path.GetDirectoryName(CurrentConfig?.Launcher) + Path.DirectorySeparatorChar;
         }
 
         public static async Task<bool> UpdateConfigAsync([CallerMemberName] string caller = "")
@@ -269,7 +269,10 @@ namespace DivaModManager.Common.Config
             string ParamInfo = $"caller:{caller}, id:{Thread.CurrentThread.ManagedThreadId}";
 
             var ret = false;
-            if (Setup.Generic("DivaMegaMix.exe", @"C:\Program Files (x86)\Steam\steamapps\common\Hatsune Miku Project DIVA Mega Mix Plus\DivaMegaMix.exe"))
+            var defaultPath = OperatingSystem.IsWindows()
+                ? @"C:\Program Files (x86)\Steam\steamapps\common\Hatsune Miku Project DIVA Mega Mix Plus\DivaMegaMix.exe"
+                : string.Empty;
+            if (Setup.Generic("DivaMegaMix.exe", defaultPath))
             {
                 ret = true;
             }

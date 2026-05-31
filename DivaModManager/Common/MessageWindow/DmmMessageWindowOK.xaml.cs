@@ -21,6 +21,8 @@ namespace DivaModManager.Common.MessageWindow
             if (string.IsNullOrEmpty(MessageText.Text)) MessageText.Visibility = Visibility.Collapsed;
             OK = ok;
             Title = title;
+
+            Activate();
         }
         private void OK_Click(object sender, RoutedEventArgs e)
         {

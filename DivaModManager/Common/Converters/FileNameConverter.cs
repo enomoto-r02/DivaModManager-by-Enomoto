@@ -20,7 +20,7 @@ namespace DivaModManager.Common.Converters
     {
         public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
         {
-            return ((string)value).Replace($@"{Global.assemblyLocation}{Global.s}Mods{Global.s}{Global.ConfigJson.CurrentGame}", "...");
+            return ((string)value).Replace(Path.Combine(Global.assemblyLocation, "Mods", Global.ConfigJson.CurrentGame), "...");
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)

@@ -33,7 +33,7 @@ namespace DivaModManager.Common.Config
         [IgnoreDataMember]
         public static readonly string CONFIG_E_TOML_NAME = $"config_e.toml";
         [IgnoreDataMember]
-        public static readonly string CONFIG_E_TOML_PATH = $"{Global.assemblyLocation}{CONFIG_E_TOML_NAME}";
+        public static readonly string CONFIG_E_TOML_PATH = Path.Combine(Global.assemblyLocation, CONFIG_E_TOML_NAME);
         [IgnoreDataMember]
         public ExtractInfo.EXTERNAL_EXTRACTOR ExtractorWinRar { get; set; } = ExtractInfo.EXTERNAL_EXTRACTOR.NOT_CHECK;
         [IgnoreDataMember]
@@ -244,6 +244,7 @@ namespace DivaModManager.Common.Config
         }
         public String ExternalExtractorUseToolTip()
         {
+            // 要Linux対応
             return $"WinRAR({Global.ConfigJson?.WinRarConsoleVersion})/7-Zip({Global.ConfigJson?.SevenZipConsoleVersion})";
         }
 
@@ -305,7 +306,11 @@ namespace DivaModManager.Common.Config
         [DataMember(Name = "mask_log")]
         [DataMemberCommentEN("Masks personal information (such as various directory information) from log file output.\nDefault : true")]
         [DataMemberCommentJP("ログファイル出力に個人情報 (各種ディレクトリ情報など) をマスクします。\nDefault：true")]
+#if DEBUG
+        public bool MaskTextLog { get; set; } = false;
+#else
         public bool MaskTextLog { get; set; } = true;
+#endif
 
         [DataMember(Name = "screenshot_dpi")]
         [DataMemberCommentEN("DPI of screenshot (100 to 300)\nOther values ​​will be set to Default.\nDefault : 200")]

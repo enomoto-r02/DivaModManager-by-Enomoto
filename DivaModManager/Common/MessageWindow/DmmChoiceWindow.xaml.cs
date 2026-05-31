@@ -16,7 +16,10 @@ public partial class DmmChoiceWindow : Window
         InitializeComponent();
         ChoiceList.ItemsSource = choices;
         if (title != null)
+        {
             Title = title;
+        }
+        Activate();
     }
     private void SelectButton_Click(object sender, RoutedEventArgs e)
     {

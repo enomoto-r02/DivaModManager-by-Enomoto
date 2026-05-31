@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "DivaModManager": {
+      "commandName": "Project",
+      "commandLineArgs": "-debug"
+    }
+  }
+}

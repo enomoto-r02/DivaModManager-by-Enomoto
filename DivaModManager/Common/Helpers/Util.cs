@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Windows.Controls;
 using System.Windows.Media;
 
@@ -79,5 +81,25 @@ namespace DivaModManager.Common.Helpers
                 scrollViewer.ScrollToTop();
             }
         }
+
+        /// <summary>
+        /// Wine環境かどうかを判定する
+        /// (LinuxであればWine環境とみなすが、WindowsであってもWine環境であればLinuxとみなす)
+        /// </summary>
+        /// <returns></returns>
+        public static bool IsWine()
+        {
+            try
+            {
+                return wine_get_version() != IntPtr.Zero;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        [DllImport("ntdll.dll", CallingConvention = CallingConvention.Cdecl)]
+        private static extern IntPtr wine_get_version();
     }
 }

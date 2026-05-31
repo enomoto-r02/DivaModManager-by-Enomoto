@@ -57,10 +57,10 @@ namespace DivaModManager.Models
 
             _SkipFileWhenSizeCheckPathList.AddRange(new[]
             {
-                $@"{Global.ModsFolder}{Global.s}{name}{Global.s}config.toml",
-                $@"{Global.ModsFolder}{Global.s}{name}{Global.s}config_e.toml",
-                $@"{Global.ModsFolder}{Global.s}{name}{Global.s}mod.json",
-                $@"{Global.ModsFolder}{Global.s}{name}{Global.s}preview"
+                Path.Combine(Global.ModsFolder, name, "config.toml"),
+                Path.Combine(Global.ModsFolder, name, "config_e.toml"),
+                Path.Combine(Global.ModsFolder, name, "mod.json"),
+                Path.Combine(Global.ModsFolder, name, "preview")
             });
 
             ConfigToml.Init(this);
@@ -258,7 +258,7 @@ namespace DivaModManager.Models
                         && Global.ConfigJson != null
                         && Global.ConfigJson.Configs.ContainsKey(currentGame)
                         && !string.IsNullOrEmpty(Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].ModsFolder))
-                        foo = $"{Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].ModsFolder}{Global.s}{name}";
+                        foo = Path.Combine(Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].ModsFolder, name);
                 }
                 return foo;
             }
@@ -279,7 +279,7 @@ namespace DivaModManager.Models
         [JsonIgnore]
         public string mods_json_path
         {
-            get => $"{directory_path}{Global.s}mod.json";
+            get => Path.Combine(directory_path, "mod.json");
         }
         [JsonIgnore]
         public bool exist_mods_json
@@ -295,7 +295,7 @@ namespace DivaModManager.Models
         [JsonIgnore]
         public string config_toml_path
         {
-            get => $"{directory_path}{Global.s}{Mod.CONFIG_TOML_NAME}";
+            get => Path.Combine(directory_path, Mod.CONFIG_TOML_NAME);
         }
         [JsonIgnore]
         public bool exist_config_toml
@@ -310,7 +310,7 @@ namespace DivaModManager.Models
         [JsonIgnore]
         public string config_e_toml_path
         {
-            get => $"{directory_path}{Global.s}{Mod.CONFIG_E_TOML_NAME}";
+            get => Path.Combine(directory_path, Mod.CONFIG_E_TOML_NAME);
         }
         [JsonIgnore]
         public bool exist_config_e_toml

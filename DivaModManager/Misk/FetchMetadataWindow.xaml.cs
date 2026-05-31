@@ -93,7 +93,7 @@ namespace DivaModManager
                         lastupdate = record.DateUpdated
                     };
                     string metadataString = JsonSerializer.Serialize(metadata, new JsonSerializerOptions { WriteIndented = true });
-                    File.WriteAllText($@"{Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].ModsFolder}{Global.s}{_mod.name}{Global.s}mod.json", metadataString);
+                    File.WriteAllText(Path.Combine(Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].ModsFolder, _mod.name, "mod.json"), metadataString);
                     success = true;
                     Close();
                     return;
@@ -124,7 +124,7 @@ namespace DivaModManager
                     lastupdate = post.Time
                 };
                 string metadataString = JsonSerializer.Serialize(metadata, new JsonSerializerOptions { WriteIndented = true });
-                File.WriteAllText($@"{Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].ModsFolder}{Global.s}{_mod.name}{Global.s}mod.json", metadataString);
+                File.WriteAllText(Path.Combine(Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].ModsFolder, _mod.name, "mod.json"), metadataString);
                 success = true;
                 Close();
                 return;

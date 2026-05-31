@@ -28,12 +28,14 @@ namespace DivaModManager.Features.Debug
         {
             // ワンクリックインストールから動いた場合、MainWindow側がログを上書きしてしまうのでファイル名を変更
             if (e.Args.ToList().Contains("-download"))
+            {
                 LogPath = Global.textLogBackgroundLocation;
+            }
 #if DEBUG
             Mode = DEBUG_MODE.DEVELOPER;
 #else
-            if (e.Args.ToList().Contains("-debug")) Mode = DEBUG_MODE.DEBUG;
-            else if (e.Args.ToList().Contains("-developer")) Mode = DEBUG_MODE.DEVELOPER;
+            if (e.Args.ToList().Contains("-deb") || e.Args.ToList().Contains("-debug")) Mode = DEBUG_MODE.DEBUG;
+            else if (e.Args.ToList().Contains("-dev") || e.Args.ToList().Contains("-developer")) Mode = DEBUG_MODE.DEVELOPER;
 #endif
         }
 
@@ -157,9 +159,11 @@ namespace DivaModManager.Features.Debug
 
         public static void OpenEditor()
         {
-            if (Mode == DEBUG_MODE.DEBUG
-                || Mode == DEBUG_MODE.DEVELOPER)
-                ProcessHelper.TryStartProcess(LogPath);
+            if (!Global.IsWine && (Mode == DEBUG_MODE.DEBUG || Mode == DEBUG_MODE.DEVELOPER))
+            {
+                ProcessHelper.TryStartProcess(LogPath, workingDirectory: AppDomain.CurrentDomain.BaseDirectory);
+                Logger.WriteLine($"TryStartProcess LogPath : {LogPath}", LoggerType.Debug);
+            }
         }
 
         // "DivaModManager.Common.MessageWindow.MainWindow+<MainWindow_Loaded>d__20"で最後の"."以降

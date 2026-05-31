@@ -28,7 +28,7 @@ namespace DivaModManager.Misk
             string MeInfo = Logger.GetMeInfo(new StackFrame());
             string ParamInfo = $"id:{Thread.CurrentThread.ManagedThreadId}";
             var path = string.Join(string.Empty, NameBox.Text.Split(Path.GetInvalidFileNameChars()));
-            if (Directory.Exists($"{Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].ModsFolder}{Global.s}{path}"))
+            if (Directory.Exists(Path.Combine(Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].ModsFolder, path)))
             {
                 Logger.WriteLine($"{path} already exists in your mod folder, please choose another name", LoggerType.Warning);
                 return;
@@ -48,20 +48,21 @@ namespace DivaModManager.Misk
                 config.Add("date", DateBox.Text);
             if (!string.IsNullOrWhiteSpace(DescriptionBox.Text))
                 config.Add("description", DescriptionBox.Text);
-            Directory.CreateDirectory($"{Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].ModsFolder}{Global.s}{path}");
+            var modDir = Path.Combine(Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].ModsFolder, path);
+            Directory.CreateDirectory(modDir);
             var configFile = Toml.FromModel(config);
-            File.WriteAllText($"{Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].ModsFolder}{Global.s}{path}{Global.s}config.toml", configFile);
+            File.WriteAllText(Path.Combine(modDir, "config.toml"), configFile);
             if (!string.IsNullOrEmpty(PreviewBox.Text) && File.Exists(PreviewBox.Text))
-                File.Copy(PreviewBox.Text, $"{Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].ModsFolder}{Global.s}{path}{Global.s}Preview{Path.GetExtension(PreviewBox.Text)}", true);
+                File.Copy(PreviewBox.Text, Path.Combine(modDir, $"Preview{Path.GetExtension(PreviewBox.Text)}"), true);
             Logger.WriteLine($"Created {NameBox.Text}!", LoggerType.Info);
             try
             {
-                Process process = Process.Start("explorer.exe", $"{Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].ModsFolder}{Global.s}{path}");
-                Logger.WriteLine($@"Opened {Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].ModsFolder}{Global.s}{path}.", LoggerType.Info);
+                Process process = Process.Start("explorer.exe", modDir);
+                Logger.WriteLine($@"Opened {modDir}.", LoggerType.Info);
             }
             catch (Exception ex)
             {
-                Logger.WriteLine($@"Couldn't open {Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].ModsFolder}{Global.s}{path}. ({ex.Message})", LoggerType.Error);
+                Logger.WriteLine($@"Couldn't open {modDir}. ({ex.Message})", LoggerType.Error);
             }
             Close();
         }

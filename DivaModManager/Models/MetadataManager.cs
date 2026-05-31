@@ -39,7 +39,7 @@ namespace DivaModManager.Structures
             metadata = new Metadata();
             METADATA_DIRECTORY_PATH = mod.directory_path;
             METADATA_DIRECTORY_NAME = mod.directory_name;
-            MOD_JSON_PATH = $@"{mod.directory_path}{Global.s}{MOD_JSON_NAME}";
+            MOD_JSON_PATH = Path.Combine(mod.directory_path, MOD_JSON_NAME);
             metadata_request = new Dictionary<string, Metadata>();
             metadata_update = new Dictionary<string, Metadata>();
         }

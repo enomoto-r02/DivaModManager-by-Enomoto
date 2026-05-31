@@ -47,6 +47,7 @@ namespace DivaModManager.Common.Helpers
                 msgOK.Owner = App.Current.MainWindow.GetType() != msgOK.GetType() ? App.Current.MainWindow : null;
                 msgOK.ShowDialog();
                 msgOK.Activate();
+                msgOK.Focus();
                 if (msgOK.IsCancel == true)
                     ret = WindowCloseStatus.Cancel;
                 else if (msgOK.OK)
@@ -64,6 +65,7 @@ namespace DivaModManager.Common.Helpers
                 msgOKCheck.Owner = App.Current.MainWindow.GetType() != msgOKCheck.GetType() ? App.Current.MainWindow : null;
                 msgOKCheck.ShowDialog();
                 msgOKCheck.Activate();
+                msgOKCheck.Focus();
                 if (msgOKCheck.IsCancel == true)
                     ret = WindowCloseStatus.Cancel;
                 else if (msgOKCheck.OK)
@@ -87,6 +89,7 @@ namespace DivaModManager.Common.Helpers
                 msgYesNo.Owner = App.Current.MainWindow.GetType() != msgYesNo.GetType() ? App.Current.MainWindow : null;
                 msgYesNo.ShowDialog();
                 msgYesNo.Activate();
+                msgYesNo.Focus();
                 if (msgYesNo.IsCancel == true)
                     ret = WindowCloseStatus.Cancel;
                 else if (msgYesNo.YesNo)
@@ -104,6 +107,7 @@ namespace DivaModManager.Common.Helpers
                 msgYesNoCheck.Check_1.Content = info.Check_1();
                 msgYesNoCheck.ShowDialog();
                 msgYesNoCheck.Activate();
+                msgYesNoCheck.Focus();
                 if (msgYesNoCheck.IsCancel == true)
                     ret = WindowCloseStatus.Cancel;
                 else if (msgYesNoCheck.YesNo)
@@ -126,6 +130,7 @@ namespace DivaModManager.Common.Helpers
                 msgYesNoOpen.Owner = App.Current.MainWindow.GetType() != msgYesNoOpen.GetType() ? App.Current.MainWindow : null;
                 msgYesNoOpen.ShowDialog();
                 msgYesNoOpen.Activate();
+                msgYesNoOpen.Focus();
                 if (msgYesNoOpen.IsCancel == true)
                     ret = WindowCloseStatus.Cancel;
                 else if (msgYesNoOpen.YesNo)
@@ -235,6 +240,7 @@ namespace DivaModManager.Common.Helpers
                 choiceWindow.Button_1.Content = choice_button.Info();
                 choiceWindow.ShowDialog();
                 choiceWindow.Activate();
+                choiceWindow.Focus();
                 if (choiceWindow.cancel)
                 {
                     if (message_no_cancel == -1)

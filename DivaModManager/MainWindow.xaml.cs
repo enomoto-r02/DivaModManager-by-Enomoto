@@ -289,13 +289,13 @@ namespace DivaModManager
             Logger.WriteLine(string.Join(" ", MeInfo, $"Start."), LoggerType.Debug, param: ParamInfo);
 
             App.Current.Dispatcher.Invoke(() => OnFirstOpenAsync());
-            if (Global.ConfigToml.DivaModManagerUpdateCheck)
+            if (!Global.IsWine && Global.ConfigToml.DivaModManagerUpdateCheck)
             {
                 Logger.WriteLine("Checking for DivaModManager by Enomoto update...", LoggerType.Info);
                 if (await DMMUpdater.CheckForDMMUpdate(new CancellationTokenSource()))
                     Close();
             }
-            if (Global.ConfigToml.DivaModLoaderUpdateCheck)
+            if (!Global.IsWine && Global.ConfigToml.DivaModLoaderUpdateCheck)
             {
                 Logger.WriteLine("Checking for DivaModLoader update...", LoggerType.Info);
                 var ret = await DMLUpdater.CheckForDMLUpdate(new CancellationTokenSource());
@@ -921,6 +921,10 @@ namespace DivaModManager
 
                 var SelectModsCount = ModGrid.SelectedCells.Count / ModGrid.Columns.Count;
                 List<string> inactiveList = new();
+                if (Global.IsWine)
+                {
+                    inactiveList.AddRange(new[] { "FetchMetadata", "CleanUpdateMod", "DeleteMod" });
+                }
                 if (SelectModsCount > 1)
                 {
                     if (Global.SearchModListFlg) { inactiveList.AddRange(new[] { "MoveToTop", "MoveToBottom" }); }
@@ -947,7 +951,7 @@ namespace DivaModManager
             if (!selectedMods.Any()) return;
 
             List<string> replaceList = new() { selectedMods.Count.ToString() };
-            var dialogResult = WindowHelper.MessageBoxOpen(64, replaceList, MessageBoxButton.OKCancel);
+            var dialogResult = WindowHelper.MessageBoxOpen(75, replaceList, MessageBoxButton.OKCancel);
             if (dialogResult == MessageBoxResult.OK)
             {
                 // ModGrid_SelectionChangedを解除しても発火したので、フラグで…。foreachをタスク化すれば大丈夫か？
@@ -1149,6 +1153,12 @@ namespace DivaModManager
         {
             string MeInfo = Logger.GetMeInfo(new StackFrame());
 
+            if(Global.IsWine)
+            {
+                WindowHelper.DMMWindowOpen(27);
+                return;
+            }
+
             DropBox.Visibility = Visibility.Collapsed;
             e.Handled = true;
             if (string.IsNullOrEmpty(Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].ModsFolder)
@@ -1214,6 +1224,12 @@ namespace DivaModManager
         {
             string MeInfo = Logger.GetMeInfo(new StackFrame());
             string ParamInfo = $"id:{Thread.CurrentThread.ManagedThreadId}";
+
+            if (Util.IsWine())
+            {
+                WindowHelper.DMMWindowOpen(27);
+                return;
+            }
 
             if (WorkManager.IsBusy || App.IsAlreadyRunningOtherProcess(false) != 0)
             {
@@ -1466,7 +1482,7 @@ namespace DivaModManager
                         SetDefaultPreviewImage();
                     }
                 }
-                else if (File.Exists($"{Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].ModsFolder}{Global.s}{mod}{Global.s}mod.json"))
+                else if (File.Exists(Path.Combine(Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].ModsFolder, mod.name, "mod.json")))
                 {
                     // ... (mod.json からメタデータとプレビューURLを取得する処理) ...
                     try
@@ -2097,13 +2113,35 @@ namespace DivaModManager
         }
         private void GBModBrowserTab_Selected(object sender, RoutedEventArgs e)
         {
+            if (Global.IsWine)
+            {
+                App.Current.Dispatcher.Invoke(() =>
+                {
+                    WindowHelper.DMMWindowOpen(27);
+                });
+                return;
+            }
+
             if (!selected)
+            {
                 InitializeGBBrowser();
+            }
         }
         private void DMAModBrowserTab_Selected(object sender, RoutedEventArgs e)
         {
+            if (Global.IsWine)
+            {
+                App.Current.Dispatcher.Invoke(() =>
+                {
+                    WindowHelper.DMMWindowOpen(27);
+                });
+                return;
+            }
+
             if (!DMAselected)
+            {
                 DMARefreshFilterAsync();
+            }
         }
         private void ModManagerTab_Selected(object sender, RoutedEventArgs e)
         {
@@ -3535,7 +3573,7 @@ namespace DivaModManager
         /// 
         /// </summary>
         /// <param name="isEnabled"></param>
-        public void IsEnabledControls(bool isEnable)
+        public void IsEnabledControls(bool isEnable, [CallerMemberName] string caller = "")
         {
             // MM+がインストールされている状態
             var isMMPInstalled = !string.IsNullOrEmpty(Global.ConfigJson.CurrentConfig.Launcher)
@@ -3545,22 +3583,33 @@ namespace DivaModManager
                 && isMMPInstalled && isEnable;
             // セットアップが完了しない場合でもtrue
             var setEnabledFirst = isEnable;
+            // Wine実行環境か
+            var isWine = Util.IsWine();
+
+            string MeInfo = Logger.GetMeInfo(new StackFrame());
+            string ParamInfo = $"isEnable:{isEnable}, isMMPInstalled:{isMMPInstalled}, isDMLInstalled:{isDMLInstalled}, setEnabledFirst:{setEnabledFirst}, isWine:{isWine}, caller:{caller}, id:{Thread.CurrentThread.ManagedThreadId}";
+            Logger.WriteLine(string.Join(" ", MeInfo, $"Start."), LoggerType.Debug, param: ParamInfo);
+
 
             // ブラウザタブ
             ModManagerTab.IsEnabled = setEnabledFirst;
+            GBModBrowserTab.Visibility = isWine ? Visibility.Hidden : Visibility.Visible;
             GBModBrowserTab.IsEnabled = isDMLInstalled;
-            DMAModBrowserTab.IsEnabled = isDMLInstalled;
-            OptionTab.IsEnabled = setEnabledFirst;
-            DebugTabItem.IsEnabled = setEnabledFirst;
+            DMAModBrowserTab.Visibility = isWine ? Visibility.Hidden : Visibility.Visible;
+            DMAModBrowserTab.IsEnabled = isDMLInstalled && !isWine;
+            OptionTab.Visibility = isWine ? Visibility.Hidden : Visibility.Visible;
+            OptionTab.IsEnabled = setEnabledFirst && !isWine;
+            DebugTabItem.Visibility = isWine ? Visibility.Hidden : Visibility.Visible;
+            DebugTabItem.IsEnabled = setEnabledFirst && !isWine;
 
             // 上部コントロール
             GameBox.IsEnabled = isMMPInstalled;
             LauncherOptionsBox.IsEnabled = isMMPInstalled;
             EditLoadoutsButton.IsEnabled = isDMLInstalled;
-            SetupButton.IsEnabled = setEnabledFirst;
-            LaunchButton.IsEnabled = isMMPInstalled;
-            CreateModButton.IsEnabled = isDMLInstalled;
-            UpdateCheckButton.IsEnabled = setEnabledFirst;
+            SetupButton.IsEnabled = setEnabledFirst && !isWine;
+            LaunchButton.IsEnabled = isMMPInstalled && !isWine;
+            CreateModButton.IsEnabled = isDMLInstalled && !isWine;
+            UpdateCheckButton.IsEnabled = setEnabledFirst && !isWine;
             LoadoutBox.IsEnabled = isDMLInstalled;
 
             // Modリスト上部検索/フィルタ関連
@@ -3606,6 +3655,8 @@ namespace DivaModManager
             //DmmFolderButton.IsEnabled = setEnabledFirst;
             //GitHubButton.IsEnabled = setEnabledFirst;
             //DiscordButton.IsEnabled = setEnabledFirst;
+
+            Logger.WriteLine(string.Join(" ", MeInfo, $"End."), LoggerType.Debug, param: ParamInfo);
         }
 
         #region FlowDocument 変換ロジック共通化
@@ -3746,8 +3797,8 @@ namespace DivaModManager
             await WorkManager.RunAsync(async () =>
             {
                 Logger.WriteLine($"ScreenShot making...", LoggerType.Info);
-                Directory.CreateDirectory($"{Global.screenshotBaseLocation}");
-                string filePathNoExtention = $"{Global.screenshotBaseLocation}ModGrid_{DateTime.Now:yyyyMMdd_HHmmss}";
+                Directory.CreateDirectory(Global.screenshotBaseLocation);
+                string filePathNoExtention = Path.Combine(Global.screenshotBaseLocation, $"ModGrid_{DateTime.Now:yyyyMMdd_HHmmss}");
 
                 await ModGrid.CaptureFullDataGridAsync(
                     filePathNoExtention,
@@ -3767,6 +3818,15 @@ namespace DivaModManager
         /// <param name="e"></param>
         public void DebugTab_TabSelected(object sender, RoutedEventArgs e)
         {
+            if (Global.IsWine)
+            {
+                App.Current.Dispatcher.Invoke(() =>
+                {
+                    WindowHelper.DMMWindowOpen(27);
+                });
+                return;
+            }
+
             var tabName = DebugTabItem.Header;
             if (Logger.Mode == Logger.DEBUG_MODE.DEBUG)
             {
@@ -3777,7 +3837,14 @@ namespace DivaModManager
 
         private void OptionTab_TabSelected(object sender, RoutedEventArgs e)
         {
-
+            if (Global.IsWine)
+            {
+                App.Current.Dispatcher.Invoke(() =>
+                {
+                    WindowHelper.DMMWindowOpen(27);
+                });
+                return;
+            }
         }
 
         private void OneClickInstallButton_Click(object sender, RoutedEventArgs e)

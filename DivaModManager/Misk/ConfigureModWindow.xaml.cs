@@ -20,7 +20,7 @@ namespace DivaModManager.Misk
             if (mod != null)
             {
                 _mod = mod;
-                configPath = $"{Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].ModsFolder}{Global.s}{mod.name}{Global.s}config.toml";
+                configPath = Path.Combine(Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].ModsFolder, mod.name, "config.toml");
                 var configString = File.ReadAllText(configPath);
                 ConfigBox.Text = configString;
                 Title = $"Configure {_mod.name}";

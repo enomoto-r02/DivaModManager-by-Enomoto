@@ -21,7 +21,7 @@ namespace DivaModManager.Models
         public string Launcher { get; set; } = string.Empty;
         // 参照されないため常にnull
         public string GamePath { get; set; }
-        public string GetLauncherDirectory() { return $"{Path.GetDirectoryName(Launcher)}{Global.s}"; }
+        public string GetLauncherDirectory() { return Path.GetDirectoryName(Launcher) + Path.DirectorySeparatorChar; }
         // Convert.ToInt32される。
         // bool == Boolean
         // True = 1、False(初期値) = 0

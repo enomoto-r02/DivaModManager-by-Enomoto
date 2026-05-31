@@ -34,6 +34,8 @@ namespace DivaModManager.Common.MessageWindow
             YesNo = yesno;
             Title = title;
             Path = path;
+
+            Activate();
         }
         private void Yes_Click(object sender, RoutedEventArgs e)
         {

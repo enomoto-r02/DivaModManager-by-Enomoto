@@ -59,7 +59,7 @@ namespace DivaModManager.Features.DML
                 { MODULE_NAME_TOML, false },
                 { MODULE_NAME_DLL, false },
                 { MODULE_NAME_MODS_DIRECTORY, true },
-                { $"{MODULE_NAME_MODS_DIRECTORY}{Global.s}{MODULE_NAME_TEMPLATE_DIRECTORY}", true },
+                { Path.Combine(MODULE_NAME_MODS_DIRECTORY, MODULE_NAME_TEMPLATE_DIRECTORY), true },
             };
 
             var count = fileList.Count;
@@ -173,7 +173,7 @@ namespace DivaModManager.Features.DML
             string ParamInfo = $"caller:{caller}, id:{Thread.CurrentThread.ManagedThreadId}";
             Logger.WriteLine(string.Join(" ", MeInfo, $"Start."), LoggerType.Debug, param: ParamInfo);
 
-            var downloadPath = $@"{Global.assemblyLocation}Downloads{Global.s}DML{Global.s}{version}{Path.GetExtension(fileName)}";
+            var downloadPath = Path.Combine(Global.assemblyLocation, "Downloads", "DML", $"{version}{Path.GetExtension(fileName)}");
             try
             {
                 if (!Directory.Exists(Global.temporaryLocationDML))

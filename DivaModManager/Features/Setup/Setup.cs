@@ -17,7 +17,7 @@ namespace DivaModManager.Features.Setup
             // Get install path from registry
             try
             {
-                if (OperatingSystem.IsWindows())
+                if (OperatingSystem.IsWindows() && !Global.IsWine)
                 {
                     var key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Steam App 1761390");
                     if (!string.IsNullOrEmpty(key.GetValue("InstallLocation") as string))
@@ -25,7 +25,21 @@ namespace DivaModManager.Features.Setup
                 }
                 else
                 {
-                    return false;
+                    // Linux (Proton/Wine) 環境: Steam の一般的なパスを確認
+                    var linuxPaths = new[]
+                    {
+                        Path.Combine(Environment.GetEnvironmentVariable("HOME") ?? "/home", ".steam", "steam", "steamapps", "common", "Hatsune Miku Project DIVA Mega Mix Plus", "DivaMegaMix.exe"),
+                        Path.Combine(Environment.GetEnvironmentVariable("HOME") ?? "/home", ".local", "share", "Steam", "steamapps", "common", "Hatsune Miku Project DIVA Mega Mix Plus", "DivaMegaMix.exe"),
+                        "/mnt/c/Program Files (x86)/Steam/steamapps/common/Hatsune Miku Project DIVA Mega Mix Plus/DivaMegaMix.exe",
+                    };
+                    foreach (var path in linuxPaths)
+                    {
+                        if (File.Exists(path))
+                        {
+                            defaultPath = path;
+                            break;
+                        }
+                    }
                 }
             }
             catch (Exception e)
@@ -70,7 +84,7 @@ namespace DivaModManager.Features.Setup
             }
 
             Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].Launcher = defaultPath;
-            Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].ModsFolder = $"{Path.GetDirectoryName(Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].Launcher)}{Global.s}mods";
+            Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].ModsFolder = Path.Combine(Path.GetDirectoryName(Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].Launcher), "mods");
             Directory.CreateDirectory(Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].ModsFolder);
 
             if (!Directory.Exists(Global.downloadBaseLocation))

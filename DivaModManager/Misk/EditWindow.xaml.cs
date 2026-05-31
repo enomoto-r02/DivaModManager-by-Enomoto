@@ -59,8 +59,8 @@ namespace DivaModManager.Misk
         {
             if (!NameBox.Text.Equals(_name, StringComparison.InvariantCultureIgnoreCase))
             {
-                var oldDirectory = $"{Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].ModsFolder}{Global.s}{Global.s}{_name}";
-                var newDirectory = $"{Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].ModsFolder}{Global.s}{Global.s}{NameBox.Text}";
+                var oldDirectory = Path.Combine(Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].ModsFolder, _name);
+                var newDirectory = Path.Combine(Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].ModsFolder, NameBox.Text);
                 if (!Directory.Exists(newDirectory))
                 {
                     try

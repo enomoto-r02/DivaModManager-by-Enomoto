@@ -3,6 +3,7 @@ using DivaModManager.Features.Debug;
 using Microsoft.Win32;
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -34,7 +35,7 @@ namespace DivaModManager.Common.Config
             string ParamInfo = $"caller:{caller}, id:{Thread.CurrentThread.ManagedThreadId}";
             Logger.WriteLine(string.Join(" ", MeInfo, $"Start."), LoggerType.Debug, param: ParamInfo);
 
-            string AppPath = $"{Global.assemblyLocation}{Global.s}DivaModManager.exe";
+            string AppPath = Path.Combine(Global.assemblyLocation, "DivaModManager.exe");
             string protocolName = $"divamodmanager";
             using var isRegist = Registry.CurrentUser.OpenSubKey(@"Software\Classes\DivaModManager");
             var flg = isRegist == null;
@@ -82,8 +83,8 @@ namespace DivaModManager.Common.Config
         /// </summary>
         public static void UpdateGBHandler()
         {
-            if (!OperatingSystem.IsWindows()) { return; }
-            string AppPath = $"{Global.assemblyLocation}{Global.s}DivaModManager.exe";
+            if (!OperatingSystem.IsWindows() || Global.IsWine) { return; }
+            string AppPath = Path.Combine(Global.assemblyLocation, "DivaModManager.exe");
             string protocolName = $"divamodmanager";
             using var isRegist = Registry.CurrentUser.OpenSubKey(@"Software\Classes\DivaModManager");
             var flg = isRegist != null;

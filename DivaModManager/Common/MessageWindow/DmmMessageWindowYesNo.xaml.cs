@@ -46,6 +46,10 @@ namespace DivaModManager.Common.MessageWindow
             IsCancel = false;
             Close();
         }
+        private void Check_Click(object sender, RoutedEventArgs e)
+        {
+            UpdateLayout();
+        }
         private void Window_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Escape)

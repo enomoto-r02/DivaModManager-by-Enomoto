@@ -22,7 +22,7 @@ namespace DivaModManager
     public partial class App : Application
     {
         public static readonly string Version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
-        public static readonly string TestVersion = "";
+        public static readonly string TestVersion = " for Linux/Wine (alpha)";
 
         [DllImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -346,15 +346,21 @@ namespace DivaModManager
         private static bool InitMachineCheck()
         {
             var ret = false;
-            if (!OperatingSystem.IsWindows())
-                WindowHelper.MessageBoxOpen(44);
-            else if (!Environment.Is64BitOperatingSystem)
-                WindowHelper.MessageBoxOpen(45);
+            if (OperatingSystem.IsWindows())
+            {
+                if (!Environment.Is64BitOperatingSystem)
+                    WindowHelper.MessageBoxOpen(45);
+                else
+                    ret = true;
+            }
             else
+            {
                 ret = true;
+            }
 
             return ret;
         }
+
 
         private static void InitHttpClientSetting()
         {

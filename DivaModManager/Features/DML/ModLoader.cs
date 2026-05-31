@@ -18,7 +18,7 @@ namespace DivaModManager.Features.DML
         public static readonly string CONFIG_TOML_NAME = "config.toml";
         public static string CONFIG_TOML_PATH
         {
-            get { return $"{Path.GetDirectoryName(Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].ModsFolder)}{Global.s}config.toml"; }
+            get { return Path.Combine(Path.GetDirectoryName(Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].ModsFolder), "config.toml"); }
         }
 
         /// <summary>

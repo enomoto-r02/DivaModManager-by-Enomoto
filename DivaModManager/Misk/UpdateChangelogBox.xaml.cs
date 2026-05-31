@@ -169,24 +169,27 @@ namespace DivaModManager.Misk
         public void PlayNotificationSound()
         {
             bool found = false;
-            try
+            if (OperatingSystem.IsWindows())
             {
-                using (RegistryKey key = Registry.CurrentUser.OpenSubKey(@"AppEvents\Schemes\Apps\.Default\Notification.Default\.Current"))
+                try
                 {
-                    if (key != null)
+                    using (RegistryKey key = Registry.CurrentUser.OpenSubKey(@"AppEvents\Schemes\Apps\.Default\Notification.Default\.Current"))
                     {
-                        object o = key.GetValue(null); // pass null to get (Default)
-                        if (o != null)
+                        if (key != null)
                         {
-                            SoundPlayer theSound = new((string)o);
-                            theSound.Play();
-                            found = true;
+                            object o = key.GetValue(null); // pass null to get (Default)
+                            if (o != null)
+                            {
+                                SoundPlayer theSound = new((string)o);
+                                theSound.Play();
+                                found = true;
+                            }
                         }
                     }
                 }
+                catch
+                { }
             }
-            catch
-            { }
             if (!found)
                 SystemSounds.Beep.Play(); // consolation prize
         }

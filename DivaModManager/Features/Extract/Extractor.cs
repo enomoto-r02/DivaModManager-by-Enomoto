@@ -37,7 +37,7 @@ namespace DivaModManager.Features.Extract
         private static readonly string WINRAR_CONSOLE_Registry_INSTALL_LOCATION_KEY = "InstallLocation";
         private static readonly string SEVENZIP_NAME = "7-Zip";
         private static readonly string SEVENZIP_CONSOLE_EXE_LOCAL_NAME = "7z.exe";
-        public static readonly string SEVENZIP_CONSOLE_EXE_LOCAL_PATH = $"{Global.assemblyLocation}{BIT_OS_DIR_NAME}{Global.s}{SEVENZIP_CONSOLE_EXE_LOCAL_NAME}";
+        public static readonly string SEVENZIP_CONSOLE_EXE_LOCAL_PATH = Path.Combine(Global.assemblyLocation, BIT_OS_DIR_NAME, SEVENZIP_CONSOLE_EXE_LOCAL_NAME);
         private static readonly string SEVENZIP_CONSOLE_EXE_LOCAL_HASH_SHA256 = "2bff20bd679d45166b8c2d039044a4ca16189e6d69ff9c82345b4c1306986ec4";
         private static readonly int MAX_LOOP_RECURSION = 10000;
         public static int MoveCount = 0;
@@ -101,13 +101,13 @@ namespace DivaModManager.Features.Extract
                 }
             }
 
-            if (Global.ConfigToml.WinRarCheckDialog)
+            if (Global.ConfigToml.WinRarCheckDialog && OperatingSystem.IsWindows())
             {
                 // レジストリから取得
                 var regWinRarPath = Registry.LocalMachine.OpenSubKey(WINRAR_CONSOLE_Registry_PATH);
                 if (!string.IsNullOrEmpty(regWinRarPath?.GetValue(WINRAR_CONSOLE_Registry_INSTALL_LOCATION_KEY) as string))
                 {
-                    var WinRarExePath = $"{regWinRarPath.GetValue(WINRAR_CONSOLE_Registry_INSTALL_LOCATION_KEY)}{Global.s}{WINRAR_CONSOLE_EXE_NAME}";
+                    var WinRarExePath = Path.Combine(regWinRarPath.GetValue(WINRAR_CONSOLE_Registry_INSTALL_LOCATION_KEY) as string, WINRAR_CONSOLE_EXE_NAME);
 
                     if (File.Exists(WinRarExePath))
                     {
@@ -488,7 +488,7 @@ namespace DivaModManager.Features.Extract
                     Logger.WriteLine(string.Join(" ", MeInfo, $"Archive File Check..."), LoggerType.Debug, param: ParamInfo);
                     extract.WindowLoggerViewFileName = new FileInfo(mv.FullPath).Name;
 
-                    var tempPath = $@"{Global.downloadBaseLocation}temp_{DateTime.Now:yyyyMMddHHmmssfff}";
+                    var tempPath = Path.Combine(Global.downloadBaseLocation, $"temp_{DateTime.Now:yyyyMMddHHmmssfff}");
                     extract.MoveInfoList.LastOrDefault().FullPathResult = tempPath;
                     extract.MoveInfoList.LastOrDefault().Status = ExtractInfo.EXTRACT_STATUS.ARCHIVE_EXTRACT;
                 }
@@ -497,7 +497,7 @@ namespace DivaModManager.Features.Extract
                     // なんとなくフォルダ分ける
                     Logger.WriteLine(string.Join(" ", MeInfo, $"Archive File Check..."), LoggerType.Debug, param: ParamInfo);
 
-                    var tempPath = $"{Global.downloadBaseLocation}{extract.Site}{Global.s}temp_{DateTime.Now:yyyyMMddHHmmssfff}";
+                    var tempPath = Path.Combine(Global.downloadBaseLocation, extract.Site.ToString(), $"temp_{DateTime.Now:yyyyMMddHHmmssfff}");
                     extract.MoveInfoList.LastOrDefault().FullPathResult = tempPath;
                     extract.MoveInfoList.LastOrDefault().Status = ExtractInfo.EXTRACT_STATUS.ARCHIVE_EXTRACT;
                 }
@@ -724,7 +724,7 @@ namespace DivaModManager.Features.Extract
                 }
                 foreach (var childDirectorie in Directory.GetDirectories(extractDirectoryPath, "*", SearchOption.TopDirectoryOnly))
                 {
-                    var moveRootDirectoryChild = $"{childDirectorie.Replace(childDirectorie, moveDirectoryPath)}{Global.s}{Path.GetFileName(childDirectorie)}";
+                    var moveRootDirectoryChild = Path.Combine(childDirectorie.Replace(childDirectorie, moveDirectoryPath), Path.GetFileName(childDirectorie));
                     MoveDirectoryRecursion(++loop, childDirectorie, moveRootDirectoryChild, SkipFileList);
                 }
             }
@@ -810,10 +810,10 @@ namespace DivaModManager.Features.Extract
                 var inExtractDirectoryFileNames = Directory.GetFiles(extractDirectoryRootPath, "*", SearchOption.TopDirectoryOnly);
                 foreach (var inExtractDirectoryFileName in inExtractDirectoryFileNames)
                 {
-                    var moveFilePath = $"{extractDirectoryRootPath.Replace(extractDirectoryRootPath, $"{moveDirectoryRootPath}{Global.s}")}";
+                    var moveFilePath = Path.Combine(moveDirectoryRootPath, extractDirectoryRootPath.Replace(extractDirectoryRootPath, string.Empty));
                     File.Move(
                         $"{inExtractDirectoryFileName}",
-                        $"{moveFilePath}{Path.GetFileName(inExtractDirectoryFileName)}"
+                        Path.Combine(moveFilePath, Path.GetFileName(inExtractDirectoryFileName))
                     );
                 }
                 foreach (var childDirectorie in Directory.GetDirectories(extractDirectoryRootPath, "*", SearchOption.TopDirectoryOnly))
@@ -821,15 +821,15 @@ namespace DivaModManager.Features.Extract
                     var childDirectoryName = Path.GetFileName(childDirectorie);
                     if (!FileHelper.PathStartsWith(childDirectoryName, "temp_") && childDirectorie != moveDirectoryRootPath)
                     {
-                        var moveNextDirectoryPath = $"{extractDirectoryRootPath.Replace(extractDirectoryRootPath, $"{moveDirectoryRootPath}{Global.s}{childDirectoryName}")}";
+                        var moveNextDirectoryPath = Path.Combine(moveDirectoryRootPath, childDirectoryName, extractDirectoryRootPath.Replace(extractDirectoryRootPath, string.Empty));
 
                         // 無限ループで同名のネストフォルダを作ってしまうため、暫定(制約)
-                        var currentDirectoryName = Path.GetFileName(Path.GetFullPath(moveDirectoryRootPath).Replace($"{Global.s}{Global.s}", $"{Global.s}").TrimEnd(Global.s));
-                        var createDirectoryName = Path.GetFileName(Path.GetFullPath(moveNextDirectoryPath).Replace($"{Global.s}{Global.s}", $"{Global.s}").TrimEnd(Global.s));
+                        var currentDirectoryName = Path.GetFileName(Path.GetFullPath(moveDirectoryRootPath).TrimEnd(Path.DirectorySeparatorChar));
+                        var createDirectoryName = Path.GetFileName(Path.GetFullPath(moveNextDirectoryPath).TrimEnd(Path.DirectorySeparatorChar));
                         if (currentDirectoryName != createDirectoryName)
                         {
-                            Directory.CreateDirectory($"{moveNextDirectoryPath}");
-                            MoveDirectoryInTemporaryRecursion(loop++, $"{childDirectorie}{Global.s}", moveNextDirectoryPath);
+                            Directory.CreateDirectory(moveNextDirectoryPath);
+                            MoveDirectoryInTemporaryRecursion(loop++, childDirectorie, moveNextDirectoryPath);
                         }
                     }
                 }
@@ -868,7 +868,7 @@ namespace DivaModManager.Features.Extract
                 && extract.Site != ExtractInfo.SITE.DML)
             {
                 // 新しく作るmod.jsonのパス
-                var createModJsonPath = $@"{mv.FullPathResult}{Global.s}mod.json";
+                var createModJsonPath = Path.Combine(mv.FullPathResult, "mod.json");
                 if (!File.Exists(createModJsonPath))
                 {
                     MetadataManager metadataManager = new(extract);
@@ -993,8 +993,8 @@ namespace DivaModManager.Features.Extract
                     var dirName = new DirectoryInfo(mv.FullPath).Name;
                     var setName = !string.IsNullOrEmpty(fileName) ? fileName : dirName;
 
-                    var newDir = $@"{mv.FullPathResult}{Global.s}{setName}";
-                    Directory.CreateDirectory($"{newDir}{Global.s}");
+                    var newDir = Path.Combine(mv.FullPathResult, setName);
+                    Directory.CreateDirectory(newDir);
                     nextMv.FullPathResult = newDir;
                     extract.MoveInfoList.Add(nextMv);
 
@@ -1234,7 +1234,7 @@ namespace DivaModManager.Features.Extract
                 }
 
                 var directoryName = Path.GetFileName(directoryRootPath);
-                mvResult.FullPathResult = $@"{Global.ModsFolder}{Global.s}{directoryName}";
+                mvResult.FullPathResult = Path.Combine(Global.ModsFolder, directoryName);
                 extract.MoveInfoList.Add(mvResult);
 
                 ret = true;
@@ -1253,7 +1253,7 @@ namespace DivaModManager.Features.Extract
                 var directoryName = Path.GetFileName(directoryRootPath);
 
                 // Modsフォルダ直下に同名フォルダが存在する場合、連番を付与
-                string moveDirNameBase = $@"{Global.ModsFolder}{Global.s}{directoryName}";
+                string moveDirNameBase = Path.Combine(Global.ModsFolder, directoryName);
                 string moveDirNameCopyedName = moveDirNameBase;
 
                 if (extract.Type != ExtractInfo.TYPE.CLEAN_UPDATE)
@@ -1305,8 +1305,8 @@ namespace DivaModManager.Features.Extract
                 return ret;
             }
 
-            var tempConfigPath = $@"{temporaryDirectoryModRootPath}{Global.s}config.toml";
-            var modsConfigPath = $@"{modDirectoryRootPath}{Global.s}config.toml";
+            var tempConfigPath = Path.Combine(temporaryDirectoryModRootPath, "config.toml");
+            var modsConfigPath = Path.Combine(modDirectoryRootPath, "config.toml");
 
             TomlTable tempConfig = null;
             if (File.Exists(tempConfigPath))
@@ -1326,8 +1326,8 @@ namespace DivaModManager.Features.Extract
                 Toml.TryToModel(File.ReadAllText(modsConfigPath), out modsConfig, out var diagnostics);
             }
 
-            var pathDlltemp = $"{extract.MoveInfoList.LastOrDefault().FullPath}{Global.s}{DMLUpdater.MODULE_NAME_DLL}";
-            var pathDllmods = $"{Global.ConfigJson.GetGameLocation()}{DMLUpdater.MODULE_NAME_DLL}";
+            var pathDlltemp = Path.Combine(extract.MoveInfoList.LastOrDefault().FullPath, DMLUpdater.MODULE_NAME_DLL);
+            var pathDllmods = Path.Combine(Global.ConfigJson.GetGameLocation(), DMLUpdater.MODULE_NAME_DLL);
             var is39error = false;
 
             if (tempConfig != null)
@@ -1761,6 +1761,7 @@ namespace DivaModManager.Features.Extract
                 ProcessStartInfo processInfo = new()
                 {
                     FileName = Global.ConfigJson.WinRarConsolePath,
+                    WorkingDirectory = AppDomain.CurrentDomain.BaseDirectory,
                     UseShellExecute = false,
                     Arguments = extractCommand,
                     RedirectStandardInput = false,
@@ -1787,7 +1788,6 @@ namespace DivaModManager.Features.Extract
 
                     // Rar.exe実行(Extract)
                     extractWinRarProcess.Start();
-                    extractWinRarProcess.BeginOutputReadLine();
                     extractWinRarProcess.WaitForExit();
 
                     //mv.FileAndDirectoryCountResult = FileHelper.GetFilesAndDirectoriesCount(mv.FullPathResult, extract.SkipFileWhenSizeCheckPathList);
@@ -1944,7 +1944,6 @@ namespace DivaModManager.Features.Extract
         /// 非同期にするとProcess.WaitForExitAsync()でしぬかも
         private static bool ExtractUseSevenZipLocal(ExtractInfo extract, [CallerMemberName] string caller = "")
         {
-
             var ret = true;
             var mv = extract.MoveInfoList.LastOrDefault();
 
@@ -1964,6 +1963,13 @@ namespace DivaModManager.Features.Extract
             var extractCommand = string.Empty;
             extractCommand = $"x -y -bsp1 \"{mv.FullPath}\" -o\"{mv.FullPathResult}\"";
 
+            //extractCommand = $"x -y -bsp1 \"{Path.GetRelativePath(AppDomain.CurrentDomain.BaseDirectory, mv.FullPath)}\" -o\"{Path.GetRelativePath(AppDomain.CurrentDomain.BaseDirectory, mv.FullPathResult)}\"";
+            //extractCommand = $"x -y -bsp1 \"{mv.RelativePath}\" -o\"{mv.RelativePathResult}\"";
+            //Logger.WriteLine(string.Join(" ", MeInfo, $"Global.assemblyLocation: {Global.assemblyLocation}, AppDomain.CurrentDomain.BaseDirectory : {AppDomain.CurrentDomain.BaseDirectory}"), LoggerType.Debug, param: ParamInfo);
+            //Logger.WriteLine(string.Join(" ", MeInfo, $"RelativePath : {Path.GetFileName(mv.RelativePath)}, RelativePathResult : {Path.GetFileName(mv.RelativePathResult)}"), LoggerType.Debug, param: ParamInfo);
+
+            Logger.WriteLine(string.Join(" ", MeInfo, $"extractCommand : {extractCommand}"), LoggerType.Debug, param: ParamInfo);
+
             try
             {
                 Logger.WriteLine(string.Join(" ", MeInfo, $"Extracting '{Path.GetFileName(mv.FullPath)}'..."), LoggerType.Debug, param: ParamInfo);
@@ -1976,10 +1982,12 @@ namespace DivaModManager.Features.Extract
                 var processInfo = new ProcessStartInfo()
                 {
                     FileName = fileName,
+                    WorkingDirectory = Global.assemblyLocation,
                     UseShellExecute = false,
                     Arguments = extractCommand,
                     RedirectStandardInput = false,
                     RedirectStandardOutput = true,
+                    RedirectStandardError = true,
                     CreateNoWindow = true,
                 };
 
@@ -1997,13 +2005,35 @@ namespace DivaModManager.Features.Extract
                     Logger.WriteLine(string.Join(" ", MeInfo, $"Extract by 7-Zip Start...", $"ExtractFiles: {mv.FileAndDirectoryCount}"), LoggerType.Debug, param: ParamInfo);
 
                     extractSevenZipProcess.EnableRaisingEvents = true;
-                    //extractSevenZipProcess.OutputDataReceived += DataReceivedEvent;
                     extractSevenZipProcess.Exited += new EventHandler(ExtractComplete);
 
-                    // sevenzip.exe実行(Extract)
+                    // 7z.exe実行(Extract)
                     extractSevenZipProcess.Start();
-                    extractSevenZipProcess.BeginOutputReadLine();
+                    Thread.Sleep(500);
                     extractSevenZipProcess.WaitForExit();
+
+                    // Wine実行環境などで反映が遅れる場合があるため、少し待つ
+                    // 7z.exe側の問題の可能性が高いので、ログ出力以外不要かも
+                    Logger.WriteLine(string.Join(" ", MeInfo, $"7z ExitCode:{extractSevenZipProcess.ExitCode}"), LoggerType.Debug, param: ParamInfo);
+
+                    if (extractSevenZipProcess.ExitCode != 0)
+                    {
+                        Logger.WriteLine(string.Join(" ", MeInfo, $"7z ErrorMessage:{extractSevenZipProcess.StandardError.ReadToEnd()}"), LoggerType.Debug, param: ParamInfo);
+                    }
+
+                    for (int i = 0; i < 20; i++)
+                    {
+                        Thread.Sleep(1000);
+
+                        if (mv.FullPathResult.Any())
+                            break;
+
+                        Logger.WriteLine(string.Join(" ", MeInfo, $"i:{i}, mv.FullPathResult:{mv.FullPathResult}"), LoggerType.Debug, param: ParamInfo);
+                        mv.FullPathResultInfo = FileHelper.GetFilesAndDirectoriesCount(mv.FullPathResult, extract.SkipFileWhenSizeCheckPathList);
+
+                        if (mv.FullPathResultInfo.Any())
+                            break;
+                    }
 
                     //mv.FileAndDirectoryCountResult = FileHelper.GetFilesAndDirectoriesCount(mv.FullPathResult, extract.SkipFileWhenSizeCheckPathList);
                     mv.FullPathResultInfo = FileHelper.GetFilesAndDirectoriesCount(mv.FullPathResult, extract.SkipFileWhenSizeCheckPathList);
@@ -2028,6 +2058,7 @@ namespace DivaModManager.Features.Extract
                 catch (OperationCanceledException)
                 {
                     ret = false;
+                    Logger.WriteLine(string.Join(" ", MeInfo, $"7z Extract Canceled!"), LoggerType.Debug, param: ParamInfo);
                     mv.Result = ExtractInfo.EXTRACT_RESULT.CANCELED;
                 }
                 finally
@@ -2109,12 +2140,12 @@ namespace DivaModManager.Features.Extract
             if (fullDest.Length >= 260)
                 return true;
 
-            // UNC拒否
-            if (fullDest.StartsWith(@"\\"))
+            // UNC拒否 (Windowsのみ)
+            if (OperatingSystem.IsWindows() && fullDest.StartsWith(@"\\"))
                 return true;
 
-            // NTプレフィックス拒否
-            if (fullDest.StartsWith(@"\\?\"))
+            // NTプレフィックス拒否 (Windowsのみ)
+            if (OperatingSystem.IsWindows() && fullDest.StartsWith(@"\\?\"))
                 return true;
 
             return false;

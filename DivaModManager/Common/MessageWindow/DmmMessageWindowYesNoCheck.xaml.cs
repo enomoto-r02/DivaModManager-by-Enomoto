@@ -51,6 +51,10 @@ public partial class DmmMessageWindowYesNoCheck : Window
         Checked = (bool)Check_1.IsChecked;
         Close();
     }
+    private void Check_Click(object sender, RoutedEventArgs e)
+    {
+        UpdateLayout();
+    }
     private void Window_KeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key == Key.Escape)

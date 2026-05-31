@@ -24,6 +24,7 @@ public static class Global
     public static readonly string GAME_NAME = "Hatsune Miku: Project DIVA Mega Mix+";
     public static readonly string GAME_NAME_EXE = "DivaMegaMix.exe";
     public static readonly DateTime STARTED_DATETIME = DateTime.Now;
+    public static readonly bool IsWine = Util.IsWine();
 
     public static readonly HttpClientHandler GBhandler = new HttpClientHandler { UseCookies = true };
     public static readonly HttpClient GBclient = new(GBhandler);
@@ -32,19 +33,20 @@ public static class Global
     public static readonly HttpClientHandler GitHubhandler = new HttpClientHandler { UseCookies = true };
     public static readonly HttpClient GitHubclient = new(GitHubhandler);
 
-    public static ConfigJson ConfigJson { get; set; } = new();
-    public static ConfigTomlDmm ConfigToml { get; set; } = new();
-    public static WindowLogger? WindowLogger { get; set; }
     public static readonly char s = Path.DirectorySeparatorChar;
     // Example : ".../DivaModManager/"
     public static string assemblyLocation = AppDomain.CurrentDomain.BaseDirectory;
-    public static readonly string textLogLocation = $@"{assemblyLocation}{Process.GetCurrentProcess().ProcessName}.log";
-    public static readonly string textLogBackgroundLocation = $@"{Global.assemblyLocation}{Process.GetCurrentProcess().ProcessName}_Download.log";
-    public static readonly string downloadBaseLocation = $@"{assemblyLocation}Downloads{s}";
-    public static readonly string screenshotBaseLocation = $@"{assemblyLocation}ScreenShots{s}";
-    public static readonly string temporaryWarningFilePath = $"{downloadBaseLocation}{s}DivaModManager uses this folder as a temporary folder, so do not place files under this folder";
-    public static readonly string temporaryLocationDML = $"{downloadBaseLocation}DML{s}";
-    public static readonly string temporaryLocationDMM = $"{downloadBaseLocation}DMM{s}";
+    public static readonly string textLogLocation = Path.Combine(assemblyLocation, $"{Process.GetCurrentProcess().ProcessName}.log");
+    public static readonly string textLogBackgroundLocation = Path.Combine(Global.assemblyLocation, $"{Process.GetCurrentProcess().ProcessName}_Download.log");
+    public static readonly string downloadBaseLocation = Path.Combine(assemblyLocation, $"Downloads");
+    public static readonly string screenshotBaseLocation = Path.Combine(assemblyLocation, $"ScreenShots");
+    public static readonly string temporaryWarningFilePath = Path.Combine(downloadBaseLocation, "DivaModManager uses this folder as a temporary folder, so do not place files under this folder");
+    public static readonly string temporaryLocationDML = Path.Combine(downloadBaseLocation, "DML");
+    public static readonly string temporaryLocationDMM = Path.Combine(downloadBaseLocation, "DMM");
+
+    public static ConfigJson ConfigJson { get; set; } = new();
+    public static ConfigTomlDmm ConfigToml { get; set; } = new();
+    public static WindowLogger? WindowLogger { get; set; }
 
     // GameBoxのTextBlockのテキスト値(ハードコーディング)
     // todo: この辺りはMainWindowが保持でよくない？

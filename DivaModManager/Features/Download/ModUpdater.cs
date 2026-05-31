@@ -49,7 +49,7 @@ namespace DivaModManager.Features.Download
                 foreach (var mod in selectedMods)
                 {
                     var m = mod;
-                    mods.Add(path + Global.s.ToString() + m.name);
+                    mods.Add(Path.Combine(path, m.name));
                 }
             }
             else
@@ -57,7 +57,7 @@ namespace DivaModManager.Features.Download
                 // isSelectedUpdateがfalseの場合は現状ではこのロジックに入らないはずなので、そもそも不要か？
                 // 確実にmod.jsonがあるフォルダだけを対象にしてしまうのは問題がある（mod.jsonが無いことを認知できない）
                 // modフォルダ内を全てアップデートの対象にするため、レスポンスが返ってこない可能性がある
-                mods = Directory.GetDirectories(path).Where(x => File.Exists($"{x}{Global.s}mod.json")).ToList();
+                mods = Directory.GetDirectories(path).Where(x => File.Exists(Path.Combine(x, "mod.json"))).ToList();
             }
             var GBmodList = new Dictionary<string, List<string>>();
             var DMAmodList = new Dictionary<string, Metadata>();
@@ -65,7 +65,7 @@ namespace DivaModManager.Features.Download
             var urlCounts = new Dictionary<string, int>();
             foreach (var mod in mods)
             {
-                if (!File.Exists($"{mod}{Global.s}mod.json"))
+                if (!File.Exists(Path.Combine(mod, "mod.json")))
                 {
                     Logger.WriteLine($"mod.json is not found in \"{Path.GetFileName(mod)}\"", LoggerType.Warning);
                     continue;
@@ -73,7 +73,7 @@ namespace DivaModManager.Features.Download
                 Metadata metadata;
                 try
                 {
-                    var metadataString = File.ReadAllText($"{mod}{Global.s}mod.json");
+                    var metadataString = File.ReadAllText(Path.Combine(mod, "mod.json"));
                     metadata = JsonSerializer.Deserialize<Metadata>(metadataString);
                 }
                 catch (Exception e)
@@ -111,7 +111,7 @@ namespace DivaModManager.Features.Download
                         var mod_name = Path.GetFileName(mod);
                         var dma_url = Global.DMA_API_URL_POSTS + metadata.id;
                         DMAmodList.Add(mod_name, metadata);
-                        ModInfo modInfo = new(path + Global.s + mod_name, mod_name);
+                        ModInfo modInfo = new(Path.Combine(path, mod_name), mod_name);
                         modInfoDict.Add(mod_name, modInfo);
                     }
                     else
@@ -186,7 +186,7 @@ namespace DivaModManager.Features.Download
                 Metadata metadata;
                 try
                 {
-                    metadata = JsonSerializer.Deserialize<Metadata>(File.ReadAllText($"{convertedModList[i]}{Global.s}mod.json"));
+                    metadata = JsonSerializer.Deserialize<Metadata>(File.ReadAllText(Path.Combine(convertedModList[i], "mod.json")));
                 }
                 catch (Exception e)
                 {
@@ -204,7 +204,7 @@ namespace DivaModManager.Features.Download
                     Metadata metadata;
                     try
                     {
-                        metadata = JsonSerializer.Deserialize<Metadata>(File.ReadAllText($"{modInfoDict[mod_dir_name].modFullPath}{Global.s}mod.json"));
+                        metadata = JsonSerializer.Deserialize<Metadata>(File.ReadAllText(Path.Combine(modInfoDict[mod_dir_name].modFullPath, "mod.json")));
                     }
                     catch (Exception e)
                     {
@@ -258,7 +258,7 @@ namespace DivaModManager.Features.Download
                 else
                     metadata.lastupdate = new DateTime(1970, 1, 1);
                 string metadataString = JsonSerializer.Serialize(metadata, new JsonSerializerOptions { WriteIndented = true });
-                File.WriteAllText($@"{mod}{Global.s}mod.json", metadataString);
+                File.WriteAllText(Path.Combine(mod, "mod.json"), metadataString);
                 return;
             }
             if (item.HasUpdates != null && (bool)item.HasUpdates)
@@ -284,12 +284,12 @@ namespace DivaModManager.Features.Download
                         changelogBox.ShowDialog();
                         if (changelogBox.Skip)
                         {
-                            if (File.Exists($@"{mod}{Global.s}mod.json"))
+                            if (File.Exists(Path.Combine(mod, "mod.json")))
                             {
                                 Logger.WriteLine($"Skipped update for {Path.GetFileName(mod)}...", LoggerType.Info);
                                 metadata.lastupdate = update.DateAdded;
                                 string metadataString = JsonSerializer.Serialize(metadata, new JsonSerializerOptions { WriteIndented = true });
-                                File.WriteAllText($@"{mod}{Global.s}mod.json", metadataString);
+                                File.WriteAllText(Path.Combine(mod, "mod.json"), metadataString);
                             }
                             return;
                         }
@@ -361,7 +361,7 @@ namespace DivaModManager.Features.Download
             {
                 metadata.lastupdate = item.Time;
                 string metadataString = JsonSerializer.Serialize(metadata, new JsonSerializerOptions { WriteIndented = true });
-                File.WriteAllText($@"{mod}{Global.s}mod.json", metadataString);
+                File.WriteAllText(Path.Combine(mod, "mod.json"), metadataString);
                 return;
             }
             // Compares dates of last update to current
@@ -376,12 +376,12 @@ namespace DivaModManager.Features.Download
                 changelogBox.ShowDialog();
                 if (changelogBox.Skip)
                 {
-                    if (File.Exists($@"{mod}{Global.s}mod.json"))
+                    if (File.Exists(Path.Combine(mod, "mod.json")))
                     {
                         Logger.WriteLine($"Skipped update for {Path.GetFileName(mod)}...", LoggerType.Info);
                         metadata.lastupdate = item.Time;
                         string metadataString = JsonSerializer.Serialize(metadata, new JsonSerializerOptions { WriteIndented = true });
-                        File.WriteAllText($@"{mod}{Global.s}mod.json", metadataString);
+                        File.WriteAllText(Path.Combine(mod, "mod.json"), metadataString);
                     }
                     return;
                 }
@@ -404,13 +404,13 @@ namespace DivaModManager.Features.Download
 
             try
             {
-                if (!Directory.Exists($@"{Global.assemblyLocation}{Global.s}Downloads"))
-                    Directory.CreateDirectory($@"{Global.assemblyLocation}{Global.s}Downloads");
-                if (File.Exists($@"{Global.assemblyLocation}{Global.s}Downloads{Global.s}{fileName}"))
+                if (!Directory.Exists(Path.Combine(Global.assemblyLocation, "Downloads")))
+                    Directory.CreateDirectory(Path.Combine(Global.assemblyLocation, "Downloads"));
+                if (File.Exists(Path.Combine(Global.assemblyLocation, "Downloads", fileName)))
                 {
                     try
                     {
-                        FileHelper.DeleteFile($@"{Global.assemblyLocation}{Global.s}Downloads{Global.s}{fileName}");
+                        FileHelper.DeleteFile(Path.Combine(Global.assemblyLocation, "Downloads", fileName));
                     }
                     catch (Exception e)
                     {
@@ -429,7 +429,7 @@ namespace DivaModManager.Features.Download
                     progressBox.Show();
                     progressBox.Activate();
                     // Write and download the file
-                    var filePath = $@"{Global.assemblyLocation}{Global.s}Downloads{Global.s}{fileName}";
+                    var filePath = Path.Combine(Global.assemblyLocation, "Downloads", fileName);
                     using (var fs = new FileStream(
                         filePath, FileMode.Create, FileAccess.Write, FileShare.None))
                     {
@@ -452,7 +452,7 @@ namespace DivaModManager.Features.Download
             catch (OperationCanceledException)
             {
                 // Remove the file is it will be a partially downloaded one and close up
-                FileHelper.DeleteFile(@$"{Global.assemblyLocation}{Global.s}Downloads{Global.s}{fileName}");
+                FileHelper.DeleteFile(Path.Combine(Global.assemblyLocation, "Downloads", fileName));
                 if (progressBox != null)
                 {
                     progressBox.finished = true;
@@ -481,10 +481,10 @@ namespace DivaModManager.Features.Download
             try
             {
                 // Create the downloads folder if necessary
-                if (!Directory.Exists($@"{Global.assemblyLocation}{Global.s}Downloads"))
-                    Directory.CreateDirectory($@"{Global.assemblyLocation}{Global.s}Downloads");
+                if (!Directory.Exists(Path.Combine(Global.assemblyLocation, "Downloads")))
+                    Directory.CreateDirectory(Path.Combine(Global.assemblyLocation, "Downloads"));
                 // Download the file if it doesn't already exist
-                var filePath = $@"{Global.assemblyLocation}{Global.s}Downloads{Global.s}{fileName}";
+                var filePath = Path.Combine(Global.assemblyLocation, "Downloads", fileName);
                 if (File.Exists(filePath))
                 {
                     try
@@ -508,7 +508,7 @@ namespace DivaModManager.Features.Download
                     progressBox.Activate();
                     // Write and download the file
                     using (var fs = new FileStream(
-                        $@"{Global.assemblyLocation}{Global.s}Downloads{Global.s}{fileName}", FileMode.Create, FileAccess.Write, FileShare.None))
+                        Path.Combine(Global.assemblyLocation, "Downloads", fileName), FileMode.Create, FileAccess.Write, FileShare.None))
                     {
                         var client = new HttpClient() { Timeout = TimeSpan.FromSeconds(Global.ConfigToml.DivaModArchiveApiTimeoutSec) };
                         await client.DownloadAsync(uri, fs, fileName, progress, cancellationToken.Token);
@@ -528,7 +528,7 @@ namespace DivaModManager.Features.Download
             catch (OperationCanceledException)
             {
                 // Remove the file is it will be a partially downloaded one and close up
-                FileHelper.DeleteFile($@"{Global.assemblyLocation}{Global.s}Downloads{Global.s}{fileName}");
+                FileHelper.DeleteFile(Path.Combine(Global.assemblyLocation, "Downloads", fileName));
                 if (progressBox != null)
                 {
                     progressBox.finished = true;

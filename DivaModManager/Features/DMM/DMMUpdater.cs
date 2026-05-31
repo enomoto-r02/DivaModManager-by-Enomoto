@@ -79,7 +79,7 @@ namespace DivaModManager.Features.DMM
                         MessageBox.Show($"Finished downloading {fileName}!\nDivaModManager by Enomoto will now restart.", "Notification", MessageBoxButton.OK);
                         // Update DMM
                         UpdateManager updateManager = new(AssemblyMetadata.FromAssembly(Assembly.GetEntryAssembly(), Process.GetCurrentProcess().MainModule.FileName),
-                            new LocalPackageResolver($"{Global.assemblyLocation}{Global.s}Downloads{Global.s}DMMeUpdate"), new ZipExtractor());
+                            new LocalPackageResolver(Path.Combine(Global.assemblyLocation, "Downloads", "DMMeUpdate")), new ZipExtractor());
                         if (!Version.TryParse(onlineVersion, out Version version))
                         {
                             MessageBox.Show($"Error parsing {onlineVersion}!\nCancelling update.", "Notification", MessageBoxButton.OK);
@@ -124,8 +124,9 @@ namespace DivaModManager.Features.DMM
             try
             {
                 // Create the downloads folder if necessary
-                if (!Directory.Exists(@$"{Global.assemblyLocation}{Global.s}Downloads{Global.s}DMMeUpdate"))
-                    Directory.CreateDirectory(@$"{Global.assemblyLocation}{Global.s}Downloads{Global.s}DMMeUpdate");
+                var dmmUpdateDir = Path.Combine(Global.assemblyLocation, "Downloads", "DMMeUpdate");
+                if (!Directory.Exists(dmmUpdateDir))
+                    Directory.CreateDirectory(dmmUpdateDir);
                 progressBox = new ProgressBox(cancellationToken);
                 progressBox.progressBar.Value = 0;
                 progressBox.progressText.Text = $"Downloading {fileName}";
@@ -133,8 +134,8 @@ namespace DivaModManager.Features.DMM
                 progressBox.finished = false;
                 progressBox.Show();
                 progressBox.Activate();
-                var downloadFilePath = $"{Global.assemblyLocation}{Global.s}Downloads{Global.s}DMMeUpdate{Global.s}{fileName}";
-                var moveFilePath = $@"{Global.assemblyLocation}{Global.s}Downloads{Global.s}DMMeUpdate{Global.s}{version}.zip";
+                var downloadFilePath = Path.Combine(Global.assemblyLocation, "Downloads", "DMMeUpdate", fileName);
+                var moveFilePath = Path.Combine(Global.assemblyLocation, "Downloads", "DMMeUpdate", $"{version}.zip");
                 // Write and download the file
                 using (var fs = new FileStream(
                     downloadFilePath, System.IO.FileMode.Create, FileAccess.Write, FileShare.None))
@@ -151,7 +152,7 @@ namespace DivaModManager.Features.DMM
             catch (OperationCanceledException)
             {
                 // Remove the file is it will be a partially downloaded one and close up
-                FileHelper.DeleteFile(@$"{Global.assemblyLocation}{Global.s}Downloads{Global.s}DMMeUpdate{Global.s}{fileName}");
+                FileHelper.DeleteFile(Path.Combine(Global.assemblyLocation, "Downloads", "DMMeUpdate", fileName));
                 if (progressBox != null)
                 {
                     progressBox.finished = true;

@@ -266,9 +266,9 @@ namespace DivaModManager.Features.Extract
                     SkipFilePathList = new List<string>
                     {
                         // config.tomlはテンポラリフォルダで設定を引き継いでから上書きする
-                        //$@"{Global.ModsFolder}{Global.s}{Mod.CONFIG_TOML_NAME}",
-                        $@"{Global.ModsFolder}{Global.s}{modsDirectoryName}{Global.s}{Mod.CONFIG_E_TOML_NAME}",
-                        $@"{Global.ModsFolder}{Global.s}{modsDirectoryName}{Global.s}{MetadataManager.MOD_JSON_NAME}",
+                        //Path.Combine(Global.ModsFolder, Mod.CONFIG_TOML_NAME),
+                        Path.Combine(Global.ModsFolder, modsDirectoryName, Mod.CONFIG_E_TOML_NAME),
+                        Path.Combine(Global.ModsFolder, modsDirectoryName, MetadataManager.MOD_JSON_NAME),
                     };
                     ret = true;
                 }
@@ -322,14 +322,14 @@ namespace DivaModManager.Features.Extract
                 var modsDirectoryName = new DirectoryInfo(MoveInfoList.Where(x => x.Status == EXTRACT_STATUS.MOVE_DIRECTORY).LastOrDefault().FullPathResult).FullName;
                 SkipFileWhenSizeCheckPathList = new List<string>
                 {
-                    $@"{tempDirectoryName}{Global.s}config.toml",
-                    $@"{tempDirectoryName}{Global.s}config_e.toml",
-                    $@"{tempDirectoryName}{Global.s}mod.json",
-                    //$@"{tempDirectoryName}{Global.s}preview",
-                    $@"{modsDirectoryName}{Global.s}config.toml",
-                    $@"{modsDirectoryName}{Global.s}config_e.toml",
-                    $@"{modsDirectoryName}{Global.s}mod.json",
-                    //$@"{modsDirectoryName}{Global.s}preview",
+                    Path.Combine(tempDirectoryName, "config.toml"),
+                    Path.Combine(tempDirectoryName, "config_e.toml"),
+                    Path.Combine(tempDirectoryName, "mod.json"),
+                    //Path.Combine(tempDirectoryName, "preview"),
+                    Path.Combine(modsDirectoryName, "config.toml"),
+                    Path.Combine(modsDirectoryName, "config_e.toml"),
+                    Path.Combine(modsDirectoryName, "mod.json"),
+                    //Path.Combine(modsDirectoryName, "preview"),
                 };
                 ret = true;
             }
