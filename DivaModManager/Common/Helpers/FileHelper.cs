@@ -132,32 +132,12 @@ namespace DivaModManager.Common.Helpers
                         var warnMsg = App.Current.Dispatcher.Invoke(() => WindowHelper.DMMWindowOpen(50, replaceList, path: deleteDirectoryPath));
                         if (warnMsg == WindowHelper.WindowCloseStatus.Yes)
                         {
-                            bool result = Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                // ディレクトリ削除
-                                //Directory.Delete(deleteDirectoryPath, true);
-                                Microsoft.VisualBasic.FileIO.FileSystem.DeleteDirectory(
-                                    deleteDirectoryPath,
-                                    Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs,
-                                    Microsoft.VisualBasic.FileIO.RecycleOption.SendToRecycleBin,
-                                    Microsoft.VisualBasic.FileIO.UICancelOption.DoNothing);
-                                return true;
-                            });
+                            ret = DeleteDirectoryRecursiveSafe(deleteDirectoryPath);
                         }
                     }
                     else
                     {
-                        ret = Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            // ディレクトリ削除
-                            //Directory.Delete(deleteDirectoryPath, true);
-                            Microsoft.VisualBasic.FileIO.FileSystem.DeleteDirectory(
-                                deleteDirectoryPath,
-                                Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs,
-                                Microsoft.VisualBasic.FileIO.RecycleOption.SendToRecycleBin,
-                                Microsoft.VisualBasic.FileIO.UICancelOption.DoNothing);
-                            return true;
-                        });
+                        ret = DeleteDirectoryRecursiveSafe(deleteDirectoryPath);
                     }
                 }
                 else
@@ -1139,5 +1119,64 @@ namespace DivaModManager.Common.Helpers
             }
             return checkHash;
         }
+
+        /// <summary>
+        /// シンボリックリンクを辿らない安全な再帰的ディレクトリ削除
+        /// ファイル個別に IsDivaModFileOrDirectory で検証してから削除する
+        /// </summary>
+        private static bool DeleteDirectoryRecursiveSafe(string path, int depth = 0, [CallerMemberName] string caller = "")
+        {
+            const int MAX_DEPTH = 10000;
+            if (depth > MAX_DEPTH)
+            {
+                Logger.WriteLine($"DeleteDirectoryRecursiveSafe: Max depth exceeded at '{path}'", LoggerType.Error);
+                return false;
+            }
+
+            // 管理対象外のパスはスキップ（シンボリックリンク対策）
+            var checkResult = IsDivaModFileOrDirectory(path);
+            if (checkResult is not (DIVA_PATH_RESULT.MODS_DIRECTORY
+                or DIVA_PATH_RESULT.TEMP_DIRECTORY
+                or DIVA_PATH_RESULT.DML_TEMP_DIRECTORY
+                or DIVA_PATH_RESULT.DML_TEMP_FILE
+                or DIVA_PATH_RESULT.DMM_TOML
+                or DIVA_PATH_RESULT.DMM_JSON
+                or DIVA_PATH_RESULT.DMM_LOG
+                or DIVA_PATH_RESULT.MODS_FILE
+                or DIVA_PATH_RESULT.DOWNLOAD_MOD_FILE))
+            {
+                Logger.WriteLine($"DeleteDirectoryRecursiveSafe: Skipping path outside managed area: '{path}' (result: {checkResult})", LoggerType.Warning);
+                return true;
+            }
+
+            try
+            {
+                foreach (var file in Directory.GetFiles(path, "*", SearchOption.TopDirectoryOnly))
+                {
+                    if (!DeleteFile(file))
+                    {
+                        Logger.WriteLine($"DeleteDirectoryRecursiveSafe: Failed to delete file '{file}'", LoggerType.Warning);
+                    }
+                }
+
+                foreach (var dir in Directory.GetDirectories(path, "*", SearchOption.TopDirectoryOnly))
+                {
+                    DeleteDirectoryRecursiveSafe(dir, depth + 1, caller);
+                }
+
+                if (!Directory.EnumerateFileSystemEntries(path).Any())
+                {
+                    Directory.Delete(path);
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Logger.WriteLine($"DeleteDirectoryRecursiveSafe: Error at '{path}': {ex.Message}", LoggerType.Error);
+                return false;
+            }
+        }
     }
 }
+

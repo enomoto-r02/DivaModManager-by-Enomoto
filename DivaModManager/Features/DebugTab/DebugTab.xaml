@@ -17,12 +17,12 @@
             <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
         <StackPanel Orientation="Vertical" Grid.Column="0">
-            <Button Foreground="#f2f2f2" FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" Height="30" Background="#303030" BorderBrush="#353535" VerticalAlignment="Center" HorizontalAlignment="Stretch" Margin="30,5,30,5" Content="Do Hang" Click="Hang_Click" Cursor=""/>
-            <Button Foreground="#f2f2f2" FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" Height="30" Background="#303030" BorderBrush="#353535" VerticalAlignment="Center" HorizontalAlignment="Stretch" Margin="30,5,30,5" Content="Do Window Out" Click="WindowOut_Click"/>
-            <Button Foreground="#f2f2f2" FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" Height="30" Background="#303030" BorderBrush="#353535" VerticalAlignment="Center" HorizontalAlignment="Stretch" Margin="30,5,30,5" Content="Setting Files Open" Click="SettingFilesOpen_Click"/>
+            <Button Foreground="#f2f2f2" FontFamily="{StaticResource DmmeFont}" FontWeight="Normal" Height="30" Background="#303030" BorderBrush="#353535" VerticalAlignment="Center" HorizontalAlignment="Stretch" Margin="30,5,30,5" Content="Do Hang" Click="Hang_Click" Cursor=""/>
+            <Button Foreground="#f2f2f2" FontFamily="{StaticResource DmmeFont}" FontWeight="Normal" Height="30" Background="#303030" BorderBrush="#353535" VerticalAlignment="Center" HorizontalAlignment="Stretch" Margin="30,5,30,5" Content="Do Window Out" Click="WindowOut_Click"/>
+            <Button Foreground="#f2f2f2" FontFamily="{StaticResource DmmeFont}" FontWeight="Normal" Height="30" Background="#303030" BorderBrush="#353535" VerticalAlignment="Center" HorizontalAlignment="Stretch" Margin="30,5,30,5" Content="Setting Files Open" Click="SettingFilesOpen_Click"/>
         </StackPanel>
         <StackPanel x:Name="DeveloperStackPanel" Orientation="Vertical" Grid.Column="1" Visibility="Hidden">
-            <Button x:Name="GlobalModListDumpButton" Grid.Column="0" Foreground="#f2f2f2" FontFamily="{StaticResource AnekLatin}" FontWeight="Medium" Height="30" Background="#303030" BorderBrush="#353535" VerticalAlignment="Center" HorizontalAlignment="Stretch" Margin="30,5,30,5" Content="Global_ModList_Dump_Click" Click="Global_ModList_Dump_Click"/>
+            <Button x:Name="GlobalModListDumpButton" Grid.Column="0" Foreground="#f2f2f2" FontFamily="{StaticResource DmmeFont}" FontWeight="Normal" Height="30" Background="#303030" BorderBrush="#353535" VerticalAlignment="Center" HorizontalAlignment="Stretch" Margin="30,5,30,5" Content="Global_ModList_Dump_Click" Click="Global_ModList_Dump_Click"/>
         </StackPanel>
     </Grid>
 </UserControl>

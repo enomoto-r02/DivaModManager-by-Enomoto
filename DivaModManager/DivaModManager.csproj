@@ -30,9 +30,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Assets\AnekLatin-Medium.ttf" />
-    <None Remove="Assets\AnekLatin-Regular.ttf" />
-    <None Remove="Assets\AnekLatin-SemiBold.ttf" />
     <None Remove="Assets\caution.png" />
     <None Remove="Assets\DMA_BLACK.png" />
     <None Remove="Assets\dml.png" />
@@ -42,7 +39,6 @@
     <None Remove="Assets\preview.png" />
     <None Remove="Assets\preview_enomoto.png" />
     <None Remove="Assets\github-mark-white.png" />
-    <None Remove="Assets\RobotoMono-Regular.ttf" />
     <None Remove="change_log_jp.txt" />
     <None Remove="GameBanana.png" />
     <None Remove="License.txt" />
@@ -97,9 +93,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Resource Include="Assets\AnekLatin-Medium.ttf" />
-    <Resource Include="Assets\AnekLatin-Regular.ttf" />
-    <Resource Include="Assets\AnekLatin-SemiBold.ttf" />
     <Resource Include="Assets\caution.png" />
     <Resource Include="Assets\DMA_BLACK.png" />
     <Resource Include="Assets\dml.png" />
@@ -110,7 +103,6 @@
     <Resource Include="Assets\preview.png" />
     <Resource Include="Assets\preview_enomoto.png" />
     <Resource Include="Assets\github-mark-white.png" />
-    <Resource Include="Assets\RobotoMono-Regular.ttf" />
     <Resource Include="Common\Style\Button.xaml" />
     <Resource Include="Common\Style\ComboBox.xaml" />
     <Resource Include="Common\Style\ScrollViewer.xaml" />

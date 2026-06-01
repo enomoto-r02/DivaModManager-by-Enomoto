@@ -1650,7 +1650,7 @@ namespace DivaModManager.Features.Extract
             }
 
             // 全走査した時点で結果をチェック
-            if (extract.MoveInfoList.LastOrDefault().Result == ExtractInfo.EXTRACT_RESULT.DANGEROUS_FILE)
+            if (extract.MoveInfoList.LastOrDefault().Result is ExtractInfo.EXTRACT_RESULT.DANGEROUS_FILE or ExtractInfo.EXTRACT_RESULT.EXCEPTION)
             {
                 Logger.WriteLine(string.Join(" ", MeInfo, $"End.", $"Return:{ret}", $"This file cannot be extracted because it may be dangerous. File:{mv.FullPath}"), LoggerType.Error, param: ParamInfo);
                 return ret;
@@ -2137,7 +2137,8 @@ namespace DivaModManager.Features.Extract
 
             // 長いパス拒否
             // MAX_PATH を少し余裕持って制限
-            if (fullDest.Length >= 260)
+            var maxPath = OperatingSystem.IsWindows() ? 260 : 4096;
+            if (fullDest.Length >= maxPath)
                 return true;
 
             // UNC拒否 (Windowsのみ)
@@ -2188,3 +2189,4 @@ namespace DivaModManager.Features.Extract
         }
     }
 }
+

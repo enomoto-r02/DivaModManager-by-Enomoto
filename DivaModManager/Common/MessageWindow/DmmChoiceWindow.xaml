@@ -7,7 +7,7 @@
         xmlns:fa5="http://schemas.fontawesome.com/icons/"
         mc:Ignorable="d"
         Title="DivaModManager by Enomoto" WindowStartupLocation="CenterScreen"
-        ResizeMode="NoResize" Width="500" MinWidth="500" FontFamily="{StaticResource AnekLatin}"
+        ResizeMode="NoResize" Width="500" MinWidth="500" FontFamily="{StaticResource DmmeFont}"
         Background="#202020" ShowActivated="True" Closing="Window_Closing" SizeToContent="WidthAndHeight">
     <Window.Resources>
         <DataTemplate x:Key="ChoiceTemplate">

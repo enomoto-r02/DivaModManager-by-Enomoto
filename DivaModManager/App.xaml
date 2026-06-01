@@ -8,8 +8,7 @@
                 <ResourceDictionary
                         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-                    <FontFamily x:Key="Monospace">../Assets/#Roboto Mono</FontFamily>
-                    <FontFamily x:Key="AnekLatin">../Assets/#Anek Latin</FontFamily>
+                    <FontFamily x:Key="DmmeFont">Noto Sans CJK JP Black</FontFamily>
                 </ResourceDictionary>
                 <ResourceDictionary Source="/Common/Style/Button.xaml"/>
                 <ResourceDictionary Source="/Common/Style/ComboBox.xaml"/>
