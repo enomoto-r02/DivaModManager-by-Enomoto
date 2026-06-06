@@ -1,12 +1,14 @@
 ﻿using DivaModManager.Common.Config;
 using DivaModManager.Features.Debug;
 using DivaModManager.Features.Extract;
+using Microsoft.Win32.SafeHandles;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -68,7 +70,17 @@ namespace DivaModManager.Common.Helpers
                     || isDivaModDirectory == DIVA_PATH_RESULT.DML_TEMP_DIRECTORY
                     || isDivaModDirectory == DIVA_PATH_RESULT.DMM_LOG)
                 {
-                    bool result = Application.Current.Dispatcher.Invoke(() =>
+                    if (TryFindUnsafeFileSystemReference(deleteFilePath, out var unsafeReference))
+                    {
+                        Logger.WriteLine($"DeleteFile: Cannot delete '{deleteFilePath}' because it is unsafe. {unsafeReference}", LoggerType.Error);
+                        return false;
+                    }
+
+                    var info = new FileInfo(deleteFilePath);
+                    var fullPath = Path.GetFullPath(deleteFilePath);
+                    Logger.WriteLine($"DeleteFile: File info for '{deleteFilePath}': fullPath='{fullPath}', Attributes={info.Attributes}, LinkTarget={info.LinkTarget ?? "null"}", LoggerType.Debug);
+
+                    ret = Application.Current.Dispatcher.Invoke(() =>
                     {
                         // ファイル削除
                         //System.IO.File.Delete(deleteFilePath);
@@ -120,6 +132,15 @@ namespace DivaModManager.Common.Helpers
                     || isDivaModDirectory == DIVA_PATH_RESULT.MODS_DIRECTORY
                     || isDivaModDirectory == DIVA_PATH_RESULT.DML_TEMP_DIRECTORY)
                 {
+                    if (TryFindUnsafeFileSystemReference(deleteDirectoryPath, out var unsafeReference))
+                    {
+                        var info = new DirectoryInfo(deleteDirectoryPath);
+                        var fullPath = Path.GetFullPath(deleteDirectoryPath);
+                        Logger.WriteLine($"DeleteDirectory: Directory info for '{deleteDirectoryPath}': fullPath='{fullPath}', Attributes={info.Attributes}, LinkTarget={info.LinkTarget ?? "null"}", LoggerType.Debug);
+
+                        Logger.WriteLine($"DeleteDirectory: Cannot delete '{deleteDirectoryPath}' because it contains unsafe file system references. {unsafeReference}", LoggerType.Error);
+                        return false;
+                    }
                     var delDirSize = GetDirectoriesSize(deleteDirectoryPath);
                     if (delDirSize > Global.ConfigToml.WarningDeleteDirectorySize * 1000000)   // MB
                     {
@@ -187,6 +208,16 @@ namespace DivaModManager.Common.Helpers
             var isDivaModDirectory = IsDivaModFileOrDirectory(mv.FullPathResult);
             if (isDivaModDirectory == DIVA_PATH_RESULT.MODS_DIRECTORY)
             {
+                if (TryFindUnsafeFileSystemReference(mv.FullPathResult, out var unsafeReference))
+                {
+                    var info = new DirectoryInfo(mv.FullPathResult);
+                    var fullPath = Path.GetFullPath(mv.FullPathResult);
+                    Logger.WriteLine($"DeleteDirectoryForCleanUpdate: Directory info for '{mv.FullPathResult}': fullPath='{fullPath}', Attributes={info.Attributes}, LinkTarget={info.LinkTarget ?? "null"}", LoggerType.Debug);
+
+                    Logger.WriteLine($"DeleteDirectoryForCleanUpdate: Cannot delete '{mv.FullPathResult}' because it contains unsafe file system references. {unsafeReference}", LoggerType.Error);
+                    ret = false;
+                    return ret;
+                }
                 Logger.WriteLine($"Directory Deleting for Clean Update... Path:{mv.FullPathResult}", LoggerType.Info);
                 var skipSize = DeleteDirectoryForCleanUpdateRecursion(mv.FullPathResult, extract.SkipFilePathList);
                 ret = skipSize.Count == 0;
@@ -377,6 +408,24 @@ namespace DivaModManager.Common.Helpers
                 return ret;
             }
 
+            try
+            {
+                var attributes = new DirectoryInfo(targetPath).Attributes;
+                if (attributes == FileAttributes.ReparsePoint)
+                {
+                    // シンボリックリンクは拒否
+                    Logger.WriteLine($"Error! Directory is resolve link. targetPath:{targetPath}", LoggerType.Error, param: ParamInfo);
+                    return DIVA_PATH_RESULT.NOT;
+                }
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                // Proton のサンドボックスでアクセスできない場合はログに残し、削除対象をシンボリックリンクとして扱わない
+                Console.Error.WriteLine($"権限エラー: {ex.Message}");
+                return DIVA_PATH_RESULT.NOT;
+            }
+
+
             // tmp directory
             var checkTmpDirectoryPath = Path.GetFullPath(Path.Combine(Global.assemblyLocation, "Downloads", "temp_")).ToLowerInvariant();
             checkTmpDirectoryResult =
@@ -405,7 +454,7 @@ namespace DivaModManager.Common.Helpers
             checkDmmSevenZipResult = _targetFullPath == Path.GetFullPath(Extractor.SEVENZIP_CONSOLE_EXE_LOCAL_PATH).ToLowerInvariant();
 
             // Rar.exe
-            checkWinRarResult = _targetFullPath == (!string.IsNullOrEmpty(Global.ConfigJson?.WinRarConsolePath) ? Path.GetFullPath(Global.ConfigJson.WinRarConsolePath).ToLowerInvariant() : null);
+            //checkWinRarResult = _targetFullPath == (!string.IsNullOrEmpty(Global.ConfigJson?.WinRarConsolePath) ? Path.GetFullPath(Global.ConfigJson.WinRarConsolePath).ToLowerInvariant() : null);
 
             // DML Download File
             checkDmlDownloadResult = FileHelper.PathStartsWith(_targetFullPath, (Path.GetFullPath(Global.ConfigJson.GetGameLocation()).ToLowerInvariant()));
@@ -424,7 +473,7 @@ namespace DivaModManager.Common.Helpers
             else if (checkModsResult)
                 ret = Directory.Exists(_targetFullPath) ? DIVA_PATH_RESULT.MODS_DIRECTORY : DIVA_PATH_RESULT.MODS_FILE;
             else if (checkDmlTempFileResult)
-                ret = System.IO.File.Exists(_targetFullPath) ? DIVA_PATH_RESULT.DML_TEMP_DIRECTORY : DIVA_PATH_RESULT.NOT;
+                ret = File.Exists(_targetFullPath) ? DIVA_PATH_RESULT.DML_TEMP_DIRECTORY : DIVA_PATH_RESULT.NOT;
             else if (checkSettingResult)
                 ret = DIVA_PATH_RESULT.DMM_TOML;
             else if (checkDmmLogResult)
@@ -436,7 +485,7 @@ namespace DivaModManager.Common.Helpers
             else if (checkDmlDownloadResult)
                 ret = Directory.Exists(_targetFullPath) ? DIVA_PATH_RESULT.DML_DOWNLOAD_FILE : DIVA_PATH_RESULT.NOT;
             else if (checkDownloadFileResult)
-                ret = System.IO.File.Exists(_targetFullPath) ? DIVA_PATH_RESULT.DOWNLOAD_MOD_FILE : DIVA_PATH_RESULT.NOT;
+                ret = File.Exists(_targetFullPath) ? DIVA_PATH_RESULT.DOWNLOAD_MOD_FILE : DIVA_PATH_RESULT.NOT;
 
             ParamInfo += $", isDownloadDir:{isDownloadDir}, isModsDir:{isModsDir}, Return:{ret}";
             Logger.WriteLine($"{MeInfo} End. Return:{ret}, Path:\"{targetPath}\"", LoggerType.Debug, param: ParamInfo);
@@ -1121,6 +1170,201 @@ namespace DivaModManager.Common.Helpers
         }
 
         /// <summary>
+        /// 指定パス以下にシンボリックリンク、ジャンクション、ハードリンクなど、
+        /// 他のパスを参照し得るファイルシステム要素が含まれているか再帰チェックする
+        /// </summary>
+        private static bool TryFindUnsafeFileSystemReference(string path, out string reason, [CallerMemberName] string caller = "")
+        {
+            string MeInfo = Logger.GetMeInfo(new StackFrame());
+            string ParamInfo = $"caller:{caller}, id:{Thread.CurrentThread.ManagedThreadId}";
+            Logger.WriteLine(string.Join(" ", $"{MeInfo}", "Start.", $"path:{path}"), LoggerType.Debug, param: ParamInfo);
+            bool ret = false;
+
+            reason = string.Empty;
+
+            try
+            {
+                if (string.IsNullOrWhiteSpace(path))
+                {
+                    Logger.WriteLine(string.Join(" ", $"{MeInfo}", $"End. string.IsNullOrWhiteSpace return:{ret}"), LoggerType.Debug, param: ParamInfo);
+                    return ret;
+                }
+
+
+                if (File.Exists(path))
+                {
+                    bool IsUnsafeFileSystemInfoResult = IsUnsafeFileSystemInfo(new FileInfo(path), out reason);
+                    Logger.WriteLine(string.Join(" ", $"{MeInfo}", $"End. File.Exists IsUnsafeFileSystemInfoResult:{IsUnsafeFileSystemInfoResult}"), LoggerType.Debug, param: ParamInfo);
+                    return IsUnsafeFileSystemInfoResult;
+                }
+
+
+                if (!Directory.Exists(path))
+                {
+                    Logger.WriteLine(string.Join(" ", $"{MeInfo}", $"End. !Directory.Exists return:{ret}"), LoggerType.Debug, param: ParamInfo);
+                    return ret;
+                }
+
+                var rootDirectory = new DirectoryInfo(path);
+                if (IsUnsafeFileSystemInfo(rootDirectory, out reason))
+                {
+                    ret = true;
+                    Logger.WriteLine(string.Join(" ", $"{MeInfo}", $"End. IsUnsafeFileSystemInfo return:{ret}"), LoggerType.Debug, param: ParamInfo);
+                    return ret;
+                }
+
+                bool TryFindUnsafeFileSystemReferenceRecursiveResult = TryFindUnsafeFileSystemReferenceRecursive(rootDirectory, 0, out reason);
+                Logger.WriteLine(string.Join(" ", $"{MeInfo}", $"End. TryFindUnsafeFileSystemReferenceRecursiveResult:{TryFindUnsafeFileSystemReferenceRecursiveResult}"), LoggerType.Debug, param: ParamInfo);
+                return TryFindUnsafeFileSystemReferenceRecursiveResult;
+            }
+            catch (Exception ex)
+            {
+                reason = $"Error scanning '{path}': {ex.Message}";
+                Logger.WriteLine($"TryFindUnsafeFileSystemReference: {reason}, ex.Message:{ex.Message}, ex.StackTrace:{ex.StackTrace}", LoggerType.Error);
+                return false;
+            }
+        }
+
+        private static bool TryFindUnsafeFileSystemReferenceRecursive(DirectoryInfo directory, int depth, out string reason)
+        {
+            const int MAX_DEPTH = 10000;
+            reason = string.Empty;
+
+            if (depth > MAX_DEPTH)
+            {
+                reason = $"Max depth exceeded at '{directory.FullName}'";
+                Logger.WriteLine($"TryFindUnsafeFileSystemReference: {reason}", LoggerType.Error);
+                return true;
+            }
+
+            try
+            {
+                foreach (var entry in directory.EnumerateFileSystemInfos("*", SearchOption.TopDirectoryOnly))
+                {
+                    if (IsUnsafeFileSystemInfo(entry, out reason))
+                        return true;
+
+                    if (entry is DirectoryInfo childDirectory)
+                    {
+                        if (TryFindUnsafeFileSystemReferenceRecursive(childDirectory, depth + 1, out reason))
+                            return true;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                reason = $"Error scanning '{directory.FullName}': {ex.Message}";
+                Logger.WriteLine($"TryFindUnsafeFileSystemReference: {reason}", LoggerType.Error);
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool IsUnsafeFileSystemInfo(FileSystemInfo fileSystemInfo, out string reason)
+        {
+            reason = string.Empty;
+
+            try
+            {
+                fileSystemInfo.Refresh();
+
+                if ((fileSystemInfo.Attributes & FileAttributes.ReparsePoint) != 0)
+                {
+                    reason = $"Reparse point found: '{fileSystemInfo.FullName}'";
+                    return true;
+                }
+
+                if (!string.IsNullOrEmpty(fileSystemInfo.LinkTarget))
+                {
+                    reason = $"Symbolic link found: '{fileSystemInfo.FullName}' -> '{fileSystemInfo.LinkTarget}'";
+                    return true;
+                }
+
+                if (fileSystemInfo is FileInfo fileInfo && HasMultipleHardLinks(fileInfo.FullName, out var linkCount))
+                {
+                    reason = $"Hard link found: '{fileInfo.FullName}' has {linkCount} links";
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                reason = $"Error scanning '{fileSystemInfo.FullName}': {ex.Message}";
+                Logger.WriteLine($"IsUnsafeFileSystemInfo: {reason}", LoggerType.Error);
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool HasMultipleHardLinks(string path, out uint linkCount)
+        {
+            linkCount = 1;
+
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                return false;
+
+            try
+            {
+                using var handle = CreateFileW(
+                    path,
+                    FILE_READ_ATTRIBUTES,
+                    FileShare.ReadWrite | FileShare.Delete,
+                    IntPtr.Zero,
+                    FileMode.Open,
+                    FILE_FLAG_BACKUP_SEMANTICS,
+                    IntPtr.Zero);
+
+                if (handle.IsInvalid)
+                    return false;
+
+                if (!GetFileInformationByHandle(handle, out var info))
+                    return false;
+
+                linkCount = info.NumberOfLinks;
+                return linkCount > 1;
+            }
+            catch (Exception ex)
+            {
+                Logger.WriteLine($"HasMultipleHardLinks: Error scanning '{path}': {ex.Message}", LoggerType.Error);
+                return true;
+            }
+        }
+
+        private const uint FILE_READ_ATTRIBUTES = 0x80;
+        private const uint FILE_FLAG_BACKUP_SEMANTICS = 0x02000000;
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern SafeFileHandle CreateFileW(
+            string lpFileName,
+            uint dwDesiredAccess,
+            FileShare dwShareMode,
+            IntPtr lpSecurityAttributes,
+            FileMode dwCreationDisposition,
+            uint dwFlagsAndAttributes,
+            IntPtr hTemplateFile);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool GetFileInformationByHandle(
+            SafeFileHandle hFile,
+            out ByHandleFileInformation lpFileInformation);
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct ByHandleFileInformation
+        {
+            public uint FileAttributes;
+            public System.Runtime.InteropServices.ComTypes.FILETIME CreationTime;
+            public System.Runtime.InteropServices.ComTypes.FILETIME LastAccessTime;
+            public System.Runtime.InteropServices.ComTypes.FILETIME LastWriteTime;
+            public uint VolumeSerialNumber;
+            public uint FileSizeHigh;
+            public uint FileSizeLow;
+            public uint NumberOfLinks;
+            public uint FileIndexHigh;
+            public uint FileIndexLow;
+        }
+
+        /// <summary>
         /// シンボリックリンクを辿らない安全な再帰的ディレクトリ削除
         /// ファイル個別に IsDivaModFileOrDirectory で検証してから削除する
         /// </summary>
@@ -1133,40 +1377,32 @@ namespace DivaModManager.Common.Helpers
                 return false;
             }
 
-            // 管理対象外のパスはスキップ（シンボリックリンク対策）
-            var checkResult = IsDivaModFileOrDirectory(path);
-            if (checkResult is not (DIVA_PATH_RESULT.MODS_DIRECTORY
-                or DIVA_PATH_RESULT.TEMP_DIRECTORY
-                or DIVA_PATH_RESULT.DML_TEMP_DIRECTORY
-                or DIVA_PATH_RESULT.DML_TEMP_FILE
-                or DIVA_PATH_RESULT.DMM_TOML
-                or DIVA_PATH_RESULT.DMM_JSON
-                or DIVA_PATH_RESULT.DMM_LOG
-                or DIVA_PATH_RESULT.MODS_FILE
-                or DIVA_PATH_RESULT.DOWNLOAD_MOD_FILE))
-            {
-                Logger.WriteLine($"DeleteDirectoryRecursiveSafe: Skipping path outside managed area: '{path}' (result: {checkResult})", LoggerType.Warning);
-                return true;
-            }
-
+            // 呼び出し元 (DeleteDirectory) で IsDivaModFileOrDirectory + TryFindUnsafeFileSystemReference の事前検証済み
             try
             {
                 foreach (var file in Directory.GetFiles(path, "*", SearchOption.TopDirectoryOnly))
                 {
                     if (!DeleteFile(file))
                     {
-                        Logger.WriteLine($"DeleteDirectoryRecursiveSafe: Failed to delete file '{file}'", LoggerType.Warning);
+                        Logger.WriteLine($"DeleteDirectoryRecursiveSafe: Failed to delete file '{file}'", LoggerType.Error);
+                        return false;
                     }
                 }
 
                 foreach (var dir in Directory.GetDirectories(path, "*", SearchOption.TopDirectoryOnly))
                 {
-                    DeleteDirectoryRecursiveSafe(dir, depth + 1, caller);
+                    if (!DeleteDirectoryRecursiveSafe(dir, depth + 1, caller))
+                        return false;
                 }
 
                 if (!Directory.EnumerateFileSystemEntries(path).Any())
                 {
+                    var info = new DirectoryInfo(path);
+                    var fullPath = Path.GetFullPath(path);
+                    Logger.WriteLine($"DeleteDirectoryRecursiveSafe: Directory info for '{path}': fullPath='{fullPath}', Attributes={info.Attributes}, LinkTarget={info.LinkTarget ?? "null"}", LoggerType.Debug);
+
                     Directory.Delete(path);
+                    Logger.WriteLine($"DeleteDirectoryRecursiveSafe: Directory info for '{path}'", LoggerType.Debug);
                 }
 
                 return true;

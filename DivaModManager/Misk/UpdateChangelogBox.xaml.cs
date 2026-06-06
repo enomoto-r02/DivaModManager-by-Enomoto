@@ -18,6 +18,14 @@ namespace DivaModManager.Misk
         public bool YesNo = false;
         public bool Skip = false;
 
+        /// <summary>
+        /// ModCleanUpdateGB
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="packageName"></param>
+        /// <param name="text"></param>
+        /// <param name="preview"></param>
+        /// <param name="skip"></param>
         public UpdateChangelogBox(GameBananaAPIV4 item, string packageName, string text, Uri preview, bool skip = false)
         {
             InitializeComponent();
@@ -55,6 +63,15 @@ namespace DivaModManager.Misk
             SizeLabel.Text = $"File Size(about) : {FileHelper.GetDirectorySizeView10(item.Files[0].Filesize)}";
             PlayNotificationSound();
         }
+
+        /// <summary>
+        /// CheckForDMLUpdate、CheckForDMMUpdate
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="packageName"></param>
+        /// <param name="text"></param>
+        /// <param name="preview"></param>
+        /// <param name="skip"></param>
         public UpdateChangelogBox(Release release, string packageName, string text, Uri preview, bool skip = false, bool loader = false)
         {
             InitializeComponent();
@@ -74,7 +91,7 @@ namespace DivaModManager.Misk
             }
             else
             {
-                PreviewImage.Source = new BitmapImage(new Uri("pack://application:,,,/DivaModManager;component/Assets/noimage.png"));
+                PreviewImage.Source = new BitmapImage(new Uri("pack://application:,,,/DivaModManager;component/Assets/preview_enomoto.png"));
                 PreviewImage.Visibility = Visibility.Visible;
             }
             Title = $"{packageName} Changelog";
@@ -100,6 +117,15 @@ namespace DivaModManager.Misk
             });
             PlayNotificationSound();
         }
+
+        /// <summary>
+        /// ModCleanUpdateDMA
+        /// </summary>
+        /// <param name="post"></param>
+        /// <param name="packageName"></param>
+        /// <param name="text"></param>
+        /// <param name="skip"></param>
+        /// <param name="loader"></param>
         public UpdateChangelogBox(DivaModArchivePost post, string packageName, string text, bool skip = false, bool loader = false)
         {
             InitializeComponent();

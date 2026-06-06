@@ -1,6 +1,5 @@
 ﻿using DivaModManager.Common.Helpers;
 using DivaModManager.Features.Debug;
-using Onova.Services;
 using SharpCompress.Common;
 using SharpCompress.Readers;
 using System;
@@ -12,14 +11,14 @@ using System.Threading.Tasks;
 
 namespace DivaModManager.Features.DMM
 {
-    public class ZipExtractor : IPackageExtractor
+    public static class ZipExtractor
     {
-        // call by CheckForDMMUpdate()
-        public async Task ExtractPackageAsync(string sourceFilePath, string destDirPath,
+        public static async Task ExtractAsync(string sourceFilePath, string destDirPath,
             IProgress<double>? progress = null, CancellationToken cancellationToken = default)
         {
             try
             {
+                Directory.CreateDirectory(destDirPath);
                 using (Stream stream = File.OpenRead(sourceFilePath))
                 using (var reader = ReaderFactory.OpenReader(stream))
                 {

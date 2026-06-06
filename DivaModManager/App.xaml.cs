@@ -22,7 +22,7 @@ namespace DivaModManager
     public partial class App : Application
     {
         public static readonly string Version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
-        public static readonly string TestVersion = " for Linux/Steam Deck (alpha2)";
+        public static readonly string TestVersion = " (alpha3)";
 
         [DllImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -66,12 +66,26 @@ namespace DivaModManager
 
             // 設定ファイル初期化
             // 初期化順をミスるとNull Pointer Exceptionで落ちるので注意
-            WindowListClass.InitWindowList();
-
-            if (!InitMachineCheck())
+            if (!WindowListClass.InitWindowList())
+            {
                 Environment.Exit(0);
+            }
+            if (!Global.IsWindows)
+            {
+                Environment.Exit(0);
+            }
+            if (Global.IsWine)
+            {
+                var ret = WindowHelper.MessageBoxOpen(78);
+                if (ret == MessageBoxResult.Cancel)
+                {
+                    Environment.Exit(0);
+                }
+            }
             if (!TestVersionMessageView())
+            {
                 Environment.Exit(0);
+            }
 
             ConfigJson.InitConfig();
             ConfigJson.SetupGame();
@@ -337,28 +351,6 @@ namespace DivaModManager
                 if (ret.Result == WindowHelper.WindowCloseStatus.YesCheck || ret.Result == WindowHelper.WindowCloseStatus.NoCheck)
                     Global.ConfigToml.LanguageDialog = false;
             }
-        }
-
-        /// <summary>
-        /// Windows(64bit)チェック
-        /// </summary>
-        /// <returns></returns>
-        private static bool InitMachineCheck()
-        {
-            var ret = false;
-            if (OperatingSystem.IsWindows())
-            {
-                if (!Environment.Is64BitOperatingSystem)
-                    WindowHelper.MessageBoxOpen(45);
-                else
-                    ret = true;
-            }
-            else
-            {
-                ret = true;
-            }
-
-            return ret;
         }
 
 

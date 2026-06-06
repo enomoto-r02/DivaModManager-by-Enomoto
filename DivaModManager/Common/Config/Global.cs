@@ -24,6 +24,7 @@ public static class Global
     public static readonly string GAME_NAME = "Hatsune Miku: Project DIVA Mega Mix+";
     public static readonly string GAME_NAME_EXE = "DivaMegaMix.exe";
     public static readonly DateTime STARTED_DATETIME = DateTime.Now;
+    public static readonly bool IsWindows = Util.IsWindows64bit();
     public static readonly bool IsWine = Util.IsWine();
 
     public static readonly HttpClientHandler GBhandler = new HttpClientHandler { UseCookies = true };
@@ -40,7 +41,7 @@ public static class Global
     public static readonly string textLogBackgroundLocation = Path.Combine(Global.assemblyLocation, $"{Process.GetCurrentProcess().ProcessName}_Download.log");
     public static readonly string downloadBaseLocation = Path.Combine(assemblyLocation, $"Downloads");
     public static readonly string screenshotBaseLocation = Path.Combine(assemblyLocation, $"ScreenShots");
-    public static readonly string temporaryWarningFilePath = Path.Combine(downloadBaseLocation, "DivaModManager uses this folder as a temporary folder, so do not place files under this folder");
+    public static readonly string temporaryWarningFilePath = Path.Combine(downloadBaseLocation, "Do not place files under this folder");
     public static readonly string temporaryLocationDML = Path.Combine(downloadBaseLocation, "DML");
     public static readonly string temporaryLocationDMM = Path.Combine(downloadBaseLocation, "DMM");
 

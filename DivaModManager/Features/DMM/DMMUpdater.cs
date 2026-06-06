@@ -4,9 +4,6 @@ using DivaModManager.Features.Debug;
 using DivaModManager.Features.Download;
 using DivaModManager.Misk;
 using Octokit;
-using Onova;
-using Onova.Models;
-using Onova.Services;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -75,20 +72,12 @@ namespace DivaModManager.Features.DMM
                         string fileName = release.Assets.First().Name;
                         // Download the update
                         await DownloadDMM(downloadUrl, fileName, onlineVersion, new Progress<DownloadProgress>(ReportUpdateProgress), cancellationToken);
-                        // Notify that the update is about to happen
-                        MessageBox.Show($"Finished downloading {fileName}!\nDivaModManager by Enomoto will now restart.", "Notification", MessageBoxButton.OK);
-                        // Update DMM
-                        UpdateManager updateManager = new(AssemblyMetadata.FromAssembly(Assembly.GetEntryAssembly(), Process.GetCurrentProcess().MainModule.FileName),
-                            new LocalPackageResolver(Path.Combine(Global.assemblyLocation, "Downloads", "DMMeUpdate")), new ZipExtractor());
-                        if (!Version.TryParse(onlineVersion, out Version version))
-                        {
-                            MessageBox.Show($"Error parsing {onlineVersion}!\nCancelling update.", "Notification", MessageBoxButton.OK);
-                            return false;
-                        }
-                        // Updates and restarts DMM
-                        await updateManager.PrepareUpdateAsync(version);
-                        updateManager.LaunchUpdater(version);
-                        return true;
+                        // Extract the downloaded update to Downloads\DMMe
+                        var extractDir = Path.Combine(Global.assemblyLocation, "Downloads", "DMMe");
+                        var downloadedZip = Path.Combine(Global.assemblyLocation, "Downloads", "DMMe", $"{onlineVersion}.zip");
+                        await ZipExtractor.ExtractAsync(downloadedZip, extractDir);
+                        MessageBox.Show($"Update downloaded and extracted to {extractDir}!\nPlease manually overwrite the existing application files.", "Notification", MessageBoxButton.OK);
+                        return false;
                     }
                     else
                         Logger.WriteLine($"Update for DivaModManager by Enomoto {onlineVersion} cancelled.", LoggerType.Info);
@@ -124,7 +113,7 @@ namespace DivaModManager.Features.DMM
             try
             {
                 // Create the downloads folder if necessary
-                var dmmUpdateDir = Path.Combine(Global.assemblyLocation, "Downloads", "DMMeUpdate");
+                var dmmUpdateDir = Path.Combine(Global.assemblyLocation, "Downloads", "DMMe");
                 if (!Directory.Exists(dmmUpdateDir))
                     Directory.CreateDirectory(dmmUpdateDir);
                 progressBox = new ProgressBox(cancellationToken);
@@ -134,8 +123,8 @@ namespace DivaModManager.Features.DMM
                 progressBox.finished = false;
                 progressBox.Show();
                 progressBox.Activate();
-                var downloadFilePath = Path.Combine(Global.assemblyLocation, "Downloads", "DMMeUpdate", fileName);
-                var moveFilePath = Path.Combine(Global.assemblyLocation, "Downloads", "DMMeUpdate", $"{version}.zip");
+                var downloadFilePath = Path.Combine(Global.assemblyLocation, "Downloads", "DMMe", fileName);
+                var moveFilePath = Path.Combine(Global.assemblyLocation, "Downloads", "DMMe", $"{version}.zip");
                 // Write and download the file
                 using (var fs = new FileStream(
                     downloadFilePath, System.IO.FileMode.Create, FileAccess.Write, FileShare.None))
@@ -152,7 +141,7 @@ namespace DivaModManager.Features.DMM
             catch (OperationCanceledException)
             {
                 // Remove the file is it will be a partially downloaded one and close up
-                FileHelper.DeleteFile(Path.Combine(Global.assemblyLocation, "Downloads", "DMMeUpdate", fileName));
+                FileHelper.DeleteFile(Path.Combine(Global.assemblyLocation, "Downloads", "DMMe", fileName));
                 if (progressBox != null)
                 {
                     progressBox.finished = true;

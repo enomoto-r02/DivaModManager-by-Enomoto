@@ -59,6 +59,12 @@ namespace DivaModManager.Features.Download
                     }
                     else if (res == WindowHelper.WindowCloseStatus.Yes)
                     {
+                        //// Windows以外の場合はディレクトリトラバーサルの可能性があるのでアップデートは実行しない
+                        //if (!Global.IsWindows)
+                        //{
+                        //    await WindowHelper.DMMWindowOpenAsync(27);
+                        //    return;
+                        //}
                         await WindowHelper.DMMWindowOpenAsync(27);
                         return;
                     }

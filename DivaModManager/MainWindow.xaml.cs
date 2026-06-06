@@ -54,7 +54,7 @@ namespace DivaModManager
         private string defaultText = "Welcome to DivaModManager by Enomoto!\n\n" +
             "To show metadata here:\nRight Click Row > Configure Mod and add author, version, and/or date fields" +
             "\nand/or Right Click Row > Fetch Metadata and confirm the GameBanana or DivaModArchive URL of the mod";
-        private ObservableCollection<string> LauncherOptions = new(new string[] { "Executable", "Steam" });
+        private ObservableCollection<string> LauncherOptions = new ObservableCollection<string> { "Executable", "Steam" };
         ListSortDirection direction = ListSortDirection.Ascending;
         // Modsフォルダ監視
         private DMMFileSystemWatcher ModsWatcher;
@@ -67,6 +67,8 @@ namespace DivaModManager
         private Action ModGridAddAfterAction = default;
         // 検索時の条件保持
         private SearchMod ModGridSearch = new();
+        // DMMeやDMLバージョンなど
+        private string InfoText = string.Empty;
 
         #region IDisposable 実装
 
@@ -324,7 +326,7 @@ namespace DivaModManager
             }
             else if (!Global.ConfigJson.CurrentConfig.FirstOpen)
             {
-                Logger.WriteLine($"Setup is not yet complete because the DivaModLoader files is missing. \"{UpdateCheckButton.Content}\" Button to install DivaModLoader!", LoggerType.Warning);
+                Logger.WriteLine($"Setup is not yet complete because the DivaModLoader files is missing. \"{CoreUpdateButton.Content}\" Button to install DivaModLoader!", LoggerType.Warning);
             }
             else if (Global.ConfigJson.IsNew)
             {
@@ -379,6 +381,8 @@ namespace DivaModManager
 
                     foreach (var modPath in modPaths)
                     {
+                        Logger.WriteLine(string.Join(" ", MeInfo, $"modPaths foreach.", $"modPaths in '{modPath}'"), LoggerType.Debug);
+
                         // Task.Run でラップするか、ProcessModDirectoryAsync をそのまま await する
                         // 並列化する場合: tasks.Add(ProcessModDirectoryAsync(modPath));
                         // 逐次処理の場合: await ProcessModDirectoryAsync(modPath);
@@ -441,7 +445,7 @@ namespace DivaModManager
         #region RefreshAsync の分割メソッド群
 
         /// <summary>
-        /// 
+        /// ModをModList_Allに追加する
         /// </summary>
         /// <param name="modPath"></param>
         /// <param name="caller"></param>
@@ -608,35 +612,29 @@ namespace DivaModManager
             var enabledCount = Global.ModList_All.Count(x => x.enabled);
             var totalCount = Global.ModList_All.Count;
 
-            var stats = new List<string>();
+            var stats = string.Empty;
+            var infos = new List<string>();
             if (Global.ConfigJson.CurrentConfig.FirstOpen && totalCount > 0)
             {
-                stats.Add($"{enabledCount}/{totalCount} mods");
+                stats = $"{enabledCount}/{totalCount} mods";
             }
+            Stats.Text = stats;
+
             if (Global.ConfigJson.CurrentConfig.FirstOpen)
             {
                 Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].UpdateModLoaderVersion();
                 if (string.IsNullOrEmpty(Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].ModLoaderVersion))
-                    stats.Add($"DML");
+                    infos.Add($"DivaModLoader");
                 else
-                    stats.Add($"DML v{Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].ModLoaderVersion}");
+                    infos.Add($"DivaModLoader v{Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].ModLoaderVersion}");
             }
             else
             {
-                stats.Add($"DML(nothing)");
+                infos.Add($"DivaModLoader(nothing)");
             }
-            stats.Add($"DMMe v{App.Version}{App.TestVersion}");
-            var externalExtractorUse = Global.ConfigToml.ExternalExtractorUseView();
-            if (Global.ConfigToml.WinRarUse || Global.ConfigToml.SevenZipUse)
-            {
-                stats.Add(Global.ConfigToml.ExternalExtractorUseView());
-            }
-            var text = string.Empty;
-            foreach (var stat in stats)
-            {
-                text += $"[{stat}] ";
-            }
-            Stats.Text = text;
+            infos.Add($"DivaModManager by Enomoto v{App.Version}{App.TestVersion}");
+
+            InfoText = string.Join("\n", infos);
 
             Logger.WriteLine(string.Join(" ", MeInfo, $"End."), LoggerType.Debug, param: ParamInfo);
         }
@@ -867,6 +865,11 @@ namespace DivaModManager
             ProcessHelper.TryStartProcess($"https://github.com/enomoto-r02/DivaModManager-by-Enomoto/releases");
         }
 
+        private void GitHubSponsorsButton_Click(object sender, RoutedEventArgs e)
+        {
+            ProcessHelper.TryStartProcess($"https://github.com/sponsors/enomoto-r02?frequency=one-time");
+        }
+
         private void GameBananaButton_Click(object sender, RoutedEventArgs e)
         {
             var id = "";
@@ -933,9 +936,14 @@ namespace DivaModManager
 
                 for (var i = 0; i < element.ContextMenu.Items.Count; i++)
                 {
-                    if (element.ContextMenu.Items[i] is MenuItem contextMenu && inactiveList.Contains(contextMenu.Name))
+                    bool enabled = false;
+                    if (element.ContextMenu.Items[i] is MenuItem contextMenu)
                     {
-                        contextMenu.IsEnabled = false;
+                        if (!inactiveList.Contains(contextMenu.Name) && Global.IsWindows)
+                        {
+                            enabled = true;
+                        }
+                        contextMenu.IsEnabled = enabled;
                     }
                 }
             }
@@ -946,6 +954,8 @@ namespace DivaModManager
             string MeInfo = Logger.GetMeInfo(new StackFrame());
             string ParamInfo = $"id:{Thread.CurrentThread.ManagedThreadId}";
             Logger.WriteLine(string.Join(" ", MeInfo, $"Start."), LoggerType.Debug, param: ParamInfo);
+
+            if (!Global.IsWindows) return;
 
             var selectedMods = ModGrid.SelectedItems.OfType<Mod>().ToList();
             if (!selectedMods.Any()) return;
@@ -967,23 +977,29 @@ namespace DivaModManager
 
                     try
                     {
-                        await Task.Run(() => FileHelper.DeleteDirectory(modPath));
+                        var deleteResult = await Task.Run(() => FileHelper.DeleteDirectory(modPath));
+                        if (!deleteResult)
+                        {
+                            Logger.WriteLine($@"Failed to delete '{modPath}'", LoggerType.Warning);
+                            await Dispatcher.InvokeAsync(() => MessageBox.Show($"Cannot delete '{row.name}':\nThe folder contains symbolic links, junctions, hard links, or another unsafe file system reference. Please remove them manually first.", "Delete Error", MessageBoxButton.OK, MessageBoxImage.Warning));
+                            continue;
+                        }
                         Logger.WriteLine(string.Join(" ", MeInfo, $"Successfully delete '{modPath}'"), LoggerType.Debug);
                     }
                     catch (IOException ex)
                     {
                         Logger.WriteLine($@"IO error deleting '{modPath}': {ex.Message}", LoggerType.Error);
-                        await Dispatcher.InvokeAsync(() => MessageBox.Show($"Could not delete '{row.name}':\n{ex.Message}", "delete Error", MessageBoxButton.OK, MessageBoxImage.Error));
+                        await Dispatcher.InvokeAsync(() => MessageBox.Show($"Could not delete '{row.name}':\n{ex.Message}", "Delete Error", MessageBoxButton.OK, MessageBoxImage.Error));
                     }
                     catch (UnauthorizedAccessException ex)
                     {
                         Logger.WriteLine($@"Permission error deleting '{modPath}': {ex.Message}", LoggerType.Error);
-                        await Dispatcher.InvokeAsync(() => MessageBox.Show($"Permission denied while deleting '{row.name}':\n{ex.Message}", "delete Error", MessageBoxButton.OK, MessageBoxImage.Error));
+                        await Dispatcher.InvokeAsync(() => MessageBox.Show($"Permission denied while deleting '{row.name}':\n{ex.Message}", "Delete Error", MessageBoxButton.OK, MessageBoxImage.Error));
                     }
                     catch (Exception ex)
                     {
                         Logger.WriteLine($@"Unexpected error deleting '{modPath}': {ex}", LoggerType.Error);
-                        await Dispatcher.InvokeAsync(() => MessageBox.Show($"An unexpected error occurred while deleting '{row.name}':\n{ex.Message}", "delete Error", MessageBoxButton.OK, MessageBoxImage.Error));
+                        await Dispatcher.InvokeAsync(() => MessageBox.Show($"An unexpected error occurred while deleting '{row.name}':\n{ex.Message}", "Delete Error", MessageBoxButton.OK, MessageBoxImage.Error));
                     }
                 }
 
@@ -1091,6 +1107,8 @@ namespace DivaModManager
         }
         private void Fetch_Mod_Click(object sender, RoutedEventArgs e)
         {
+            if (!Global.IsWindows) return;
+
             var selectedMods = ModGrid.SelectedItems;
             var temp = new Mod[selectedMods.Count];
             selectedMods.CopyTo(temp, 0);
@@ -1153,12 +1171,6 @@ namespace DivaModManager
         {
             string MeInfo = Logger.GetMeInfo(new StackFrame());
 
-            if(Global.IsWine)
-            {
-                WindowHelper.DMMWindowOpen(27);
-                return;
-            }
-
             DropBox.Visibility = Visibility.Collapsed;
             e.Handled = true;
             if (string.IsNullOrEmpty(Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].ModsFolder)
@@ -1209,27 +1221,36 @@ namespace DivaModManager
                 }
             }
         }
-        private void CreateMod_Click(object sender, RoutedEventArgs e)
+        //private void CreateMod_Click(object sender, RoutedEventArgs e)
+        //{
+        //    if (Global.SearchModListFlg)
+        //    {
+        //        WindowHelper.MessageBoxOpen(41);
+        //        return;
+        //    }
+        //    var createModWindow = new CreateModWindow();
+        //    createModWindow.ShowDialog();
+        //    ModGrid.Focus();
+        //}
+
+
+        private void DMLConsoleBox_SelectionChanged(object sender, RoutedEventArgs e)
         {
-            if (Global.SearchModListFlg)
+            if (IsLoaded)
             {
-                WindowHelper.MessageBoxOpen(41);
-                return;
+                MessageBox.Show(Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].DMLConfig);
             }
-            var createModWindow = new CreateModWindow();
-            createModWindow.ShowDialog();
-            ModGrid.Focus();
         }
         private void Update_Check_Click(object sender, RoutedEventArgs e)
         {
             string MeInfo = Logger.GetMeInfo(new StackFrame());
             string ParamInfo = $"id:{Thread.CurrentThread.ManagedThreadId}";
 
-            if (Util.IsWine())
-            {
-                WindowHelper.DMMWindowOpen(27);
-                return;
-            }
+            //if (Util.IsWine())
+            //{
+            //    WindowHelper.DMMWindowOpen(27);
+            //    return;
+            //}
 
             if (WorkManager.IsBusy || App.IsAlreadyRunningOtherProcess(false) != 0)
             {
@@ -1248,7 +1269,7 @@ namespace DivaModManager
                 // Update Checkボタンなら設定ファイルを参照しない
                 Logger.WriteLine("Checking for DivaModManager by Enomoto update...", LoggerType.Info);
                 if (await DMMUpdater.CheckForDMMUpdate(new CancellationTokenSource()))
-                    Close();    // CloseしてOnovaに自動実行させる
+                    Close();    // DMMeDownloadで展開、手動更新のためCloseしない
                 Logger.WriteLine($"Checking for DivaModLoader update...", LoggerType.Info);
                 await DMLUpdater.CheckForDMLUpdate(new CancellationTokenSource());
                 await RefreshAsync();
@@ -1258,6 +1279,8 @@ namespace DivaModManager
         {
             string MeInfo = Logger.GetMeInfo(new StackFrame());
             string ParamInfo = $"id:{Thread.CurrentThread.ManagedThreadId}";
+
+            if (!Global.IsWindows) return;
 
             try
             {
@@ -1427,127 +1450,132 @@ namespace DivaModManager
                     var init = ConvertToFlowParagraph(text);
                     DescriptionWindow.Document.Blocks.Add(init);
                 }
-                if (previewFiles != null && previewFiles.Length > 0)
+                // Wine環境で落ちるのでいったんバイパス
+                if (!Global.IsWine)
                 {
-                    try
+                    if (previewFiles != null && previewFiles.Length > 0)
                     {
-                        string imagePath = previewFiles[0].FullName; // ファイルのフルパスを取得
-
-                        // --- MemoryStream を使わずに UriSource で直接読み込む ---
-                        var img = new BitmapImage();
-                        img.BeginInit();
-                        // UriSource にファイルパスを設定 (絶対パスを指定)
-                        img.UriSource = new Uri(imagePath, UriKind.Absolute);
-                        // CacheOption は OnLoad のまま推奨 (読み込み完了後にファイルを解放するため)
-                        img.CacheOption = BitmapCacheOption.OnLoad;
-                        // DecodePixelWidth/Height を設定するとメモリ効率が良くなる場合がある (任意)
-                        // img.DecodePixelWidth = (int)Preview.ActualWidth; // または固定値
-                        img.EndInit();
-
-                        // Freeze すると別スレッドからのアクセスでも安全になる場合がある
-                        if (img.CanFreeze)
+                        try
                         {
-                            img.Freeze();
+                            string imagePath = previewFiles[0].FullName; // ファイルのフルパスを取得
+
+                            // --- MemoryStream を使わずに UriSource で直接読み込む ---
+                            var img = new BitmapImage();
+                            img.BeginInit();
+                            // UriSource にファイルパスを設定 (絶対パスを指定)
+                            img.UriSource = new Uri(imagePath, UriKind.Absolute);
+                            // CacheOption は OnLoad のまま推奨 (読み込み完了後にファイルを解放するため)
+                            img.CacheOption = BitmapCacheOption.OnLoad;
+                            // DecodePixelWidth/Height を設定するとメモリ効率が良くなる場合がある (任意)
+                            // img.DecodePixelWidth = (int)Preview.ActualWidth; // または固定値
+                            img.EndInit();
+
+                            // Freeze すると別スレッドからのアクセスでも安全になる場合がある
+                            if (img.CanFreeze)
+                            {
+                                img.Freeze();
+                            }
+
+                            Dispatcher.InvokeAsync(() =>
+                            {
+                                ImageBehavior.SetAnimatedSource(Preview, img);
+                                ImageBehavior.SetAnimatedSource(PreviewBG, img);
+                            });
                         }
-
-                        Dispatcher.InvokeAsync(() =>
+                        catch (UriFormatException ex)
                         {
-                            ImageBehavior.SetAnimatedSource(Preview, img);
-                            ImageBehavior.SetAnimatedSource(PreviewBG, img);
-                        });
-                    }
-                    catch (UriFormatException ex)
-                    {
-                        Logger.WriteLine($"Invalid URI format for image path '{previewFiles[0].FullName}': {ex.Message}", LoggerType.Error);
-                        SetDefaultPreviewImage();
-                    }
-                    catch (FileNotFoundException) // UriSource でもファイルが見つからない場合
-                    {
-                        Logger.WriteLine($"Preview file not found (UriSource): '{previewFiles[0].FullName}'", LoggerType.Warning);
-                        SetDefaultPreviewImage();
-                    }
-                    catch (IOException ex) // ファイル読み込み中のIOエラー
-                    {
-                        Logger.WriteLine($"IO error loading preview image from UriSource '{previewFiles[0].FullName}': {ex.Message}", LoggerType.Error);
-                        SetDefaultPreviewImage();
-                    }
-                    catch (NotSupportedException ex) // サポートされていない画像形式
-                    {
-                        Logger.WriteLine($"Unsupported image format for preview file '{previewFiles[0].FullName}': {ex.Message}", LoggerType.Warning);
-                        SetDefaultPreviewImage();
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.WriteLine($"Error loading preview image '{previewFiles[0].FullName}': {ex}", LoggerType.Error);
-                        SetDefaultPreviewImage();
-                    }
-                }
-                else if (File.Exists(Path.Combine(Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].ModsFolder, mod.name, "mod.json")))
-                {
-                    // ... (mod.json からメタデータとプレビューURLを取得する処理) ...
-                    try
-                    {
-                        // metadata.preview (Uri) から BitmapImage を作成
-                        metadata = null; // (mod.json からロードする処理が必要)
-                        if (metadata?.preview != null)
-                        {
-                            var bitmap = new BitmapImage();
-                            bitmap.BeginInit();
-                            bitmap.UriSource = metadata.preview; // ネットワークアクセスが発生
-                            bitmap.CacheOption = BitmapCacheOption.OnLoad; // OnLoad推奨
-                            bitmap.EndInit();
-                            // if (bitmap.CanFreeze) bitmap.Freeze();
-                            ImageBehavior.SetAnimatedSource(Preview, bitmap);
-                            ImageBehavior.SetAnimatedSource(PreviewBG, bitmap);
+                            Logger.WriteLine($"Invalid URI format for image path '{previewFiles[0].FullName}': {ex.Message}", LoggerType.Error);
+                            SetDefaultPreviewImage();
                         }
-                        else
+                        catch (FileNotFoundException) // UriSource でもファイルが見つからない場合
                         {
+                            Logger.WriteLine($"Preview file not found (UriSource): '{previewFiles[0].FullName}'", LoggerType.Warning);
+                            SetDefaultPreviewImage();
+                        }
+                        catch (IOException ex) // ファイル読み込み中のIOエラー
+                        {
+                            Logger.WriteLine($"IO error loading preview image from UriSource '{previewFiles[0].FullName}': {ex.Message}", LoggerType.Error);
+                            SetDefaultPreviewImage();
+                        }
+                        catch (NotSupportedException ex) // サポートされていない画像形式
+                        {
+                            Logger.WriteLine($"Unsupported image format for preview file '{previewFiles[0].FullName}': {ex.Message}", LoggerType.Warning);
+                            SetDefaultPreviewImage();
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.WriteLine($"Error loading preview image '{previewFiles[0].FullName}': {ex}", LoggerType.Error);
                             SetDefaultPreviewImage();
                         }
                     }
-                    catch (Exception ex)
+                    else if (File.Exists(Path.Combine(Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].ModsFolder, mod.name, "mod.json")))
                     {
-                        Logger.WriteLine($"Error loading preview image from URI '{mod.name}/mod.json': {ex.Message}", LoggerType.Error);
+                        try
+                        {
+                            // metadata.preview (Uri) から BitmapImage を作成
+                            metadata = null; // (mod.json からロードする処理が必要)
+                            if (metadata?.preview != null)
+                            {
+                                var bitmap = new BitmapImage();
+                                bitmap.BeginInit();
+                                bitmap.UriSource = metadata.preview; // ネットワークアクセスが発生
+                                bitmap.CacheOption = BitmapCacheOption.OnLoad; // OnLoad推奨
+                                bitmap.EndInit();
+                                // if (bitmap.CanFreeze) bitmap.Freeze();
+                                ImageBehavior.SetAnimatedSource(Preview, bitmap);
+                                ImageBehavior.SetAnimatedSource(PreviewBG, bitmap);
+                            }
+                            else
+                            {
+                                SetDefaultPreviewImage();
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.WriteLine($"Error loading preview image from URI '{mod.name}/mod.json': {ex.Message}", LoggerType.Error);
+                            SetDefaultPreviewImage();
+                        }
+                    }
+
+                    if (previewFiles != null && previewFiles.Length > 0)
+                    {
+                        try
+                        {
+                            byte[] imageBytes = File.ReadAllBytes(previewFiles[0].FullName);
+                            using var stream = new MemoryStream(imageBytes);
+                            var img = new BitmapImage();
+
+                            img.BeginInit();
+                            img.StreamSource = stream;
+                            img.CacheOption = BitmapCacheOption.OnLoad;
+                            img.EndInit();
+                            ImageBehavior.SetAnimatedSource(Preview, img);
+                            ImageBehavior.SetAnimatedSource(PreviewBG, img);
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.WriteLine(ex.Message, LoggerType.Error);
+                        }
+                    }
+                    else
+                    {
                         SetDefaultPreviewImage();
                     }
-                }
-            }
-            if (previewFiles != null && previewFiles.Length > 0)
-            {
-                try
-                {
-                    byte[] imageBytes = File.ReadAllBytes(previewFiles[0].FullName);
-                    using var stream = new MemoryStream(imageBytes);
-                    var img = new BitmapImage();
 
-                    img.BeginInit();
-                    img.StreamSource = stream;
-                    img.CacheOption = BitmapCacheOption.OnLoad;
-                    img.EndInit();
-                    ImageBehavior.SetAnimatedSource(Preview, img);
-                    ImageBehavior.SetAnimatedSource(PreviewBG, img);
                 }
-                catch (Exception ex)
-                {
-                    Logger.WriteLine(ex.Message, LoggerType.Error);
-                }
-            }
-            else
-            {
-                SetDefaultPreviewImage();
-            }
 
-            if (DescriptionWindow.Document.Blocks.Count == 0)
-            {
-                defaultFlow.Blocks.Add(ConvertToFlowParagraph(defaultText));
-                DescriptionWindow.Document = defaultFlow;
+                if (DescriptionWindow.Document.Blocks.Count == 0)
+                {
+                    defaultFlow.Blocks.Add(ConvertToFlowParagraph(defaultText));
+                    DescriptionWindow.Document = defaultFlow;
+                }
+                else
+                {
+                    var descriptionText = new TextRange(DescriptionWindow.Document.ContentStart, DescriptionWindow.Document.ContentEnd);
+                    descriptionText.ApplyPropertyValue(Inline.BaselineAlignmentProperty, BaselineAlignment.Center);
+                }
+                DescriptionWindow.ScrollToHome();
             }
-            else
-            {
-                var descriptionText = new TextRange(DescriptionWindow.Document.ContentStart, DescriptionWindow.Document.ContentEnd);
-                descriptionText.ApplyPropertyValue(Inline.BaselineAlignmentProperty, BaselineAlignment.Center);
-            }
-            DescriptionWindow.ScrollToHome();
         }
 
         // --- デフォルトプレビュー画像設定の共通化 ---
@@ -2113,14 +2141,14 @@ namespace DivaModManager
         }
         private void GBModBrowserTab_Selected(object sender, RoutedEventArgs e)
         {
-            if (Global.IsWine)
-            {
-                App.Current.Dispatcher.Invoke(() =>
-                {
-                    WindowHelper.DMMWindowOpen(27);
-                });
-                return;
-            }
+            //if (Global.IsWine)
+            //{
+            //    App.Current.Dispatcher.Invoke(() =>
+            //    {
+            //        WindowHelper.DMMWindowOpen(27);
+            //    });
+            //    return;
+            //}
 
             if (!selected)
             {
@@ -2129,14 +2157,14 @@ namespace DivaModManager
         }
         private void DMAModBrowserTab_Selected(object sender, RoutedEventArgs e)
         {
-            if (Global.IsWine)
-            {
-                App.Current.Dispatcher.Invoke(() =>
-                {
-                    WindowHelper.DMMWindowOpen(27);
-                });
-                return;
-            }
+            //if (Global.IsWine)
+            //{
+            //    App.Current.Dispatcher.Invoke(() =>
+            //    {
+            //        WindowHelper.DMMWindowOpen(27);
+            //    });
+            //    return;
+            //}
 
             if (!DMAselected)
             {
@@ -2610,23 +2638,36 @@ namespace DivaModManager
             ConfigJson.SetupGame();
             while (Global.ConfigJson.IsNew || Global.ConfigJson.CurrentConfig.LauncherOptionIndex == -1)
             {
-                List<int> messageNoList = new() { 32, 33, 34 };
-                var sel = await WindowHelper.DMMWindowChoiceOpenAsync(messageNoList);
-                if (sel == -1)
+                if (!Global.IsWine)
                 {
-                    if (await WindowHelper.DMMWindowOpenAsync(26) == WindowHelper.WindowCloseStatus.Yes)
+                    List<int> messageNoList = new() { 32, 33, 34 };
+                    var sel = await WindowHelper.DMMWindowChoiceOpenAsync(messageNoList);
+                    if (sel == -1)
                     {
-                        Environment.Exit(0);
+                        if (await WindowHelper.DMMWindowOpenAsync(26) == WindowHelper.WindowCloseStatus.Yes)
+                        {
+                            Environment.Exit(0);
+                        }
                     }
+                    else
+                    {
+                        Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].LauncherOptionIndex = (int)sel;
+                        LauncherOptionsBox.SelectedIndex = (int)sel;
+                        break;
+                    }
+                    LauncherOptionsBox.SelectedIndex = Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].LauncherOptionIndex;
                 }
                 else
                 {
-                    Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].LauncherOptionIndex = (int)sel;
-                    LauncherOptionsBox.SelectedIndex = (int)sel;
+                    // 効いてない？？
+                    Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].LauncherOptionIndex = 1;
+                    LauncherOptionsBox.SelectedIndex = 1;
+                    LauncherOptionsBox.IsEnabled = false;
+
                     break;
                 }
+
             }
-            LauncherOptionsBox.SelectedIndex = Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].LauncherOptionIndex;
             Logger.WriteLine(string.Join(" ", MeInfo, $"End."), LoggerType.Debug, param: ParamInfo);
         }
 
@@ -3384,6 +3425,12 @@ namespace DivaModManager
             }
         }
 
+        private void InfoText_Click(object sender, RoutedEventArgs e)
+        {
+            List<string> replaceList = new() { InfoText.ToString() };
+            var resultWindow = WindowHelper.DMMWindowOpenAsync(76, replaceList);
+        }
+
         private void MMPFolder_Click(object sender, RoutedEventArgs e)
         {
             var launcherPath = Global.ConfigJson?.CurrentConfig?.Launcher;
@@ -3593,10 +3640,10 @@ namespace DivaModManager
 
             // ブラウザタブ
             ModManagerTab.IsEnabled = setEnabledFirst;
-            GBModBrowserTab.Visibility = isWine ? Visibility.Hidden : Visibility.Visible;
+            GBModBrowserTab.Visibility = Visibility.Visible;
             GBModBrowserTab.IsEnabled = isDMLInstalled;
-            DMAModBrowserTab.Visibility = isWine ? Visibility.Hidden : Visibility.Visible;
-            DMAModBrowserTab.IsEnabled = isDMLInstalled && !isWine;
+            DMAModBrowserTab.Visibility = Visibility.Visible;
+            DMAModBrowserTab.IsEnabled = isDMLInstalled;
             OptionTab.Visibility = isWine ? Visibility.Hidden : Visibility.Visible;
             OptionTab.IsEnabled = setEnabledFirst && !isWine;
             DebugTabItem.Visibility = isWine ? Visibility.Hidden : Visibility.Visible;
@@ -3604,12 +3651,13 @@ namespace DivaModManager
 
             // 上部コントロール
             GameBox.IsEnabled = isMMPInstalled;
-            LauncherOptionsBox.IsEnabled = isMMPInstalled;
+            LauncherOptionsBox.IsEnabled = isMMPInstalled && !isWine;
             EditLoadoutsButton.IsEnabled = isDMLInstalled;
             SetupButton.IsEnabled = setEnabledFirst && !isWine;
-            LaunchButton.IsEnabled = isMMPInstalled && !isWine;
-            CreateModButton.IsEnabled = isDMLInstalled && !isWine;
-            UpdateCheckButton.IsEnabled = setEnabledFirst && !isWine;
+            LaunchButton.IsEnabled = isMMPInstalled;
+            //DMLConsoleBox.IsEnabled = isDMLInstalled;
+            DMLConsoleBox.IsEnabled = false;
+            CoreUpdateButton.IsEnabled = setEnabledFirst && !isWine;
             LoadoutBox.IsEnabled = isDMLInstalled;
 
             // Modリスト上部検索/フィルタ関連

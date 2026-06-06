@@ -96,16 +96,7 @@ namespace DivaModManager.Models
         public string CurrentLoadout { get; set; }
         public Dictionary<string, ObservableCollection<Mod>> Loadouts { get; set; } = new();
 
-        public bool Validate()
-        {
-            bool ret = false;
-
-            if (!string.IsNullOrEmpty(Launcher)
-                && !string.IsNullOrEmpty(ModsFolder))
-            {
-                ret = true;
-            }
-            return ret;
-        }
+        [JsonIgnore]
+        public string DMLConfig { get; set; } = string.Empty;
     }
 }

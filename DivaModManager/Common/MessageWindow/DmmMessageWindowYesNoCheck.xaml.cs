@@ -35,6 +35,11 @@ public partial class DmmMessageWindowYesNoCheck : Window
         Checked = check;
         Title = title;
 
+        if (Global.IsWine)
+            Check_1.Background = System.Windows.Media.Brushes.Transparent;
+        else
+            Check_1.Background = System.Windows.Media.Brushes.White;
+
         Activate();
     }
     private void Yes_Click(object sender, RoutedEventArgs e)
@@ -53,6 +58,7 @@ public partial class DmmMessageWindowYesNoCheck : Window
     }
     private void Check_Click(object sender, RoutedEventArgs e)
     {
+        InvalidateVisual();
         UpdateLayout();
     }
     private void Window_KeyDown(object sender, KeyEventArgs e)
