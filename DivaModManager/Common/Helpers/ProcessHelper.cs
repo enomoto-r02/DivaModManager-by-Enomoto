@@ -1,4 +1,5 @@
-﻿using DivaModManager.Features.Debug;
+﻿using DivaModManager;
+using DivaModManager.Features.Debug;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -87,7 +88,7 @@ namespace DivaModManager.Common.Helpers
         //            {
         //                UseShellExecute = false,
         //                CreateNoWindow = true,
-        //                WorkingDirectory = workingDirectory ?? Environment.CurrentDirectory
+        //                WorkingDirectory = workingDirectory ?? Environment.CurrentDirectory   // "Environment.CurrentDirectory"では予期しないディレクトリになる場合があるため、コメント解除時は注意
         //            };
         //        }
         //        else
@@ -98,7 +99,7 @@ namespace DivaModManager.Common.Helpers
         //                UseShellExecute = true,
         //                Verb = "open",
         //                Arguments = fileName,
-        //                WorkingDirectory = workingDirectory ?? Environment.CurrentDirectory
+        //                WorkingDirectory = workingDirectory ?? Environment.CurrentDirectory   // "Environment.CurrentDirectory"では予期しないディレクトリになる場合があるため、コメント解除時は注意
         //            };
         //        }
 
@@ -145,7 +146,8 @@ namespace DivaModManager.Common.Helpers
                 {
                     RedirectStandardOutput = true,
                     UseShellExecute = false,
-                    CreateNoWindow = true
+                    CreateNoWindow = true,
+                    WorkingDirectory = Global.assemblyLocation
                 };
 
                 using (var proc = Process.Start(psi))
@@ -171,8 +173,7 @@ namespace DivaModManager.Common.Helpers
             if (arg.StartsWith("\"") && arg.EndsWith("\""))
                 return arg;
 
-            // return $"\"{arg.Replace(\"\\\", \"\\\\\").Replace(\"'\", \"\\'\")}\"";
-            return $"\"{arg.Replace("\\", "\\\\").Replace("'", "\\'")}\"";
+            return $"\"{arg.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("'", "\\'")}\"";
         }
     }
 }

@@ -306,11 +306,11 @@ namespace DivaModManager.Common.Helpers
             {
                 if (FileExists(filePath))
                 {
-                    var directoryFullPath = Path.GetDirectoryName(filePath) + Path.DirectorySeparatorChar;
+                    var directoryFullPath = Path.GetDirectoryName(filePath) ?? string.Empty;
                     var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(filePath);
                     var extension = Path.GetExtension(filePath);
                     var version = string.IsNullOrEmpty(oldVersion) ? string.Empty : $"_v{oldVersion}";
-                    var backupFileName = $"{directoryFullPath}{fileNameWithoutExtension}{version}_{Global.STARTED_DATETIME.ToString("yyyyMMddHHmmssfff")}{extension}";
+                    var backupFileName = Path.Combine(directoryFullPath, $"{fileNameWithoutExtension}{version}_{Global.STARTED_DATETIME:yyyyMMddHHmmssfff}{extension}");
                     System.IO.File.Copy(filePath, backupFileName);
                     if (IsOriginalFileDelete) { DeleteFile(filePath); }
                     ret = backupFileName;
@@ -411,7 +411,7 @@ namespace DivaModManager.Common.Helpers
             try
             {
                 var attributes = new DirectoryInfo(targetPath).Attributes;
-                if (attributes == FileAttributes.ReparsePoint)
+                if ((attributes & FileAttributes.ReparsePoint) != 0)
                 {
                     // シンボリックリンクは拒否
                     Logger.WriteLine($"Error! Directory is resolve link. targetPath:{targetPath}", LoggerType.Error, param: ParamInfo);
@@ -439,8 +439,8 @@ namespace DivaModManager.Common.Helpers
             // mods
             checkModsResult =
                 FileHelper.PathStartsWith(_targetFullPath, Path.GetFullPath(Global.ModsFolder).ToLowerInvariant())
-                // Config.jsonの"ModsFolder"は最後にGlobal.sが付与されていないので、ここで加えたものをReplace
-                && _targetFullPath.ToLowerInvariant().Replace(Path.GetFullPath(Global.ModsFolder).ToLowerInvariant(), "").Replace(Global.s.ToString(), "").Length > 0;
+                // Config.jsonの"ModsFolder"は最後にGlobal.sが付与されていないので、パス長で判定
+                && _targetFullPath.Length > Path.GetFullPath(Global.ModsFolder).TrimEnd(Path.DirectorySeparatorChar).Length;
 
             // setting
             checkSettingResult = _targetFullPath == Path.GetFullPath(ConfigTomlDmm.CONFIG_E_TOML_PATH).ToLowerInvariant();
@@ -463,7 +463,8 @@ namespace DivaModManager.Common.Helpers
             checkDmlTempFileResult = FileHelper.PathStartsWith(_targetFullPath, (Path.GetFullPath(Global.temporaryLocationDML).ToLowerInvariant()));
 
             // DML Temp Directory
-            checkDmlTmpDirectoryResult = FileHelper.PathStartsWith(_targetFullPath, (Path.GetFullPath($"{Global.temporaryLocationDML}temp_").ToLowerInvariant()));
+            checkDmlTmpDirectoryResult = FileHelper.PathStartsWith(_targetFullPath,
+                (Path.GetFullPath(Path.Combine(Global.temporaryLocationDML, "temp_")).ToLowerInvariant()));
 
             // 削除判定の順番は重要なので注意(上位のフォルダほどチェックは後に！)
             if (checkTmpDirectoryResult)
@@ -1221,7 +1222,7 @@ namespace DivaModManager.Common.Helpers
             {
                 reason = $"Error scanning '{path}': {ex.Message}";
                 Logger.WriteLine($"TryFindUnsafeFileSystemReference: {reason}, ex.Message:{ex.Message}, ex.StackTrace:{ex.StackTrace}", LoggerType.Error);
-                return false;
+                return true;
             }
         }
 
@@ -1302,7 +1303,9 @@ namespace DivaModManager.Common.Helpers
             linkCount = 1;
 
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                return false;
+            {
+                return HasMultipleHardLinksLinux(path, out linkCount);
+            }
 
             try
             {
@@ -1329,6 +1332,46 @@ namespace DivaModManager.Common.Helpers
                 Logger.WriteLine($"HasMultipleHardLinks: Error scanning '{path}': {ex.Message}", LoggerType.Error);
                 return true;
             }
+        }
+
+        private static bool HasMultipleHardLinksLinux(string path, out uint linkCount)
+        {
+            linkCount = 1;
+            try
+            {
+                var stat = new LibcStat();
+                if (stat_x64(path, ref stat) == 0)
+                {
+                    linkCount = (uint)stat.st_nlink;
+                    return linkCount > 1;
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.WriteLine($"HasMultipleHardLinksLinux: Error scanning '{path}': {ex.Message}", LoggerType.Error);
+            }
+            return false;
+        }
+
+        [DllImport("libc", EntryPoint = "stat", CallingConvention = CallingConvention.Cdecl, SetLastError = true)]
+        private static extern int stat_x64([MarshalAs(UnmanagedType.LPUTF8Str)] string path, ref LibcStat buf);
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct LibcStat
+        {
+            public ulong st_dev;
+            public ulong st_ino;
+            public ulong st_nlink;
+            public uint st_mode;
+            public uint st_uid;
+            public uint st_gid;
+            public int st_rdev;
+            public long st_size;
+            public long st_blksize;
+            public long st_blocks;
+            public long st_atime;
+            public long st_mtime;
+            public long st_ctime;
         }
 
         private const uint FILE_READ_ATTRIBUTES = 0x80;

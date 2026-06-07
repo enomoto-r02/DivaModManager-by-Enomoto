@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using DivaModManager.Common.Helpers;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
@@ -11,7 +12,7 @@ namespace DivaModManager.Features.AltLink
     /// </summary>
     public partial class AltLinkWindow : Window
     {
-        public AltLinkWindow(List<GameBananaAlternateFileSource> files, string packageName, string game, string url, bool update = false)
+        public AltLinkWindow(List<GameBananaAlternateFileSource> files, string packageName, string url, bool update = false)
         {
             InitializeComponent();
             FileList.ItemsSource = files;
@@ -33,12 +34,7 @@ namespace DivaModManager.Features.AltLink
         {
             Button button = sender as Button;
             var item = button.DataContext as GameBananaAlternateFileSource;
-            var ps = new ProcessStartInfo(item.Url.AbsoluteUri)
-            {
-                UseShellExecute = true,
-                Verb = "open"
-            };
-            Process.Start(ps);
+            ProcessHelper.TryStartProcess(item.Url.AbsoluteUri);
             Close();
         }
 

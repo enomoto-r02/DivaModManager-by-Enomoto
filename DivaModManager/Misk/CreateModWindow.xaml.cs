@@ -55,15 +55,8 @@ namespace DivaModManager.Misk
             if (!string.IsNullOrEmpty(PreviewBox.Text) && File.Exists(PreviewBox.Text))
                 File.Copy(PreviewBox.Text, Path.Combine(modDir, $"Preview{Path.GetExtension(PreviewBox.Text)}"), true);
             Logger.WriteLine($"Created {NameBox.Text}!", LoggerType.Info);
-            try
-            {
-                Process process = Process.Start("explorer.exe", modDir);
-                Logger.WriteLine($@"Opened {modDir}.", LoggerType.Info);
-            }
-            catch (Exception ex)
-            {
-                Logger.WriteLine($@"Couldn't open {modDir}. ({ex.Message})", LoggerType.Error);
-            }
+            ProcessHelper.TryStartProcess(modDir);
+            Logger.WriteLine($@"Opened {modDir}.", LoggerType.Info);
             Close();
         }
 

@@ -1,5 +1,5 @@
 
-DivaMoaManager by Enomoto v1.3.1.35 for Linux Mint/Ubuntu (alpha3)
+DivaMoaManager by Enomoto v1.3.1.35 for Linux Mint/Ubuntu (alpha4)
 
 ----- 注意(必ず読んでください！！) -------------------------
 
@@ -28,10 +28,10 @@ DivaMoaManager by Enomoto v1.3.1.35 for Linux Mint/Ubuntu (alpha3)
 - OSに標準インストールされているフォントに変更(暫定)
 - ファイルの削除時に原則ゴミ箱に入るようになっています
   DivaModManager/Downloadsフォルダに一時ファイルが展開されますので、空き容量にご注意ください
-- Steam Deckなどのカーソル移動による動作は未確認です
 
 ----- 動作確認済の環境 -------------------------
 
-alpha3
+alpha4
+- Windows 11 Home 25H2
 - Ubuntu 26.04 (on VMware Workstation) + Proton Experimental 11.0-20260522b
 

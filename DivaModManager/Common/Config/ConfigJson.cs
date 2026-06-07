@@ -186,7 +186,7 @@ namespace DivaModManager.Common.Config
 
         public string GetGameLocation()
         {
-            return Path.GetDirectoryName(CurrentConfig?.Launcher) + Path.DirectorySeparatorChar;
+            return (Path.GetDirectoryName(CurrentConfig?.Launcher) ?? string.Empty) + Path.DirectorySeparatorChar;
         }
 
         public static async Task<bool> UpdateConfigAsync([CallerMemberName] string caller = "")

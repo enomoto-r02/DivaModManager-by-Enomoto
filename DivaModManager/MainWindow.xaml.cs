@@ -872,18 +872,13 @@ namespace DivaModManager
 
         private void GameBananaButton_Click(object sender, RoutedEventArgs e)
         {
-            var id = "";
-            switch ((GameFilter)GameFilterBox.SelectedIndex)
+            if (!string.IsNullOrEmpty(Global.GAME_ID))
             {
-                case GameFilter.MMP: id = "16522"; break;
-            }
-            if (!string.IsNullOrEmpty(id))
-            {
-                ProcessHelper.TryStartProcess($"https://gamebanana.com/games/{id}");
+                ProcessHelper.TryStartProcess($"https://gamebanana.com/games/{Global.GAME_ID}");
             }
             else
             {
-                Logger.WriteLine($"GameBanana link not configured for selected game index: {GameFilterBox.SelectedIndex}", LoggerType.Warning);
+                Logger.WriteLine($"GameBanana link not configured for selected game index: {Global.GAME_ID}", LoggerType.Warning);
             }
         }
         private void DmaButton_Click(object sender, RoutedEventArgs e)
@@ -1623,7 +1618,7 @@ namespace DivaModManager
             {
                 await WorkManager.RunAsync(async () =>
                 {
-                    await new ModDownloader().BrowserDownload(Global.games[GameFilterBox.SelectedIndex], item, onExtractAsync: async (extractInfo) =>
+                    await new ModDownloader().BrowserDownload(Global.GAME_ID, item, onExtractAsync: async (extractInfo) =>
                     {
                         await Dispatcher.InvokeAsync(() =>
                         {
@@ -1681,7 +1676,6 @@ namespace DivaModManager
             Button button = sender as Button;
             var item = button.DataContext as GameBananaRecord;
             new AltLinkWindow(item.AlternateFileSources, item.Title,
-                (((GameFilterBox.SelectedValue as ComboBoxItem).Content as StackPanel).Children[1] as TextBlock).Text.Trim().Replace(":", string.Empty),
                 item.Link.AbsoluteUri).ShowDialog();
         }
 
@@ -1921,7 +1915,7 @@ namespace DivaModManager
                 BrowserRefreshButton.Visibility = Visibility.Collapsed;
             });
 
-            var gameIDS = new string[] { "16522" };
+            var gameIDS = new string[] { Global.GAME_ID };
             var types = new string[] { "Mod", "Wip", "Sound" };
             var gameCounter = 0;
 
@@ -2046,9 +2040,8 @@ namespace DivaModManager
                 await Dispatcher.InvokeAsync(() =>
                 {
                     filterSelect = true;
-                    GameFilterBox.SelectedIndex = GameBox.SelectedIndex;
                     FilterBox.ItemsSource = FilterBoxList;
-                    CatBox.ItemsSource = All.Concat(cats[(GameFilter)GameFilterBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Where(x => x.RootID == 0).OrderBy(y => y.ID));
+                    CatBox.ItemsSource = All.Concat(cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Where(x => x.RootID == 0).OrderBy(y => y.ID));
                     SubCatBox.ItemsSource = None;
                     CatBox.SelectedIndex = 0;
                     SubCatBox.SelectedIndex = 0;
@@ -2073,9 +2066,8 @@ namespace DivaModManager
             }
 
             filterSelect = true;
-            GameFilterBox.SelectedIndex = GameBox.SelectedIndex;
             FilterBox.ItemsSource = FilterBoxList;
-            CatBox.ItemsSource = All.Concat(cats[(GameFilter)GameFilterBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Where(x => x.RootID == 0).OrderBy(y => y.ID));
+            CatBox.ItemsSource = All.Concat(cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Where(x => x.RootID == 0).OrderBy(y => y.ID));
             SubCatBox.ItemsSource = None;
             CatBox.SelectedIndex = 0;
             SubCatBox.SelectedIndex = 0;
@@ -2241,7 +2233,7 @@ namespace DivaModManager
                 }
                 try
                 {
-                    await FeedGenerator.GetFeed(page, (GameFilter)GameFilterBox.SelectedIndex, (Features.Feed.TypeFilter)TypeBox.SelectedIndex, (FeedFilter)FilterBox.SelectedIndex, (GameBananaCategory)CatBox.SelectedItem,
+                    await FeedGenerator.GetFeed(page, (GameFilter)GameBox.SelectedIndex, (Features.Feed.TypeFilter)TypeBox.SelectedIndex, (FeedFilter)FilterBox.SelectedIndex, (GameBananaCategory)CatBox.SelectedItem,
                          (GameBananaCategory)SubCatBox.SelectedItem, (PerPageBox.SelectedIndex + 1) * 10, (bool)NSFWCheckbox.IsChecked, search);
                 }
                 catch (HttpRequestException ex)
@@ -2500,14 +2492,14 @@ namespace DivaModManager
                     FilterBox.SelectedIndex = 1;
                 }
                 // Set categories
-                if (cats[(GameFilter)GameFilterBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Any(x => x.RootID == 0))
-                    CatBox.ItemsSource = All.Concat(cats[(GameFilter)GameFilterBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Where(x => x.RootID == 0).OrderBy(y => y.ID));
+                if (cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Any(x => x.RootID == 0))
+                    CatBox.ItemsSource = All.Concat(cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Where(x => x.RootID == 0).OrderBy(y => y.ID));
                 else
                     CatBox.ItemsSource = None;
                 CatBox.SelectedIndex = 0;
                 var cat = (GameBananaCategory)CatBox.SelectedValue;
-                if (cats[(GameFilter)GameFilterBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Any(x => x.RootID == cat.ID))
-                    SubCatBox.ItemsSource = All.Concat(cats[(GameFilter)GameFilterBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Where(x => x.RootID == cat.ID).OrderBy(y => y.ID));
+                if (cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Any(x => x.RootID == cat.ID))
+                    SubCatBox.ItemsSource = All.Concat(cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Where(x => x.RootID == cat.ID).OrderBy(y => y.ID));
                 else
                     SubCatBox.ItemsSource = None;
                 SubCatBox.SelectedIndex = 0;
@@ -2529,14 +2521,14 @@ namespace DivaModManager
                     FilterBox.SelectedIndex = 1;
                 }
                 // Set categories
-                if (cats[(GameFilter)GameFilterBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Any(x => x.RootID == 0))
-                    CatBox.ItemsSource = All.Concat(cats[(GameFilter)GameFilterBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Where(x => x.RootID == 0).OrderBy(y => y.ID));
+                if (cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Any(x => x.RootID == 0))
+                    CatBox.ItemsSource = All.Concat(cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Where(x => x.RootID == 0).OrderBy(y => y.ID));
                 else
                     CatBox.ItemsSource = None;
                 CatBox.SelectedIndex = 0;
                 var cat = (GameBananaCategory)CatBox.SelectedValue;
-                if (cats[(GameFilter)GameFilterBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Any(x => x.RootID == cat.ID))
-                    SubCatBox.ItemsSource = All.Concat(cats[(GameFilter)GameFilterBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Where(x => x.RootID == cat.ID).OrderBy(y => y.ID));
+                if (cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Any(x => x.RootID == cat.ID))
+                    SubCatBox.ItemsSource = All.Concat(cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Where(x => x.RootID == cat.ID).OrderBy(y => y.ID));
                 else
                     SubCatBox.ItemsSource = None;
                 SubCatBox.SelectedIndex = 0;
@@ -2559,8 +2551,8 @@ namespace DivaModManager
                 }
                 // Set Categories
                 var cat = (GameBananaCategory)CatBox.SelectedValue;
-                if (cats[(GameFilter)GameFilterBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Any(x => x.RootID == cat.ID))
-                    SubCatBox.ItemsSource = All.Concat(cats[(GameFilter)GameFilterBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Where(x => x.RootID == cat.ID).OrderBy(y => y.ID));
+                if (cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Any(x => x.RootID == cat.ID))
+                    SubCatBox.ItemsSource = All.Concat(cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Where(x => x.RootID == cat.ID).OrderBy(y => y.ID));
                 else
                     SubCatBox.ItemsSource = None;
                 SubCatBox.SelectedIndex = 0;
@@ -2953,14 +2945,14 @@ namespace DivaModManager
                 FilterBox.ItemsSource = FilterBoxListWhenSearched;
                 FilterBox.SelectedIndex = 3;
                 // Set categories
-                if (cats[(GameFilter)GameFilterBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Any(x => x.RootID == 0))
-                    CatBox.ItemsSource = All.Concat(cats[(GameFilter)GameFilterBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Where(x => x.RootID == 0).OrderBy(y => y.ID));
+                if (cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Any(x => x.RootID == 0))
+                    CatBox.ItemsSource = All.Concat(cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Where(x => x.RootID == 0).OrderBy(y => y.ID));
                 else
                     CatBox.ItemsSource = None;
                 CatBox.SelectedIndex = 0;
                 var cat = (GameBananaCategory)CatBox.SelectedValue;
-                if (cats[(GameFilter)GameFilterBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Any(x => x.RootID == cat.ID))
-                    SubCatBox.ItemsSource = All.Concat(cats[(GameFilter)GameFilterBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Where(x => x.RootID == cat.ID).OrderBy(y => y.ID));
+                if (cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Any(x => x.RootID == cat.ID))
+                    SubCatBox.ItemsSource = All.Concat(cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Where(x => x.RootID == cat.ID).OrderBy(y => y.ID));
                 else
                     SubCatBox.ItemsSource = None;
                 SubCatBox.SelectedIndex = 0;
@@ -3675,7 +3667,6 @@ namespace DivaModManager
 
             SearchBar.IsEnabled = isDMLInstalled;
             SearchButton.IsEnabled = isDMLInstalled;
-            GameFilterBox.IsEnabled = isDMLInstalled;
             FilterBox.IsEnabled = isDMLInstalled;
             TypeBox.IsEnabled = isDMLInstalled;
             CatBox.IsEnabled = isDMLInstalled;
@@ -3856,7 +3847,7 @@ namespace DivaModManager
                 );
 
                 Logger.WriteLine($"Screenshot making Complete! Path: \"{Path.GetDirectoryName(filePathNoExtention)}\"", LoggerType.Info);
-                ProcessHelper.TryStartProcess($"\"{Path.GetDirectoryName(filePathNoExtention)}\"");
+                ProcessHelper.TryStartProcess(Path.GetDirectoryName(filePathNoExtention));
             });
         }
         /// <summary>

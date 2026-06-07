@@ -344,8 +344,8 @@
                             <ColumnDefinition/>
                             <ColumnDefinition/>
                         </Grid.ColumnDefinitions>
-                        <Button Grid.Column="0" Foreground="#f2f2f2" FontFamily="{StaticResource DmmeFont}" FontWeight="Normal" Height="30" Width="95" Background="#303030" BorderBrush="#353535" VerticalAlignment="Bottom" Content="More Info" Click="MoreInfo_Click"/>
-                        <Button Grid.Column="1" Foreground="#f2f2f2" FontFamily="{StaticResource DmmeFont}" FontWeight="Normal" Height="30" Width="95" Background="#303030" BorderBrush="#353535" VerticalAlignment="Top" Content="Download" IsEnabled="{Binding Path=Compatible}" Click="GBDownload_Click"/>
+                        <Button Grid.Column="0" Foreground="#f2f2f2" FontFamily="{StaticResource DmmeFont}" FontWeight="Normal" Height="35" Width="120" Background="#303030" BorderBrush="#353535" VerticalAlignment="Bottom" Content="More Info" Click="MoreInfo_Click"/>
+                        <Button Grid.Column="1" Foreground="#f2f2f2" FontFamily="{StaticResource DmmeFont}" FontWeight="Normal" Height="35" Width="120" Background="#303030" BorderBrush="#353535" VerticalAlignment="Top" Content="Download" IsEnabled="{Binding Path=Compatible}" Click="GBDownload_Click"/>
                     </Grid>
                 </Grid>
             </Border>
@@ -531,8 +531,8 @@
                             <ColumnDefinition/>
                             <ColumnDefinition/>
                         </Grid.ColumnDefinitions>
-                        <Button Grid.Column="0" Foreground="#f2f2f2" FontFamily="{StaticResource DmmeFont}" FontWeight="Normal" Height="30" Width="95" Background="#303030" BorderBrush="#353535" VerticalAlignment="Bottom" Content="More Info" Click="DMAMoreInfo_Click"/>
-                        <Button Grid.Column="1" Foreground="#f2f2f2" FontFamily="{StaticResource DmmeFont}" FontWeight="Normal" Height="30" Width="95" Background="#303030" BorderBrush="#353535" VerticalAlignment="Top" Content="Download" Click="DMADownload_Click"/>
+                        <Button Grid.Column="0" Foreground="#f2f2f2" FontFamily="{StaticResource DmmeFont}" FontWeight="Normal" Height="35" Width="120" Background="#303030" BorderBrush="#353535" VerticalAlignment="Bottom" Content="More Info" Click="DMAMoreInfo_Click"/>
+                        <Button Grid.Column="1" Foreground="#f2f2f2" FontFamily="{StaticResource DmmeFont}" FontWeight="Normal" Height="35" Width="120" Background="#303030" BorderBrush="#353535" VerticalAlignment="Top" Content="Download" Click="DMADownload_Click"/>
                     </Grid>
                 </Grid>
             </Border>
@@ -965,7 +965,6 @@
                         <RowDefinition Height="50"/>
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="0.55*"/>
                         <ColumnDefinition Width="1.2*"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="1.5*"/>
@@ -1084,22 +1083,13 @@
                             </Button>
                         </StackPanel>
                     </Grid>
-                    <!-- <ComboBox Margin="10,0,0,0" IsEnabled="False" Name="GameFilterBox" Height="35" Width="65" HorizontalAlignment="Stretch" FontSize="18" FontWeight="Normal" SelectionChanged="GameFilterSelectionChanged"> -->
-                    <ComboBox Margin="10,0,0,0" IsEnabled="False" Name="GameFilterBox" Height="35" Width="65" HorizontalAlignment="Left" FontSize="18" FontWeight="Normal" SelectionChanged="GameFilterSelectionChanged">
-                        <ComboBoxItem>
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <Image Source="./Assets/mmplus.png" Width="27" Margin="4,0,10,0"/>
-                                <TextBlock Text="Project DIVA Mega Mix+" FontFamily="{StaticResource DmmeFont}" VerticalAlignment="Center" FontWeight="Normal"/>
-                            </StackPanel>
-                        </ComboBoxItem>
-                    </ComboBox>
-                    <ComboBox Margin="5,0,0,0" Grid.Column="1" IsEnabled="False" FontFamily="{StaticResource DmmeFont}" Name="FilterBox" Height="35" MinWidth="130" HorizontalAlignment="Left" FontSize="18"  FontWeight="Normal" SelectionChanged="FilterSelectionChanged"/>
-                    <ComboBox Margin="5,0,0,0" Grid.Column="2" IsEnabled="False" FontFamily="{StaticResource DmmeFont}" FontWeight="Normal" FontSize="18" Name="TypeBox" Height="35" HorizontalAlignment="Left" MinWidth="100" SelectionChanged="TypeFilterSelectionChanged">
+                    <ComboBox Margin="5,0,0,0" Grid.Column="0" IsEnabled="False" FontFamily="{StaticResource DmmeFont}" Name="FilterBox" Height="35" MinWidth="130" HorizontalAlignment="Stretch" FontSize="18"  FontWeight="Normal" SelectionChanged="FilterSelectionChanged"/>
+                    <ComboBox Margin="5,0,0,0" Grid.Column="1" IsEnabled="False" FontFamily="{StaticResource DmmeFont}" FontWeight="Normal" FontSize="18" Name="TypeBox" Height="35" HorizontalAlignment="Stretch" MinWidth="100" SelectionChanged="TypeFilterSelectionChanged">
                         <ComboBoxItem xml:space="preserve" IsSelected="True"> Mods</ComboBoxItem>
                         <ComboBoxItem xml:space="preserve"> WiPs</ComboBoxItem>
                         <ComboBoxItem xml:space="preserve"> Sounds</ComboBoxItem>
                     </ComboBox>
-                    <ComboBox Margin="5,0,0,0" Grid.Column="3" IsEnabled="False" Name="CatBox" Height="35" HorizontalAlignment="Left" MinWidth="150" SelectionChanged="MainFilterSelectionChanged">
+                    <ComboBox Margin="5,0,0,0" Grid.Column="2" IsEnabled="False" Name="CatBox" Height="35" HorizontalAlignment="Stretch" MinWidth="150" SelectionChanged="MainFilterSelectionChanged">
                         <ComboBox.ItemTemplate>
                             <DataTemplate >
                                 <StackPanel Orientation="Horizontal">
@@ -1109,7 +1099,7 @@
                             </DataTemplate>
                         </ComboBox.ItemTemplate>
                     </ComboBox>
-                    <ComboBox Margin="5,0,0,0" Grid.Column="4" IsEnabled="False" Name="SubCatBox" Height="35" HorizontalAlignment="Left" MinWidth="200" SelectionChanged="SubFilterSelectionChanged">
+                    <ComboBox Margin="5,0,0,0" Grid.Column="3" IsEnabled="False" Name="SubCatBox" Height="35" HorizontalAlignment="Stretch" MinWidth="200" SelectionChanged="SubFilterSelectionChanged">
                         <ComboBox.ItemTemplate>
                             <DataTemplate >
                                 <StackPanel Orientation="Horizontal">
@@ -1119,8 +1109,8 @@
                             </DataTemplate>
                         </ComboBox.ItemTemplate>
                     </ComboBox>
-                    <TextBox Margin="5,0,35,0" Padding="4,0,0,0" Grid.Column="5" FontFamily="{StaticResource DmmeFont}" IsEnabled="False" KeyDown="GBSearchBar_KeyDown" Name="SearchBar" Height="35" MinWidth="200" HorizontalAlignment="Stretch" VerticalContentAlignment="Center"/>
-                    <TextBlock Margin="5,0,35,0" Padding="7,8,3,3" Grid.Column="5" FontFamily="{StaticResource DmmeFont}" IsHitTestVisible="False" Height="35" MinWidth="200" HorizontalAlignment="Stretch" Text="Search..." VerticalAlignment="Center" Foreground="#303030" >
+                    <TextBox Margin="5,0,35,0" Padding="4,0,0,0" Grid.Column="4" FontFamily="{StaticResource DmmeFont}" IsEnabled="False" KeyDown="GBSearchBar_KeyDown" Name="SearchBar" Height="35" MinWidth="200" HorizontalAlignment="Stretch" VerticalContentAlignment="Center"/>
+                    <TextBlock Margin="5,0,35,0" Padding="7,8,3,3" Grid.Column="4" FontFamily="{StaticResource DmmeFont}" IsHitTestVisible="False" Height="35" MinWidth="200" HorizontalAlignment="Stretch" Text="Search..." VerticalAlignment="Center" Foreground="#303030" >
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
                                 <Style.Triggers>
@@ -1131,14 +1121,14 @@
                             </Style>
                         </TextBlock.Style>
                     </TextBlock>
-                    <Button Grid.Column="5" IsEnabled="False" HorizontalAlignment="Right" Click="GBSearchButton_Click" Name="SearchButton" Height="35" Width="35">
+                    <Button Grid.Column="4" IsEnabled="False" HorizontalAlignment="Right" Click="GBSearchButton_Click" Name="SearchButton" Height="35" Width="35">
                         <fa5:ImageAwesome Icon="Solid_Search" Foreground="#f2f2f2" HorizontalAlignment="Right" Margin="3"/>
                     </Button>
-                    <StackPanel Grid.Column="6" Orientation="Horizontal" HorizontalAlignment="Center" Margin="5,0,0,0" >
-                        <CheckBox Name="NSFWCheckbox" IsEnabled="False" Unchecked="NSFWCheckbox_Checked" Checked="NSFWCheckbox_Checked"  Margin="0,0,5,0" VerticalAlignment="Center" />
-                        <TextBlock Foreground="#f2f2f2" FontFamily="{StaticResource DmmeFont}" VerticalAlignment="Center" HorizontalAlignment="Right" FontSize="18" FontWeight="Normal">NSFW</TextBlock>
+                    <StackPanel Grid.Column="5" Orientation="Horizontal" HorizontalAlignment="Center" Margin="5,0,0,0" >
+                        <CheckBox Name="NSFWCheckbox" IsEnabled="False" Unchecked="NSFWCheckbox_Checked" Checked="NSFWCheckbox_Checked"  Margin="0,0,5,0" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                        <TextBlock Foreground="#f2f2f2" FontFamily="{StaticResource DmmeFont}" VerticalAlignment="Center" HorizontalAlignment="Right" FontSize="18" FontWeight="Normal">NS<LineBreak/>FW</TextBlock>
                     </StackPanel>
-                    <Image Grid.Column="7" Name="GameBananaButton" VerticalAlignment="Center" HorizontalAlignment="Right" Height="35" Source="./Assets/GameBanana.png" Cursor="Hand" MouseLeftButtonDown="GameBananaButton_Click"/>
+                    <Image Grid.Column="6" Name="GameBananaButton" VerticalAlignment="Center" HorizontalAlignment="Right" Height="35" Source="./Assets/GameBanana.png" Cursor="Hand" MouseLeftButtonDown="GameBananaButton_Click" Margin="0,0,5,0"/>
                     <Popup PlacementTarget="{Binding ElementName=GameBananaButton}" IsOpen="{Binding IsMouseDirectlyOver, ElementName=GameBananaButton, Mode=OneWay}" AllowsTransparency="True">
                         <Border CornerRadius="5" Panel.ZIndex="0" Margin="10">
                             <Border.BorderBrush>

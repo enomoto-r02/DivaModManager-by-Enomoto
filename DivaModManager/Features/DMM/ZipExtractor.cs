@@ -4,6 +4,7 @@ using SharpCompress.Common;
 using SharpCompress.Readers;
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -26,6 +27,18 @@ namespace DivaModManager.Features.DMM
                     {
                         if (!reader.Entry.IsDirectory)
                         {
+                            var entryKey = reader.Entry.Key?.Replace('/', Path.DirectorySeparatorChar).Replace('\\', Path.DirectorySeparatorChar);
+                            if (string.IsNullOrEmpty(entryKey))
+                                continue;
+                            var fullDest = Path.GetFullPath(Path.Combine(destDirPath, entryKey));
+                            var fullRoot = Path.GetFullPath(destDirPath);
+
+                            if (!fullDest.StartsWith(fullRoot, StringComparison.OrdinalIgnoreCase))
+                            {
+                                Logger.WriteLine($"Blocked ZipSlip path: '{reader.Entry.Key}' -> '{fullDest}'", LoggerType.Error);
+                                continue;
+                            }
+
                             reader.WriteEntryToDirectory(destDirPath, new ExtractionOptions()
                             {
                                 ExtractFullPath = true,
