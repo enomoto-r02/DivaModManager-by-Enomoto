@@ -41,15 +41,19 @@
     <None Remove="Assets\preview.png" />
     <None Remove="Assets\preview_enomoto.png" />
     <None Remove="Assets\github-mark-white.png" />
+    <None Remove="Downloads\Do not place files under this folder" />
     <None Remove="GameBanana.png" />
     <None Remove="License.txt" />
     <None Remove="x64\7z.dll" />
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Assets\miku.ico">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </EmbeddedResource>
+    <Resource Include="Assets\miku.ico">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Resource>
+    <Content Include="Downloads\Do not place files under this folder">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="License.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -77,9 +81,9 @@
     <Content Include="x64\7z.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <EmbeddedResource Include="Assets\dummy.png" />
+    <Resource Include="Assets\dummy.png" />
     <EmbeddedResource Include="Resources\Message.toml">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToOutputDirectory></CopyToOutputDirectory>
     </EmbeddedResource>
   </ItemGroup>
 
@@ -98,8 +102,12 @@
     <Resource Include="Assets\DMA_BLACK.png" />
     <Resource Include="Assets\dml.png" />
     <Resource Include="Assets\GameBanana.png" />
-    <Resource Include="Assets\mmplus.png" />
-    <Resource Include="Assets\load.gif" />
+    <Resource Include="Assets\mmplus.png">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\load.gif">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Resource>
     <Resource Include="Assets\noimage.png">
       <CopyToOutputDirectory></CopyToOutputDirectory>
     </Resource>
