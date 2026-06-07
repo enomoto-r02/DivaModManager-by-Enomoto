@@ -22,7 +22,7 @@ namespace DivaModManager
     public partial class App : Application
     {
         public static readonly string Version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
-        public static readonly string TestVersion = " (alpha4)";
+        public static readonly string TestVersion = " (alpha5)";
 
         [DllImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -81,10 +81,6 @@ namespace DivaModManager
                 {
                     Environment.Exit(0);
                 }
-            }
-            if (!TestVersionMessageView())
-            {
-                Environment.Exit(0);
             }
 
             ConfigJson.InitConfig();
@@ -371,37 +367,6 @@ namespace DivaModManager
             Global.GitHubclient.DefaultRequestHeaders.Referrer = new Uri("https://github.com/");
             Global.GitHubclient.DefaultRequestHeaders.CacheControl = new() { MaxAge = TimeSpan.FromSeconds(Global.ConfigToml.GitHubCacheControlMaxAge) };
             Global.GitHubclient.Timeout = TimeSpan.FromSeconds(Global.ConfigToml.GitHubApiTimeoutSec);
-        }
-
-        /// <summary>
-        /// テストバージョン用警告
-        /// </summary>
-        /// <returns></returns>
-        private static bool TestVersionMessageView()
-        {
-            var ret = true;
-            if (!string.IsNullOrWhiteSpace(TestVersion))
-            {
-                if (string.IsNullOrWhiteSpace(ConfigurationManager.AppSettings["TestVersion"]))
-                {
-                    ret = false;
-                    if (WindowHelper.MessageBoxOpen(35, type: MessageBoxButton.OKCancel) == MessageBoxResult.OK)
-                    {
-                        if (WindowHelper.MessageBoxOpen(36, type: MessageBoxButton.OKCancel) == MessageBoxResult.OK)
-                        {
-                            ret = true;
-                            if (WindowHelper.MessageBoxOpen(37, type: MessageBoxButton.YesNo) == MessageBoxResult.Yes)
-                            {
-                                var configFile = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-                                var settings = configFile.AppSettings.Settings;
-                                settings.Add("TestVersion", $"{Version}{TestVersion}");
-                                configFile.Save(ConfigurationSaveMode.Modified);
-                            }
-                        }
-                    }
-                }
-            }
-            return ret;
         }
     }
 }

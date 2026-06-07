@@ -38,7 +38,7 @@ public static class Global
 
     public static readonly char s = Path.DirectorySeparatorChar;
     // Example : ".../DivaModManager/"
-    public static string assemblyLocation = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!;
+    public static string assemblyLocation = AppContext.BaseDirectory;
     public static readonly string textLogLocation = Path.Combine(assemblyLocation, $"{Process.GetCurrentProcess().ProcessName}.log");
     public static readonly string textLogBackgroundLocation = Path.Combine(Global.assemblyLocation, $"{Process.GetCurrentProcess().ProcessName}_Download.log");
     public static readonly string downloadBaseLocation = Path.Combine(assemblyLocation, $"Downloads");
