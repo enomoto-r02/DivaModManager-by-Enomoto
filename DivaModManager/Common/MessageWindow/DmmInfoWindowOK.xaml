@@ -1,0 +1,21 @@
+﻿<Window x:Class="DivaModManager.Common.MessageWindow.DmmInfoWindowOK"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        WindowStartupLocation="CenterScreen"
+        mc:Ignorable="d" Background="#202020" ResizeMode="NoResize" FontFamily="{StaticResource DmmeFont}"
+        Title="TitleText" SizeToContent="WidthAndHeight"
+        Keyboard.KeyDown="Window_KeyDown" MinWidth="350" MinHeight="100">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="50"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+        <TextBlock Name="InfoText" HorizontalAlignment="Center" Grid.ColumnSpan="3" Grid.Row="0" VerticalAlignment="Center" Text="Info Text" Foreground="#f2f2f2" FontSize="18" FontWeight="SemiBold" TextAlignment="Center" Margin="50,8,50,8"/>
+        <Button Name="Button_1" Grid.Row="1" Grid.Column="0" Content="OK" VerticalAlignment="Center" HorizontalContentAlignment="Center" MinWidth="120" MinHeight="35" FontSize="18" FontWeight="SemiBold" Foreground="#f2f2f2" Background="#494949" Margin="30,8,30,8" Click="OK_Click"/>
+    </Grid>
+</Window>

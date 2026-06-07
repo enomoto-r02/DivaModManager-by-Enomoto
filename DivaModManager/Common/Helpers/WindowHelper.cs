@@ -138,6 +138,21 @@ namespace DivaModManager.Common.Helpers
                 else
                     ret = WindowCloseStatus.No;
             }
+            else if (info.WindowType.ToString().ToUpper() == WindowInfo.MESSAGE_WINDOW.InfoOK.ToString().ToUpper())
+            {
+                var msgOK = new DmmInfoWindowOK(info.Info(), info.Context(), $"[{info.WindowId()}] {info.WindowTitle()}", true);
+                msgOK.Button_1.Content = info.Button_1();
+                msgOK.Owner = App.Current.MainWindow.GetType() != msgOK.GetType() ? App.Current.MainWindow : null;
+                msgOK.ShowDialog();
+                msgOK.Activate();
+                msgOK.Focus();
+                if (msgOK.IsCancel == true)
+                    ret = WindowCloseStatus.Cancel;
+                else if (msgOK.OK)
+                    ret = WindowCloseStatus.Yes;
+                else
+                    ret = WindowCloseStatus.No;
+            }
 
             Logger.WriteLine(string.Join(" ", MeInfo, $"End. Return:{ret}"), LoggerType.Debug, param: ParamInfo);
             return ret;

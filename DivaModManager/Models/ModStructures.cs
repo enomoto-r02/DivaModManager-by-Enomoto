@@ -21,7 +21,7 @@ namespace DivaModManager.Models
         public string Launcher { get; set; } = string.Empty;
         // 参照されないため常にnull
         public string GamePath { get; set; }
-        public string GetLauncherDirectory() { return Path.GetDirectoryName(Launcher) + Path.DirectorySeparatorChar; }
+        public string GetLauncherDirectory() { return (Path.GetDirectoryName(Launcher) ?? string.Empty) + Path.DirectorySeparatorChar; }
         // Convert.ToInt32される。
         // bool == Boolean
         // True = 1、False(初期値) = 0
@@ -53,7 +53,8 @@ namespace DivaModManager.Models
         }
         private static bool IsDMLFiles()
         {
-            return File.Exists($"{Global.ConfigJson.CurrentConfig.GetLauncherDirectory()}config.toml") && File.Exists($"{Global.ConfigJson.CurrentConfig.GetLauncherDirectory()}dinput8.dll");
+            var launcherDir = Global.ConfigJson.CurrentConfig.GetLauncherDirectory();
+            return File.Exists(Path.Combine(launcherDir, "config.toml")) && File.Exists(Path.Combine(launcherDir, "dinput8.dll"));
         }
         // Launcherのフォルダに"mods"フォルダを生成し、そのフルパスが設定される(Launcherがnullの時はこちらもnull)
         public string ModsFolder { get; set; }
@@ -96,16 +97,7 @@ namespace DivaModManager.Models
         public string CurrentLoadout { get; set; }
         public Dictionary<string, ObservableCollection<Mod>> Loadouts { get; set; } = new();
 
-        public bool Validate()
-        {
-            bool ret = false;
-
-            if (!string.IsNullOrEmpty(Launcher)
-                && !string.IsNullOrEmpty(ModsFolder))
-            {
-                ret = true;
-            }
-            return ret;
-        }
+        [JsonIgnore]
+        public string DMLConfig { get; set; } = string.Empty;
     }
 }

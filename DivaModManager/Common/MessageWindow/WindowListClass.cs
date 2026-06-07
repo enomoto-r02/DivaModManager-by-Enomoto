@@ -12,6 +12,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Windows;
 using Tomlyn;
 
 namespace DivaModManager.Common.MessageWindow
@@ -73,7 +74,12 @@ namespace DivaModManager.Common.MessageWindow
 
             var assenbly = Assembly.GetExecutingAssembly();
             using Stream stream = assenbly.GetManifestResourceStream(WINDOW_LIST_RESOURCE_PATH);
-            if (stream != null)
+            if (stream == null)
+            {
+                // Message.tomlが見つからない場合はアプリケーションを再度ダウンロードしてもらう
+                MessageBox.Show("Message.tomlの読み込みに失敗しました。\nアプリケーションを再度ダウンロードしてください。\n\nFailed to load Message.toml\nPlease download the application again.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            else
             {
                 using StreamReader reader = new(stream);
                 var content = reader.ReadToEnd();
@@ -225,6 +231,7 @@ namespace DivaModManager.Common.MessageWindow
             Choice,
             Metadata,
             MessageBox,
+            InfoOK,
         }
         [DataMember(Name = "id")]
         public int ID { get; set; }

@@ -107,7 +107,7 @@ namespace DivaModManager.Features.Feed
                 switch (game)
                 {
                     case GameFilter.MMP:
-                        url += "16522&";
+                        url += Global.GAME_ID + "&";
                         break;
                 }
             }
@@ -119,7 +119,7 @@ namespace DivaModManager.Features.Feed
                 switch (game)
                 {
                     case GameFilter.MMP:
-                        url += "16522&";
+                        url += Global.GAME_ID + "&";
                         break;
                 }
             }

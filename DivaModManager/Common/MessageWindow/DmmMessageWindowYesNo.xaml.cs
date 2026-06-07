@@ -48,6 +48,7 @@ namespace DivaModManager.Common.MessageWindow
         }
         private void Check_Click(object sender, RoutedEventArgs e)
         {
+            InvalidateVisual();
             UpdateLayout();
         }
         private void Window_KeyDown(object sender, KeyEventArgs e)

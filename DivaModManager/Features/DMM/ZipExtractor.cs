@@ -1,10 +1,10 @@
 ﻿using DivaModManager.Common.Helpers;
 using DivaModManager.Features.Debug;
-using Onova.Services;
 using SharpCompress.Common;
 using SharpCompress.Readers;
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -12,14 +12,14 @@ using System.Threading.Tasks;
 
 namespace DivaModManager.Features.DMM
 {
-    public class ZipExtractor : IPackageExtractor
+    public static class ZipExtractor
     {
-        // call by CheckForDMMUpdate()
-        public async Task ExtractPackageAsync(string sourceFilePath, string destDirPath,
+        public static async Task ExtractAsync(string sourceFilePath, string destDirPath,
             IProgress<double>? progress = null, CancellationToken cancellationToken = default)
         {
             try
             {
+                Directory.CreateDirectory(destDirPath);
                 using (Stream stream = File.OpenRead(sourceFilePath))
                 using (var reader = ReaderFactory.OpenReader(stream))
                 {
@@ -27,6 +27,18 @@ namespace DivaModManager.Features.DMM
                     {
                         if (!reader.Entry.IsDirectory)
                         {
+                            var entryKey = reader.Entry.Key?.Replace('/', Path.DirectorySeparatorChar).Replace('\\', Path.DirectorySeparatorChar);
+                            if (string.IsNullOrEmpty(entryKey))
+                                continue;
+                            var fullDest = Path.GetFullPath(Path.Combine(destDirPath, entryKey));
+                            var fullRoot = Path.GetFullPath(destDirPath);
+
+                            if (!fullDest.StartsWith(fullRoot, StringComparison.OrdinalIgnoreCase))
+                            {
+                                Logger.WriteLine($"Blocked ZipSlip path: '{reader.Entry.Key}' -> '{fullDest}'", LoggerType.Error);
+                                continue;
+                            }
+
                             reader.WriteEntryToDirectory(destDirPath, new ExtractionOptions()
                             {
                                 ExtractFullPath = true,

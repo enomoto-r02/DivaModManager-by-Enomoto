@@ -83,6 +83,28 @@ namespace DivaModManager.Common.Helpers
         }
 
         /// <summary>
+        /// Windows(64bit)チェック
+        /// </summary>
+        /// <returns></returns>
+        public static bool IsWindows64bit()
+        {
+            var ret = false;
+            if (OperatingSystem.IsWindows())
+            {
+                if (!Environment.Is64BitOperatingSystem)
+                    WindowHelper.MessageBoxOpen(45);
+                else
+                    ret = true;
+            }
+            else
+            {
+                ret = true;
+            }
+
+            return ret;
+        }
+
+        /// <summary>
         /// Wine環境かどうかを判定する
         /// (LinuxであればWine環境とみなすが、WindowsであってもWine環境であればLinuxとみなす)
         /// </summary>

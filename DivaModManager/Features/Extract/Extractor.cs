@@ -694,12 +694,13 @@ namespace DivaModManager.Features.Extract
         {
             try
             {
-                var moveRootDirectory = $"{extractDirectoryPath.Replace(extractDirectoryPath, moveDirectoryPath)}";
+                var moveRootDirectory = moveDirectoryPath;
                 Directory.CreateDirectory(moveRootDirectory);
                 var inExtractDirectoryFilePathList = Directory.GetFiles(extractDirectoryPath, "*", SearchOption.TopDirectoryOnly);
                 foreach (var inExtractDirectoryFilePath in inExtractDirectoryFilePathList)
                 {
-                    var moveFilePath = $"{inExtractDirectoryFilePath.Replace(extractDirectoryPath, moveDirectoryPath)}";
+                    var relativePath = Path.GetRelativePath(extractDirectoryPath, inExtractDirectoryFilePath);
+                    var moveFilePath = Path.Combine(moveDirectoryPath, relativePath);
                     var skip = false;
                     if (moveSkipPathList != null)
                     {
@@ -1580,7 +1581,7 @@ namespace DivaModManager.Features.Extract
             foreach (var e in archive.Entries)
             {
                 string entry = e.Key;
-                string dest = Path.Combine(mv.FullPathResult, entry.Replace('/', Path.DirectorySeparatorChar));
+                string dest = Path.Combine(mv.FullPathResult, entry.Replace('/', Path.DirectorySeparatorChar).Replace('\\', Path.DirectorySeparatorChar));
                 string fullDest = Path.GetFullPath(dest);
                 string fullRoot = Path.GetFullPath(mv.FullPathResult);
 
@@ -1761,7 +1762,7 @@ namespace DivaModManager.Features.Extract
                 ProcessStartInfo processInfo = new()
                 {
                     FileName = Global.ConfigJson.WinRarConsolePath,
-                    WorkingDirectory = AppDomain.CurrentDomain.BaseDirectory,
+                    WorkingDirectory = Global.assemblyLocation,
                     UseShellExecute = false,
                     Arguments = extractCommand,
                     RedirectStandardInput = false,
@@ -1963,11 +1964,6 @@ namespace DivaModManager.Features.Extract
             var extractCommand = string.Empty;
             extractCommand = $"x -y -bsp1 \"{mv.FullPath}\" -o\"{mv.FullPathResult}\"";
 
-            //extractCommand = $"x -y -bsp1 \"{Path.GetRelativePath(AppDomain.CurrentDomain.BaseDirectory, mv.FullPath)}\" -o\"{Path.GetRelativePath(AppDomain.CurrentDomain.BaseDirectory, mv.FullPathResult)}\"";
-            //extractCommand = $"x -y -bsp1 \"{mv.RelativePath}\" -o\"{mv.RelativePathResult}\"";
-            //Logger.WriteLine(string.Join(" ", MeInfo, $"Global.assemblyLocation: {Global.assemblyLocation}, AppDomain.CurrentDomain.BaseDirectory : {AppDomain.CurrentDomain.BaseDirectory}"), LoggerType.Debug, param: ParamInfo);
-            //Logger.WriteLine(string.Join(" ", MeInfo, $"RelativePath : {Path.GetFileName(mv.RelativePath)}, RelativePathResult : {Path.GetFileName(mv.RelativePathResult)}"), LoggerType.Debug, param: ParamInfo);
-
             Logger.WriteLine(string.Join(" ", MeInfo, $"extractCommand : {extractCommand}"), LoggerType.Debug, param: ParamInfo);
 
             try
@@ -2096,25 +2092,26 @@ namespace DivaModManager.Features.Extract
             Logger.WriteLine(string.Join(" ", MeInfo, $"Start."), LoggerType.Debug, param: ParamInfo);
 
             var ret = true;
+            var tempPath = string.Empty;
 
             try
             {
-                var tempPath = extract.MoveInfoList.Where(x =>
+                tempPath = extract.MoveInfoList.Where(x =>
                     x.Status == ExtractInfo.EXTRACT_STATUS.ARCHIVE_EXTRACT
                     || x.Status == ExtractInfo.EXTRACT_STATUS.DIRECTORY_DROP)
                         .FirstOrDefault().FullPathResult;
 
                 if (FileHelper.DeleteDirectory(tempPath))
-                    Logger.WriteLine(string.Join(" ", MeInfo, $"{MeInfo} Complete! Path:{FileHelper.DeleteDirectory}"), LoggerType.Debug, param: ParamInfo);
+                    Logger.WriteLine(string.Join(" ", MeInfo, $"{MeInfo} Complete! Path:{tempPath}"), LoggerType.Debug, param: ParamInfo);
                 else
-                    Logger.WriteLine(string.Join(" ", MeInfo, $"{MeInfo} Failed! Path:{FileHelper.DeleteDirectory}"), LoggerType.Debug, param: ParamInfo);
+                    Logger.WriteLine(string.Join(" ", MeInfo, $"{MeInfo} Failed! Path:{tempPath}"), LoggerType.Debug, param: ParamInfo);
             }
             catch (Exception ex)
             {
                 ret = false;
                 Logger.WriteLine(string.Join(" ", MeInfo, $"Exception.", $"ex.Message:{ex.Message}", $"ex.StackTrace:{ex.StackTrace}"), LoggerType.Error, param: ParamInfo);
             }
-            Logger.WriteLine($"{MeInfo} End. Path:{FileHelper.DeleteDirectory}, Return:{ret}", LoggerType.Debug);
+            Logger.WriteLine($"{MeInfo} End. Path:{tempPath}, Return:{ret}", LoggerType.Debug);
             return ret;
         }
 

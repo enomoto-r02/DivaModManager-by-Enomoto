@@ -132,8 +132,8 @@ namespace DivaModManager.Features.Debug
                     {
                         ret = ret.Replace(MaskAddDropFilePath, "(MaskAddDropFilePath)");
                     }
-                    if (Directory.Exists(Path.GetDirectoryName(AppDomain.CurrentDomain.BaseDirectory)))
-                        ret = ret.Replace(Path.GetDirectoryName(AppDomain.CurrentDomain.BaseDirectory), "(AppDomain.CurrentDomain.BaseDirectoryDir)");
+                    if (Directory.Exists(Path.GetDirectoryName(Global.assemblyLocation)))
+                        ret = ret.Replace(Path.GetDirectoryName(Global.assemblyLocation), "(Global.assemblyLocationDir)");
                     if (Directory.Exists(Path.GetDirectoryName(Global.ConfigJson.CurrentConfig.Launcher)))
                         ret = ret.Replace(Path.GetDirectoryName(Global.ConfigJson.CurrentConfig.Launcher), "(Global.configJson.CurrentConfig.LauncherDir)");
                     if (Directory.Exists(Path.GetDirectoryName(Global.ConfigJson.WinRarConsolePath)))
@@ -161,7 +161,7 @@ namespace DivaModManager.Features.Debug
         {
             if (!Global.IsWine && (Mode == DEBUG_MODE.DEBUG || Mode == DEBUG_MODE.DEVELOPER))
             {
-                ProcessHelper.TryStartProcess(LogPath, workingDirectory: AppDomain.CurrentDomain.BaseDirectory);
+                ProcessHelper.TryStartProcess(LogPath, workingDirectory: Global.assemblyLocation);
                 Logger.WriteLine($"TryStartProcess LogPath : {LogPath}", LoggerType.Debug);
             }
         }

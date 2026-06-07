@@ -22,6 +22,11 @@ namespace DivaModManager.Common.MessageWindow
             if (string.IsNullOrEmpty(MessageText.Text)) MessageText.Visibility = Visibility.Collapsed;
             Title = title;
 
+            if (Global.IsWine)
+                Check_1.Background = System.Windows.Media.Brushes.Transparent;
+            else
+                Check_1.Background = System.Windows.Media.Brushes.White;
+
             OK = ok;
 
             Activate();
@@ -35,6 +40,7 @@ namespace DivaModManager.Common.MessageWindow
         }
         private void Check_Click(object sender, RoutedEventArgs e)
         {
+            InvalidateVisual();
             UpdateLayout();
         }
         private void Window_KeyDown(object sender, KeyEventArgs e)

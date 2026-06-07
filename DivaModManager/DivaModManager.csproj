@@ -33,25 +33,23 @@
     <None Remove="Assets\caution.png" />
     <None Remove="Assets\DMA_BLACK.png" />
     <None Remove="Assets\dml.png" />
-    <None Remove="Assets\KoFi.png" />
+    <None Remove="Assets\dml_backup.png" />
+    <None Remove="Assets\dummy.png" />
     <None Remove="Assets\load.gif" />
     <None Remove="Assets\load.webp" />
+    <None Remove="Assets\noimage.png" />
     <None Remove="Assets\preview.png" />
     <None Remove="Assets\preview_enomoto.png" />
     <None Remove="Assets\github-mark-white.png" />
-    <None Remove="change_log_jp.txt" />
     <None Remove="GameBanana.png" />
     <None Remove="License.txt" />
+    <None Remove="x64\7z.dll" />
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Assets\miku.ico" />
-    <Content Include="change_log_en.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="change_log_jp.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
+    <EmbeddedResource Include="Assets\miku.ico">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </EmbeddedResource>
     <Content Include="License.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -76,8 +74,12 @@
     <Content Include="Licenses\MIT License.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <EmbeddedResource Include="Resources\Message.toml">
+    <Content Include="x64\7z.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <EmbeddedResource Include="Assets\dummy.png" />
+    <EmbeddedResource Include="Resources\Message.toml">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </EmbeddedResource>
   </ItemGroup>
 
@@ -86,8 +88,7 @@
     <PackageReference Include="FontAwesome5" Version="2.1.11" />
     <PackageReference Include="gong-wpf-dragdrop" Version="4.0.0" />
     <PackageReference Include="Octokit" Version="14.0.0" />
-    <PackageReference Include="Onova" Version="2.6.13" />
-    <PackageReference Include="SharpCompress" Version="0.48.1" />
+    <PackageReference Include="SharpCompress" Version="0.49.1" />
     <PackageReference Include="Tomlyn" Version="0.19.0" />
     <PackageReference Include="WpfAnimatedGif" Version="2.0.2" />
   </ItemGroup>
@@ -98,17 +99,17 @@
     <Resource Include="Assets\dml.png" />
     <Resource Include="Assets\GameBanana.png" />
     <Resource Include="Assets\mmplus.png" />
-    <Resource Include="Assets\KoFi.png" />
     <Resource Include="Assets\load.gif" />
+    <Resource Include="Assets\noimage.png">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Resource>
     <Resource Include="Assets\preview.png" />
     <Resource Include="Assets\preview_enomoto.png" />
     <Resource Include="Assets\github-mark-white.png" />
+    <Resource Include="Assets\gift-solid.png" />
     <Resource Include="Common\Style\Button.xaml" />
     <Resource Include="Common\Style\ComboBox.xaml" />
     <Resource Include="Common\Style\ScrollViewer.xaml" />
-    <Content Include="DivaModManager_DebugMode.bat">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
     <Content Include="x64\7z.exe">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -169,9 +170,6 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="readme_jp.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="x64\7z.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>

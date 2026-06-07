@@ -4,7 +4,6 @@ using DivaModManager.Features.Debug;
 using Microsoft.Win32;
 using System;
 using System.IO;
-using System.Windows;
 
 namespace DivaModManager.Features.Setup
 {
@@ -58,12 +57,12 @@ namespace DivaModManager.Features.Setup
             else if (!File.Exists(defaultPath))
             {
                 // 3番目：ユーザーファイル選択
-                MessageBox.Show("Hatsune Miku Project DIVA Mega Mix Plus could not be found.\nPlease select DivaMegaMix.exe.", "Information");
+                var resultWindow = WindowHelper.DMMWindowOpenAsync(77);
                 OpenFileDialog dialog = new()
                 {
                     DefaultExt = ".exe",
                     Filter = $"Executable Files ({exe})|{exe}",
-                    Title = $"Select {exe} from your Steam Install folder",
+                    Title = $"{exe}を選択してください / Select {exe}",
                     Multiselect = false,
                     InitialDirectory = Global.assemblyLocation
                 };
@@ -85,6 +84,7 @@ namespace DivaModManager.Features.Setup
 
             Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].Launcher = defaultPath;
             Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].ModsFolder = Path.Combine(Path.GetDirectoryName(Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].Launcher), "mods");
+            Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].DMLConfig = Path.Combine(Path.GetDirectoryName(Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].Launcher), "config.toml");
             Directory.CreateDirectory(Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].ModsFolder);
 
             if (!Directory.Exists(Global.downloadBaseLocation))
