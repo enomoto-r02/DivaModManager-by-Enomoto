@@ -1,0 +1,90 @@
+
+## --------------------------------------------------
+## DivaModManager Error Report Template Example
+## --------------------------------------------------
+
+### Date and Time of Occurrence
+Around 11:05 AM on June 10, 2026
+
+### OS
+Steam Deck (SteamOS 3.4, based on Arch Linux)
+
+### DivaModManager Version
+1.3.1.35 (alpha5)
+
+### Did this issue start after updating DivaModManager?
+### If so, please tell us which version you were using before the update.
+I updated from TekkaGB version 1.2.9.
+
+### DivaModLoader Version
+0.0.16
+
+### DivaMegaMix.exe Directory
+C:\SteamLibrary\steamapps\common\Hatsune Miku Project DIVA Mega Mix Plus
+
+### DivaModManager.exe Directory
+C:\Users\(username)\Desktop\DivaModManager_Windows
+
+### Is DivaMegaMix or DivaModManager installed on an external drive or an internal drive?
+Internal drive (Steam Deck)
+
+### Enabled Value in DivaModLoader's config.toml (located in the game directory)
+enabled = true
+
+### Target Mod Name (if identifiable)
+Another Song Merge Tool
+
+### Distribution Site of the Target Mod
+GameBanana
+
+### When launching the game with only the target mod enabled, does it work correctly?
+It cannot be tested because the error occurs immediately after downloading the mod.
+
+### Does the same error occur after restarting your computer and trying the same operation again?
+Yes
+
+### Please describe exactly what action caused the error
+I clicked the download button on the GameBanana tab, and the error occurred a few seconds after the progress bar reached 100%.
+
+### What was displayed in the error message? (Please paste the complete error message as displayed, do not shorten it)
+### (A screenshot is also acceptable, but if it contains personal information such as your username, please edit the image and remove that information before sending it.)
+Save a screenshot of this message or contact the developer with the text you see after the process is complete.
+
+Unhandled exception occured:
+
+Value cannot be null. (Parameter 'path')
+
+Inner Exception:
+
+Stack Trace:
+at void ArgumentNullException.Throw(string paramName)
+at new System.IO.DirectoryInfo(string path)
+at List<FileSystemInfo> DivaModManager.Common.Helpers.FileHelper.GetFilesAndDirectoriesCount(string path, List<string> SkipFileWhenSizeCheckPathList)
+at void DivaModManager.Features.Extract.Extractor.MoveDirectoryInTemporary (ExtractInfo extract, string newTemporaryPath, string caller)
+at bool DivaModManager.Features.Extract.Extractor.MoveNextDir(ExtractInfo extract, string caller)
+at bool DivaModManager.Features.Extract.Extractor.CheckArchiveRoot Directory (ExtractInfo extract, string caller)
+at async Task<bool> DivaModManager.Features.Extract.Extractor.Extract Main(ExtractInfo extract, string caller)
+at async void DivaModManager.MainWindow.DMADownload_Click(object sender, RoutedEventArgs e)+(?) => {}
+at async Task DivaModManager.Features.Download.Mod Downloader.DMABrowserDownload(string game, DivaModArchivePost post, Func<ExtractInfo, Task> on ExtractAsync)+(?) => {}
+at async Task WorkManager.RunAsync(Func<Task> action)
+at async Task Diva ModManager.Features. Download.Mod Downloader.DMABrowserDownload(string game, DivaModArchivePost post, Func<ExtractInfo, Task> on ExtractAsync)
+at async void DivaModManager.MainWindow.DMADownload_Click(object sender, RoutedEventArgs e)+(?) => {}
+at async Task WorkManager.RunAsync(Func<Task> action)
+at async void DivaModManager.MainWindow.DMADownload_Click(object sender, RoutedEventArgs e) x 2
+at void System.Threading.Tasks. Task.ThrowAsync(Exception exception, SynchronizationContext targetContext)+(object state) => {}
+at object System.Windows.Threading.Exception Wrapper.Internal RealCall (Delegate callback, object args, int numArgs)
+at object System.Windows.Threading.Exception Wrapper. TryCatch When(object source, Delegate callback, object args, int numArgs, Delegate catchHandler)
+
+### Before submitting this template, did you review it and confirm that it does not contain personal information such as your username?
+Yes
+
+### Before submitting this template, did you search for your username using a text editor or similar tool and confirm that it does not appear anywhere in this report?
+Yes
+
+### You may be asked to provide the log file (DivaModManager.log) later, so please keep it if possible.
+DivaModManager.log was not generated.
+
+### We may ask you to attach an additional log file (DivaModManager.log) later, so please keep it if possible.
+### (Since DivaModManager.exe is initialized every time it is run, please rename the file or make a copy.)
+The DivaModManager.log file has disappeared.
+
