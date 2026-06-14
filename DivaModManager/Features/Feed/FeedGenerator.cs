@@ -1,8 +1,13 @@
-﻿using System;
+﻿using DivaModManager.Common.Helpers;
+using DivaModManager.Features.Debug;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -31,6 +36,30 @@ namespace DivaModManager.Features.Feed
         public static bool error;
         public static Exception exception;
         public static GameBananaModList CurrentFeed;
+        private static readonly string _gbCacheDir = Path.Combine(Global.assemblyLocation, "cache", "gb_api");
+
+        private static string GetCacheKey(string url)
+        {
+            var hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(url));
+            var sb = new StringBuilder(64);
+            foreach (var b in hashBytes)
+                sb.Append(b.ToString("x2"));
+            return sb.ToString();
+        }
+
+        private static string GetCachePath(string url)
+        {
+            return Path.Combine(_gbCacheDir, GetCacheKey(url) + ".txt");
+        }
+
+        private static bool IsCacheValid(string path, int cacheHours)
+        {
+            if (cacheHours == -1)
+                return true;
+            var age = DateTime.UtcNow - File.GetLastWriteTimeUtc(path);
+            return age.TotalHours < cacheHours;
+        }
+
         public static double GetHeader(this HttpResponseMessage request, string key)
         {
             IEnumerable<string> keys = null;
@@ -42,8 +71,14 @@ namespace DivaModManager.Features.Feed
         {
             if (feed != null)
                 feed.Clear();
+            try
+            {
+                if (Directory.Exists(_gbCacheDir))
+                    FileHelper.DeleteDirectory(_gbCacheDir);
+            }
+            catch { }
         }
-        public static async Task GetFeed(int page, GameFilter game, TypeFilter type, FeedFilter filter, GameBananaCategory category, GameBananaCategory subcategory, int perPage, bool nsfw, string search)
+        public static async Task GetFeed(int page, GameFilter game, TypeFilter type, FeedFilter filter, GameBananaCategory category, GameBananaCategory subcategory, int perPage, bool nsfw, string search, int cacheHours = 24)
         {
             error = false;
             if (feed == null)
@@ -58,10 +93,42 @@ namespace DivaModManager.Features.Feed
                 return;
             }
             CurrentFeed = new();
+
+            // ディスクキャッシュをチェック
+            var cachePath = GetCachePath(requestUrl);
+            if (File.Exists(cachePath) && IsCacheValid(cachePath, cacheHours))
+            {
+                try
+                {
+                    var lines = await File.ReadAllLinesAsync(cachePath);
+                    if (lines.Length >= 2 && double.TryParse(lines[0], out var totalPages))
+                    {
+                        var json = string.Join(Environment.NewLine, lines.Skip(1));
+                        var records = JsonSerializer.Deserialize<ObservableCollection<GameBananaRecord>>(json);
+                        if (records != null)
+                        {
+                            CurrentFeed.Records = records;
+                            CurrentFeed.TotalPages = totalPages;
+                            Logger.WriteLine($"FeedGenerator: Disk cache hit '{requestUrl}'", LoggerType.Debug);
+                            if (!feed.ContainsKey(requestUrl))
+                                feed.Add(requestUrl, CurrentFeed);
+                            else
+                                feed[requestUrl] = CurrentFeed;
+                            return;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.WriteLine($"FeedGenerator: Disk cache読み込みエラー: {ex.Message}", LoggerType.Warning);
+                }
+            }
+
             try
             {
                 var response = await Global.GBclient.GetAsync(requestUrl);
-                var records = JsonSerializer.Deserialize<ObservableCollection<GameBananaRecord>>(await response.Content.ReadAsStringAsync());
+                var responseString = await response.Content.ReadAsStringAsync();
+                var records = JsonSerializer.Deserialize<ObservableCollection<GameBananaRecord>>(responseString);
                 CurrentFeed.Records = records;
                 // Get record count from header
                 var numRecords = response.GetHeader("X-GbApi-Metadata_nRecordCount");
@@ -71,6 +138,20 @@ namespace DivaModManager.Features.Feed
                     if (totalPages == 0)
                         totalPages = 1;
                     CurrentFeed.TotalPages = totalPages;
+                }
+
+                // ディスクキャッシュに保存 (1行目: totalPages, 2行目以降: JSON)
+                try
+                {
+                    var dir = Path.GetDirectoryName(cachePath);
+                    if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                        Directory.CreateDirectory(dir);
+                    await File.WriteAllTextAsync(cachePath, $"{CurrentFeed.TotalPages}{Environment.NewLine}{responseString}");
+                    Logger.WriteLine($"FeedGenerator: Disk cache saved '{cachePath}'", LoggerType.Debug);
+                }
+                catch (Exception ex)
+                {
+                    Logger.WriteLine($"FeedGenerator: Disk cache保存エラー: {ex.Message}", LoggerType.Warning);
                 }
             }
             catch (Exception e)

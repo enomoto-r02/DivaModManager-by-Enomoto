@@ -4,7 +4,6 @@ using SharpCompress.Common;
 using SharpCompress.Readers;
 using System;
 using System.IO;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -33,7 +32,7 @@ namespace DivaModManager.Features.DMM
                             var fullDest = Path.GetFullPath(Path.Combine(destDirPath, entryKey));
                             var fullRoot = Path.GetFullPath(destDirPath);
 
-                            if (!fullDest.StartsWith(fullRoot, StringComparison.OrdinalIgnoreCase))
+                            if (!FileHelper.PathStartsWith(fullDest, fullRoot))
                             {
                                 Logger.WriteLine($"Blocked ZipSlip path: '{reader.Entry.Key}' -> '{fullDest}'", LoggerType.Error);
                                 continue;
@@ -52,7 +51,7 @@ namespace DivaModManager.Features.DMM
             {
                 Logger.WriteLine("Failed to extract update", LoggerType.Error);
             }
-            File.Delete(sourceFilePath);
+            FileHelper.DeleteFile(sourceFilePath);
         }
     }
 }

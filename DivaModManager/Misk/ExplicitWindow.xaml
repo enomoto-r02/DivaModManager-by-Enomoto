@@ -17,7 +17,7 @@
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
-        <Image Name="Preview" Source="../Assets/caution.png" Stretch="Uniform" VerticalAlignment="Center" Grid.Row="1" Grid.ColumnSpan="2"/>
+        <Image Name="Preview" Source="/Assets/caution.png" Stretch="Uniform" VerticalAlignment="Center" Grid.Row="1" Grid.ColumnSpan="2"/>
         <TextBlock Name="ExplicitReasonText" Grid.ColumnSpan="2" Grid.Row="2" VerticalAlignment="Center" Text="Explicit_Reason Text" Foreground="#f2f2f2" FontSize="24" FontWeight="SemiBold" TextAlignment="Center" HorizontalAlignment="Stretch" Width="Auto" Margin="20,20,20,20" TextWrapping="Wrap"/>
         <Button Grid.Row="3" Grid.Column="0" Content="Yes" FontSize="16" FontWeight="SemiBold" Foreground="#f2f2f2" Background="#494949" Margin="20,5,20,5" Click="Yes_Click"/>
         <Button Grid.Row="3" Grid.Column="1" Content="No" FontSize="16" FontWeight="SemiBold" Foreground="#f2f2f2" Background="#494949" Margin="20,5,20,5" Click="No_Click"/>
