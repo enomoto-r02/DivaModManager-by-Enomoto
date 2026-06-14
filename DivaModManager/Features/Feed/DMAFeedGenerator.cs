@@ -1,8 +1,13 @@
-﻿using DivaModManager.Models;
+﻿using DivaModManager.Common.Helpers;
+using DivaModManager.Features.Debug;
+using DivaModManager.Models;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -30,12 +35,25 @@ namespace DivaModManager.Features.Feed
         public static bool error;
         public static Exception exception;
         public static DivaModArchiveModList CurrentFeed;
-        public static void ClearCache()
+        private static readonly string _dmaCacheDir = Path.Combine(Global.assemblyLocation, "cache", "dma_api");
+
+        private static string GetCacheKey(string url)
+        {
+            var hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(url));
+            var sb = new StringBuilder(64);
+            foreach (var b in hashBytes)
+                sb.Append(b.ToString("x2"));
+            return sb.ToString();
+        }
+
+        public static void DMAClearCache()
         {
             if (feed != null)
                 feed.Clear();
+            ApiCacheManager.ClearCache(_dmaCacheDir);
         }
-        public static async Task GetFeed(int page, DMAFeedSort sort, DMAFeedFilter filter, string search, int limit)
+
+        public static async Task GetFeed(int page, DMAFeedSort sort, DMAFeedFilter filter, string search, int limit, int cacheHours = 24)
         {
             error = false;
             if (feed == null)
@@ -50,17 +68,75 @@ namespace DivaModManager.Features.Feed
                 return;
             }
             CurrentFeed = new();
+
+            var cachePath = Path.Combine(_dmaCacheDir, GetCacheKey(requestUrl) + ".json");
+            var countUrl = $"https://divamodarchive.com/api/v1/posts/count?query={search}&limit={limit}";
+            var countCachePath = Path.Combine(_dmaCacheDir, GetCacheKey(countUrl) + ".txt");
+
+            // Posts cache check
+            if (File.Exists(cachePath) && IsCacheValid(cachePath, cacheHours)
+                && File.Exists(countCachePath) && IsCacheValid(countCachePath, cacheHours))
+            {
+                try
+                {
+                    var json = await File.ReadAllTextAsync(cachePath);
+                    var posts = JsonSerializer.Deserialize<ObservableCollection<DivaModArchivePost>>(json);
+                    if (posts != null)
+                    {
+                        CurrentFeed.Posts = posts;
+                        CurrentFeed.TotalPages = double.Parse(await File.ReadAllTextAsync(countCachePath));
+                        Logger.WriteLine($"DMAFeedGenerator: Disk cache hit '{requestUrl}'", LoggerType.Debug);
+                        if (!feed.ContainsKey(requestUrl))
+                            feed.Add(requestUrl, CurrentFeed);
+                        else
+                            feed[requestUrl] = CurrentFeed;
+                        return;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.WriteLine($"DMAFeedGenerator: Disk cache読み込みエラー: {ex.Message}", LoggerType.Warning);
+                }
+            }
+
             try
             {
-                var response = await Global.DMAclient.GetAsync(requestUrl);
-                var posts = JsonSerializer.Deserialize<ObservableCollection<DivaModArchivePost>>(await response.Content.ReadAsStringAsync());
-                CurrentFeed.Posts = posts;
-                response = await Global.DMAclient.GetAsync($"https://divamodarchive.com/api/v1/posts/count?query={search}&limit={limit}");
-                var numPosts = double.Parse(await response.Content.ReadAsStringAsync());
-                var totalPages = Math.Ceiling(numPosts / limit);
-                if (totalPages == 0)
-                    totalPages = 1;
-                CurrentFeed.TotalPages = totalPages;
+                // Posts
+                {
+                    var response = await Global.DMAclient.GetAsync(requestUrl);
+                    var responseString = await response.Content.ReadAsStringAsync();
+                    var posts = JsonSerializer.Deserialize<ObservableCollection<DivaModArchivePost>>(responseString);
+                    CurrentFeed.Posts = posts;
+                    // ディスクに保存
+                    try
+                    {
+                        var dir = Path.GetDirectoryName(cachePath);
+                        if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                            Directory.CreateDirectory(dir);
+                        await File.WriteAllTextAsync(cachePath, responseString);
+                    }
+                    catch { }
+                }
+
+                // Count
+                {
+                    var response = await Global.DMAclient.GetAsync(countUrl);
+                    var countString = await response.Content.ReadAsStringAsync();
+                    var numPosts = double.Parse(countString);
+                    var totalPages = Math.Ceiling(numPosts / limit);
+                    if (totalPages == 0)
+                        totalPages = 1;
+                    CurrentFeed.TotalPages = totalPages;
+                    // ディスクに保存
+                    try
+                    {
+                        var dir = Path.GetDirectoryName(countCachePath);
+                        if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                            Directory.CreateDirectory(dir);
+                        await File.WriteAllTextAsync(countCachePath, totalPages.ToString());
+                    }
+                    catch { }
+                }
             }
             catch (Exception e)
             {
@@ -73,6 +149,15 @@ namespace DivaModManager.Features.Feed
             else
                 feed[requestUrl] = CurrentFeed;
         }
+
+        private static bool IsCacheValid(string path, int cacheHours)
+        {
+            if (cacheHours == -1)
+                return true;
+            var age = DateTime.UtcNow - File.GetLastWriteTimeUtc(path);
+            return age.TotalHours < cacheHours;
+        }
+
         private static string GenerateUrl(int page, DMAFeedSort sort, DMAFeedFilter filter, string search, int limit)
         {
             // Base

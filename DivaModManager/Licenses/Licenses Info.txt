@@ -44,7 +44,7 @@ Please refrain from contacting SEGA Corporation with any inquiries.
 また本ソフトウェアの実行中は上記ソフトウェアの設定ファイルを適時編集しております。
 このアップデートファイルのチェック等に関しては本ソフトウェアと同じディレクトリにあるtomlファイルにて、設定の変更が可能です。
 
------ 本ツールで使用しているライブラリの一覧 -------------------------
+----- ライブラリ一覧 -------------------------
 
 ・Ben.Demystifier (0.4.1)
     HomePage  : https://github.com/benaadams/Ben.Demystifier
@@ -80,4 +80,12 @@ Please refrain from contacting SEGA Corporation with any inquiries.
     HomePage : https://github.com/XamlAnimatedGif/WpfAnimatedGif
     License(Apache-2.0 license) : https://licenses.nuget.org/Apache-2.0
     License(Local File)  : Apache-2.0 license.txt
+
+----- その他 フリーアイコン等 -------------------------
+
+・fontawesome-free-7.2.0-desktop
+    HomePage  : https://fontawesome.com/
+    License(License) : https://fontawesome.com/icons/packs/classic
+    License(Local File)  : LICENSE(fontawesome).txt
+     * ライセンスに則る形で、色の反転及びpngに変更して使用しています
 

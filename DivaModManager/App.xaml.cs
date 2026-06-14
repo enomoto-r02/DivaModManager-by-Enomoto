@@ -6,7 +6,6 @@ using DivaModManager.Features.Download;
 using DivaModManager.Features.Extract;
 using System;
 using System.Collections.Generic;
-using System.Configuration;
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
@@ -22,7 +21,7 @@ namespace DivaModManager
     public partial class App : Application
     {
         public static readonly string Version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
-        public static readonly string TestVersion = " (alpha5)";
+        public static readonly string TestVersion = " (beta1)";
 
         [DllImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -97,7 +96,6 @@ namespace DivaModManager
             }
 
             Extractor.InitSevenZipLocal();
-            //Extractor.InitSevenZip();
             Extractor.InitWinRar();
 
             RegistryConfig.UpdateGBHandler();

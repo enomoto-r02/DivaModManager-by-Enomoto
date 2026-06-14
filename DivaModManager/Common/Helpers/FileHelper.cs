@@ -38,6 +38,7 @@ namespace DivaModManager.Common.Helpers
             DMM_LOG,
             DMM_SEVEN_ZIP,
             WIN_RAR,
+            DMM_CHCHE,
         }
 
         /// <summary>
@@ -68,7 +69,8 @@ namespace DivaModManager.Common.Helpers
                     || isDivaModDirectory == DIVA_PATH_RESULT.DML_TOML
                     || isDivaModDirectory == DIVA_PATH_RESULT.DML_TEMP_FILE
                     || isDivaModDirectory == DIVA_PATH_RESULT.DML_TEMP_DIRECTORY
-                    || isDivaModDirectory == DIVA_PATH_RESULT.DMM_LOG)
+                    || isDivaModDirectory == DIVA_PATH_RESULT.DMM_LOG
+                    || isDivaModDirectory == DIVA_PATH_RESULT.DMM_CHCHE)
                 {
                     if (TryFindUnsafeFileSystemReference(deleteFilePath, out var unsafeReference))
                     {
@@ -82,13 +84,19 @@ namespace DivaModManager.Common.Helpers
 
                     ret = Application.Current.Dispatcher.Invoke(() =>
                     {
-                        // ファイル削除
-                        //System.IO.File.Delete(deleteFilePath);
-                        Microsoft.VisualBasic.FileIO.FileSystem.DeleteFile(
-                            deleteFilePath,
-                            Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs,
-                            Microsoft.VisualBasic.FileIO.RecycleOption.SendToRecycleBin,
-                            Microsoft.VisualBasic.FileIO.UICancelOption.DoNothing);
+                        if (Global.IsWine)
+                        {
+                            System.IO.File.Delete(deleteFilePath);
+                        }
+                        else
+                        {
+                            // Windows native keeps the previous recycle-bin behavior.
+                            Microsoft.VisualBasic.FileIO.FileSystem.DeleteFile(
+                                deleteFilePath,
+                                Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs,
+                                Microsoft.VisualBasic.FileIO.RecycleOption.SendToRecycleBin,
+                                Microsoft.VisualBasic.FileIO.UICancelOption.DoNothing);
+                        }
 
                         // 成功したら true を返す
                         return true;
@@ -388,9 +396,10 @@ namespace DivaModManager.Common.Helpers
             var checkDmlDownloadResult = false;
             var checkDmlTempFileResult = false;
             var checkDmlTmpDirectoryResult = false;
+            var checkDmmCacheDirectoryResult = false;
 
             var ret = DIVA_PATH_RESULT.NOT;
-            var _targetFullPath = Path.GetFullPath(targetPath).ToLowerInvariant();
+            var targetFullPath = Path.GetFullPath(targetPath);
 
             // 設定ファイルでDMM/DownloadsフォルダとMM+/modsフォルダの両方が設定されている
             var isDownloadDir = !string.IsNullOrWhiteSpace(Path.GetFullPath(Global.downloadBaseLocation))
@@ -425,56 +434,62 @@ namespace DivaModManager.Common.Helpers
                 return DIVA_PATH_RESULT.NOT;
             }
 
-
             // tmp directory
-            var checkTmpDirectoryPath = Path.GetFullPath(Path.Combine(Global.assemblyLocation, "Downloads", "temp_")).ToLowerInvariant();
+            var checkTmpDirectoryPath = Path.GetFullPath(Path.Combine(Global.assemblyLocation, "Downloads", "temp_"));
             checkTmpDirectoryResult =
-                _targetFullPath.StartsWith(checkTmpDirectoryPath.ToLowerInvariant());
+                StartsWith(targetFullPath, checkTmpDirectoryPath);
+
+            // chech directory
+            var checkCacheDirectoryPath = Path.GetFullPath(Path.Combine(Global.assemblyLocation, "chech"));
+            checkDmmCacheDirectoryResult =
+                StartsWith(targetFullPath, checkCacheDirectoryPath);
 
             // download file
             var checkDownloadFilePath = Path.Combine(Global.assemblyLocation, "Downloads");
             checkDownloadFileResult =
-                _targetFullPath.StartsWith(Path.GetFullPath(checkDownloadFilePath).ToLowerInvariant());
+                PathStartsWith(targetFullPath, Path.GetFullPath(checkDownloadFilePath));
 
             // mods
             checkModsResult =
-                FileHelper.PathStartsWith(_targetFullPath, Path.GetFullPath(Global.ModsFolder).ToLowerInvariant())
+                FileHelper.PathStartsWith(targetFullPath, Path.GetFullPath(Global.ModsFolder))
                 // Config.jsonの"ModsFolder"は最後にGlobal.sが付与されていないので、パス長で判定
-                && _targetFullPath.Length > Path.GetFullPath(Global.ModsFolder).TrimEnd(Path.DirectorySeparatorChar).Length;
+                && targetFullPath.Length > TrimEndingDirectorySeparators(Path.GetFullPath(Global.ModsFolder)).Length;
 
             // setting
-            checkSettingResult = _targetFullPath == Path.GetFullPath(ConfigTomlDmm.CONFIG_E_TOML_PATH).ToLowerInvariant();
+            checkSettingResult = PathsEqual(targetFullPath, Path.GetFullPath(ConfigTomlDmm.CONFIG_E_TOML_PATH));
 
             // log
             checkDmmLogResult =
-                (_targetFullPath == Path.GetFullPath(Global.textLogLocation).ToLowerInvariant())
-                || (_targetFullPath == Path.GetFullPath(Global.textLogBackgroundLocation).ToLowerInvariant());
+                PathsEqual(targetFullPath, Path.GetFullPath(Global.textLogLocation))
+                || PathsEqual(targetFullPath, Path.GetFullPath(Global.textLogBackgroundLocation));
 
             // 7z.exe
-            checkDmmSevenZipResult = _targetFullPath == Path.GetFullPath(Extractor.SEVENZIP_CONSOLE_EXE_LOCAL_PATH).ToLowerInvariant();
+            checkDmmSevenZipResult = PathsEqual(targetFullPath, Path.GetFullPath(Extractor.SEVENZIP_CONSOLE_EXE_LOCAL_PATH));
 
             // Rar.exe
             //checkWinRarResult = _targetFullPath == (!string.IsNullOrEmpty(Global.ConfigJson?.WinRarConsolePath) ? Path.GetFullPath(Global.ConfigJson.WinRarConsolePath).ToLowerInvariant() : null);
 
             // DML Download File
-            checkDmlDownloadResult = FileHelper.PathStartsWith(_targetFullPath, (Path.GetFullPath(Global.ConfigJson.GetGameLocation()).ToLowerInvariant()));
+            checkDmlDownloadResult = FileHelper.PathStartsWith(targetFullPath, Path.GetFullPath(Global.ConfigJson.GetGameLocation()));
 
             // DML Temp File
-            checkDmlTempFileResult = FileHelper.PathStartsWith(_targetFullPath, (Path.GetFullPath(Global.temporaryLocationDML).ToLowerInvariant()));
+            checkDmlTempFileResult = FileHelper.PathStartsWith(targetFullPath, Path.GetFullPath(Global.temporaryLocationDML));
 
             // DML Temp Directory
-            checkDmlTmpDirectoryResult = FileHelper.PathStartsWith(_targetFullPath,
-                (Path.GetFullPath(Path.Combine(Global.temporaryLocationDML, "temp_")).ToLowerInvariant()));
+            checkDmlTmpDirectoryResult = StartsWith(targetFullPath,
+                Path.GetFullPath(Path.Combine(Global.temporaryLocationDML, "temp_")));
 
             // 削除判定の順番は重要なので注意(上位のフォルダほどチェックは後に！)
             if (checkTmpDirectoryResult)
-                ret = Directory.Exists(_targetFullPath) ? DIVA_PATH_RESULT.TEMP_DIRECTORY : DIVA_PATH_RESULT.NOT;
+                ret = Directory.Exists(targetFullPath) ? DIVA_PATH_RESULT.TEMP_DIRECTORY : DIVA_PATH_RESULT.NOT;
+            if (checkDmmCacheDirectoryResult)
+                ret = DIVA_PATH_RESULT.DMM_CHCHE;
             else if (checkDmlTmpDirectoryResult)
-                ret = Directory.Exists(_targetFullPath) ? DIVA_PATH_RESULT.DML_TEMP_DIRECTORY : DIVA_PATH_RESULT.DML_TEMP_FILE;
+                ret = Directory.Exists(targetFullPath) ? DIVA_PATH_RESULT.DML_TEMP_DIRECTORY : DIVA_PATH_RESULT.DML_TEMP_FILE;
             else if (checkModsResult)
-                ret = Directory.Exists(_targetFullPath) ? DIVA_PATH_RESULT.MODS_DIRECTORY : DIVA_PATH_RESULT.MODS_FILE;
+                ret = Directory.Exists(targetFullPath) ? DIVA_PATH_RESULT.MODS_DIRECTORY : DIVA_PATH_RESULT.MODS_FILE;
             else if (checkDmlTempFileResult)
-                ret = File.Exists(_targetFullPath) ? DIVA_PATH_RESULT.DML_TEMP_DIRECTORY : DIVA_PATH_RESULT.NOT;
+                ret = File.Exists(targetFullPath) ? DIVA_PATH_RESULT.DML_TEMP_DIRECTORY : DIVA_PATH_RESULT.NOT;
             else if (checkSettingResult)
                 ret = DIVA_PATH_RESULT.DMM_TOML;
             else if (checkDmmLogResult)
@@ -484,9 +499,9 @@ namespace DivaModManager.Common.Helpers
             else if (checkWinRarResult)
                 ret = DIVA_PATH_RESULT.WIN_RAR;
             else if (checkDmlDownloadResult)
-                ret = Directory.Exists(_targetFullPath) ? DIVA_PATH_RESULT.DML_DOWNLOAD_FILE : DIVA_PATH_RESULT.NOT;
+                ret = Directory.Exists(targetFullPath) ? DIVA_PATH_RESULT.DML_DOWNLOAD_FILE : DIVA_PATH_RESULT.NOT;
             else if (checkDownloadFileResult)
-                ret = File.Exists(_targetFullPath) ? DIVA_PATH_RESULT.DOWNLOAD_MOD_FILE : DIVA_PATH_RESULT.NOT;
+                ret = File.Exists(targetFullPath) ? DIVA_PATH_RESULT.DOWNLOAD_MOD_FILE : DIVA_PATH_RESULT.NOT;
 
             ParamInfo += $", isDownloadDir:{isDownloadDir}, isModsDir:{isModsDir}, Return:{ret}";
             Logger.WriteLine($"{MeInfo} End. Return:{ret}, Path:\"{targetPath}\"", LoggerType.Debug, param: ParamInfo);
@@ -495,21 +510,17 @@ namespace DivaModManager.Common.Helpers
 
         /// <summary>
         /// StartsWithを用いた文字列チェック
-        /// 　小文字にして比較
-        /// 　インバリアントカルチャを考慮
         /// </summary>
         /// <param name="targetPath"></param>
         /// <param name="startPath"></param>
         /// <returns></returns>
         public static bool StartsWith(string targetA, string targetB)
         {
-            return targetA.ToLowerInvariant().StartsWith(targetB.ToLowerInvariant(), StringComparison.InvariantCultureIgnoreCase);
+            return targetA.StartsWith(targetB, GetPathComparison());
         }
 
         /// <summary>
-        /// StartsWithを用いたファイル存在チェック
-        /// 　小文字にして比較
-        /// 　インバリアントカルチャを考慮
+        /// startPath配下のパスか確認する
         /// </summary>
         /// <param name="targetPath"></param>
         /// <param name="startPath"></param>
@@ -518,13 +529,50 @@ namespace DivaModManager.Common.Helpers
         {
             try
             {
-                return Path.GetFullPath(targetPath).ToLowerInvariant().StartsWith(Path.GetFullPath(startPath).ToLowerInvariant(), StringComparison.InvariantCultureIgnoreCase);
+                var targetFullPath = TrimEndingDirectorySeparators(Path.GetFullPath(targetPath));
+                var startFullPath = TrimEndingDirectorySeparators(Path.GetFullPath(startPath));
+                if (PathsEqual(targetFullPath, startFullPath))
+                {
+                    return true;
+                }
+
+                var relativePath = Path.GetRelativePath(startFullPath, targetFullPath);
+                return relativePath != "."
+                    && !IsParentDirectoryReference(relativePath)
+                    && !Path.IsPathRooted(relativePath);
             }
             catch (Exception ex)
             {
                 Logger.WriteLine($"Error checking file existence for '{targetPath}': {ex.Message}", LoggerType.Warning);
                 return false;
             }
+        }
+
+        private static bool PathsEqual(string pathA, string pathB)
+        {
+            return string.Equals(
+                TrimEndingDirectorySeparators(Path.GetFullPath(pathA)),
+                TrimEndingDirectorySeparators(Path.GetFullPath(pathB)),
+                GetPathComparison());
+        }
+
+        private static string TrimEndingDirectorySeparators(string path)
+        {
+            return Path.TrimEndingDirectorySeparator(path);
+        }
+
+        private static bool IsParentDirectoryReference(string relativePath)
+        {
+            return relativePath == ".."
+                || relativePath.StartsWith($"..{Path.DirectorySeparatorChar}", GetPathComparison())
+                || relativePath.StartsWith($"..{Path.AltDirectorySeparatorChar}", GetPathComparison());
+        }
+
+        private static StringComparison GetPathComparison()
+        {
+            return (OperatingSystem.IsWindows() || Global.IsWine)
+                ? StringComparison.OrdinalIgnoreCase
+                : StringComparison.Ordinal;
         }
 
         public static bool FileExists(string path)
@@ -858,18 +906,24 @@ namespace DivaModManager.Common.Helpers
 
             var dirInfo = new DirectoryInfo(path);
 
-            foreach (FileInfo fi in dirInfo.GetFiles())
+            if (dirInfo != null)
             {
-                var sumFlg = true;
-                if (SkipFileWhenSizeCheckPathList != null)
+                foreach (FileInfo fi in dirInfo.GetFiles())
                 {
-                    sumFlg = !SkipFileWhenSizeCheckPathList.Where(x => FileHelper.PathStartsWith(fi.FullName, x)).Any();
+                    var sumFlg = true;
+                    if (SkipFileWhenSizeCheckPathList != null)
+                    {
+                        sumFlg = !SkipFileWhenSizeCheckPathList.Where(x => FileHelper.PathStartsWith(fi.FullName, x)).Any();
+                    }
+                    if (sumFlg)
+                        DirectorySize += fi.Length;
                 }
-                if (sumFlg)
-                    DirectorySize += fi.Length;
+                foreach (DirectoryInfo di in dirInfo.GetDirectories())
+                {
+                    DirectorySize += GetDirectorySize(di.FullName, SkipFileWhenSizeCheckPathList);
+                }
             }
-            foreach (DirectoryInfo di in dirInfo.GetDirectories())
-                DirectorySize += GetDirectorySize(di.FullName, SkipFileWhenSizeCheckPathList);
+
             return DirectorySize;
         }
 
@@ -901,26 +955,30 @@ namespace DivaModManager.Common.Helpers
             var fileSystemInfo = new List<FileSystemInfo>();
 
             int ret = 0;
-            foreach (FileInfo fi in dirInfo.GetFiles())
+
+            if (dirInfo != null)
             {
-                var sumFlg = true;
-                if (SkipFileWhenSizeCheckPathList != null)
+                foreach (FileInfo fi in dirInfo.GetFiles())
                 {
-                    sumFlg = !SkipFileWhenSizeCheckPathList.Where(x => FileHelper.PathStartsWith(fi.FullName, x)).Any();
+                    var sumFlg = true;
+                    if (SkipFileWhenSizeCheckPathList != null)
+                    {
+                        sumFlg = !SkipFileWhenSizeCheckPathList.Where(x => FileHelper.PathStartsWith(fi.FullName, x)).Any();
+                    }
+                    if (sumFlg)
+                    {
+                        fileSystemInfo.Add(fi);
+                        ret++;
+                    }
                 }
-                if (sumFlg)
+                foreach (DirectoryInfo di in dirInfo.GetDirectories())
                 {
-                    fileSystemInfo.Add(fi);
+                    fileSystemInfo.Add(di);
                     ret++;
+                    var addFileSystemInfo = GetFilesAndDirectoriesCount(di.FullName, SkipFileWhenSizeCheckPathList);
+                    ret += addFileSystemInfo.Count;
+                    fileSystemInfo.AddRange(addFileSystemInfo);
                 }
-            }
-            foreach (DirectoryInfo di in dirInfo.GetDirectories())
-            {
-                fileSystemInfo.Add(di);
-                ret++;
-                var addFileSystemInfo = GetFilesAndDirectoriesCount(di.FullName, SkipFileWhenSizeCheckPathList);
-                ret += addFileSystemInfo.Count;
-                fileSystemInfo.AddRange(addFileSystemInfo);
             }
             return fileSystemInfo;
         }
@@ -986,12 +1044,11 @@ namespace DivaModManager.Common.Helpers
                     if (sumFlg)
                         ret.Add(fi);
                 }
+                foreach (DirectoryInfo di in directories.GetDirectories())
+                {
+                    ret = _GetFilesAndDirectoryList(ret, basePath, SkipFileWhenSizeCheckPathList, di.FullName);
+                }
             }
-            foreach (DirectoryInfo di in directories.GetDirectories())
-            {
-                ret = _GetFilesAndDirectoryList(ret, basePath, SkipFileWhenSizeCheckPathList, di.FullName);
-            }
-
             return ret;
         }
 

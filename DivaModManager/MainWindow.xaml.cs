@@ -1,4 +1,4 @@
-﻿using DivaModManager.Common.Config;
+using DivaModManager.Common.Config;
 using DivaModManager.Common.Helpers;
 using DivaModManager.Features.AltLink;
 using DivaModManager.Features.Debug;
@@ -50,11 +50,17 @@ namespace DivaModManager
             Note,
         }
 
+        #region Cache constants (後日外部ファイル化予定)
+        private const int GB_API_CACHE_HOURS = -1;      // -1 で永続
+        private const int DMA_API_CACHE_HOURS = -1;     // -1 で永続
+        private const int GB_IMAGE_CACHE_HOURS = -1;    // -1 で永続
+        private const int DMA_IMAGE_CACHE_HOURS = -1;   // -1 で永続
+        #endregion
+
         private FlowDocument defaultFlow = new();
         private string defaultText = "Welcome to DivaModManager by Enomoto!\n\n" +
             "To show metadata here:\nRight Click Row > Configure Mod and add author, version, and/or date fields" +
             "\nand/or Right Click Row > Fetch Metadata and confirm the GameBanana or DivaModArchive URL of the mod";
-        private ObservableCollection<string> LauncherOptions = new ObservableCollection<string> { "Executable", "Steam" };
         ListSortDirection direction = ListSortDirection.Ascending;
         // Modsフォルダ監視
         private DMMFileSystemWatcher ModsWatcher;
@@ -290,7 +296,7 @@ namespace DivaModManager
             string ParamInfo = $"id:{Thread.CurrentThread.ManagedThreadId}";
             Logger.WriteLine(string.Join(" ", MeInfo, $"Start."), LoggerType.Debug, param: ParamInfo);
 
-            App.Current.Dispatcher.Invoke(() => OnFirstOpenAsync());
+            await App.Current.Dispatcher.InvokeAsync(() => OnFirstOpenAsync());
             if (!Global.IsWine && Global.ConfigToml.DivaModManagerUpdateCheck)
             {
                 Logger.WriteLine("Checking for DivaModManager by Enomoto update...", LoggerType.Info);
@@ -739,7 +745,7 @@ namespace DivaModManager
             await Dispatcher.InvokeAsync(() => ShowMetadata(checkMod));
         }
 
-        private async void Setup_Click(object sender, RoutedEventArgs e)
+        private async void SetupButton_Click(object sender, RoutedEventArgs e)
         {
             string MeInfo = Logger.GetMeInfo(new StackFrame());
             string ParamInfo = $"id:{Thread.CurrentThread.ManagedThreadId}";
@@ -810,7 +816,7 @@ namespace DivaModManager
             });
         }
 
-        private async void Launch_Click(object sender, RoutedEventArgs e)
+        private async void LaunchButton_Click(object sender, RoutedEventArgs e)
         {
             string MeInfo = Logger.GetMeInfo(new StackFrame());
             string ParamInfo = $"id:{Thread.CurrentThread.ManagedThreadId}";
@@ -870,7 +876,7 @@ namespace DivaModManager
             ProcessHelper.TryStartProcess($"https://github.com/sponsors/enomoto-r02?frequency=one-time");
         }
 
-        private void GameBananaButton_Click(object sender, RoutedEventArgs e)
+        private void GBGameBananaButton_Click(object sender, RoutedEventArgs e)
         {
             if (!string.IsNullOrEmpty(Global.GAME_ID))
             {
@@ -919,10 +925,6 @@ namespace DivaModManager
 
                 var SelectModsCount = ModGrid.SelectedCells.Count / ModGrid.Columns.Count;
                 List<string> inactiveList = new();
-                if (Global.IsWine)
-                {
-                    inactiveList.AddRange(new[] { "FetchMetadata", "CleanUpdateMod", "DeleteMod" });
-                }
                 if (SelectModsCount > 1)
                 {
                     if (Global.SearchModListFlg) { inactiveList.AddRange(new[] { "MoveToTop", "MoveToBottom" }); }
@@ -944,13 +946,11 @@ namespace DivaModManager
             }
         }
 
-        private async void Delete_Mod_Click(object sender, RoutedEventArgs e)
+        private async void DeleteMod_Click(object sender, RoutedEventArgs e)
         {
             string MeInfo = Logger.GetMeInfo(new StackFrame());
             string ParamInfo = $"id:{Thread.CurrentThread.ManagedThreadId}";
             Logger.WriteLine(string.Join(" ", MeInfo, $"Start."), LoggerType.Debug, param: ParamInfo);
-
-            if (!Global.IsWindows) return;
 
             var selectedMods = ModGrid.SelectedItems.OfType<Mod>().ToList();
             if (!selectedMods.Any()) return;
@@ -1050,7 +1050,7 @@ namespace DivaModManager
             Dispose();
         }
 
-        private void Open_Mod_Click(object sender, RoutedEventArgs e)
+        private void OpenMod_Click(object sender, RoutedEventArgs e)
         {
             string MeInfo = Logger.GetMeInfo(new StackFrame());
             var selectedMods = ModGrid.SelectedItems.OfType<Mod>().ToList();
@@ -1068,7 +1068,7 @@ namespace DivaModManager
             }
         }
 
-        private async void Rename_Mod_Click(object sender, RoutedEventArgs e)
+        private async void RenameMod_Click(object sender, RoutedEventArgs e)
         {
             var selectedMods = ModGrid.SelectedItems;
             var temp = new Mod[selectedMods.Count];
@@ -1086,7 +1086,7 @@ namespace DivaModManager
             ModGrid.Focus();
         }
 
-        private void Configure_Mod_Click(object sender, RoutedEventArgs e)
+        private void ConfigureMod_Click(object sender, RoutedEventArgs e)
         {
             var selectedMods = ModGrid.SelectedItems;
             var temp = new Mod[selectedMods.Count];
@@ -1100,10 +1100,8 @@ namespace DivaModManager
                 }
             }
         }
-        private void Fetch_Mod_Click(object sender, RoutedEventArgs e)
+        private void FetchMod_Click(object sender, RoutedEventArgs e)
         {
-            if (!Global.IsWindows) return;
-
             var selectedMods = ModGrid.SelectedItems;
             var temp = new Mod[selectedMods.Count];
             selectedMods.CopyTo(temp, 0);
@@ -1118,7 +1116,7 @@ namespace DivaModManager
                 }
             }
         }
-        private void MoveToTop_Click(object sender, RoutedEventArgs e)
+        private void MoveToTopMod_Click(object sender, RoutedEventArgs e)
         {
             var selectedObjects = ModGrid.SelectedItems as ObservableCollection<Object>;
             var selectedMods = selectedObjects.Cast<Mod>().ToList();
@@ -1130,7 +1128,7 @@ namespace DivaModManager
 
             e.Handled = true;
         }
-        private void MoveToBottom_Click(object sender, RoutedEventArgs e)
+        private void MoveToBottomMod_Click(object sender, RoutedEventArgs e)
         {
             var selectedObjects = ModGrid.SelectedItems as ObservableCollection<Object>;
             var selectedMods = selectedObjects.Cast<Mod>().ToList();
@@ -1216,17 +1214,6 @@ namespace DivaModManager
                 }
             }
         }
-        //private void CreateMod_Click(object sender, RoutedEventArgs e)
-        //{
-        //    if (Global.SearchModListFlg)
-        //    {
-        //        WindowHelper.MessageBoxOpen(41);
-        //        return;
-        //    }
-        //    var createModWindow = new CreateModWindow();
-        //    createModWindow.ShowDialog();
-        //    ModGrid.Focus();
-        //}
 
 
         private void DMLConsoleBox_SelectionChanged(object sender, RoutedEventArgs e)
@@ -1236,7 +1223,7 @@ namespace DivaModManager
                 MessageBox.Show(Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].DMLConfig);
             }
         }
-        private void Update_Check_Click(object sender, RoutedEventArgs e)
+        private void CoreUpdateButton_Click(object sender, RoutedEventArgs e)
         {
             string MeInfo = Logger.GetMeInfo(new StackFrame());
             string ParamInfo = $"id:{Thread.CurrentThread.ManagedThreadId}";
@@ -1270,12 +1257,10 @@ namespace DivaModManager
                 await RefreshAsync();
             });
         }
-        private async void Clean_Update_Mod_Click(object sender, RoutedEventArgs e)
+        private async void CleanUpdateMod_Click(object sender, RoutedEventArgs e)
         {
             string MeInfo = Logger.GetMeInfo(new StackFrame());
             string ParamInfo = $"id:{Thread.CurrentThread.ManagedThreadId}";
-
-            if (!Global.IsWindows) return;
 
             try
             {
@@ -1317,7 +1302,7 @@ namespace DivaModManager
             DescriptionWindowInit();
             ViewErrorAndWarningDescriptionWindow(mod);
 
-            FileInfo[] previewFiles = null;
+            List<string> previewFiles = null;
             try
             {
                 // Delete後に呼ばれた場合はmod == null(初期状態の表示を行うため)
@@ -1326,7 +1311,14 @@ namespace DivaModManager
                 }
                 else if (Directory.Exists(path))
                 {
-                    previewFiles = new DirectoryInfo(path).GetFiles("Preview.*");
+                    var allFiles = Directory.GetFiles(path, "*.*").ToList();
+                    previewFiles = allFiles.Where(f =>
+                        f.EndsWith(".png", StringComparison.OrdinalIgnoreCase)  ||
+                        f.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase)  ||
+                        f.EndsWith(".gif", StringComparison.OrdinalIgnoreCase)  ||
+                        f.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) ||
+                        f.EndsWith(".webp", StringComparison.OrdinalIgnoreCase)
+                    ).ToList();
                 }
                 else
                 {
@@ -1336,7 +1328,7 @@ namespace DivaModManager
             catch (Exception ex)
             {
                 Logger.WriteLine($"Error accessing preview files in '{path}': {ex.Message}", LoggerType.Error);
-                previewFiles = Array.Empty<FileInfo>();
+                previewFiles = new();
             }
 
             if (File.Exists(mod?.mods_json_path)
@@ -1376,7 +1368,7 @@ namespace DivaModManager
                         para.Inlines.Add($"Submitter: ");
                         if (metadata.avi != null && metadata.avi.ToString().Length > 0)
                         {
-                            BitmapImage bm = new(metadata.avi);
+                            BitmapImage bm = ImageCacheManager.GetCachedBitmap(metadata.avi);
                             Image image = new()
                             {
                                 Source = bm,
@@ -1387,7 +1379,7 @@ namespace DivaModManager
                         }
                         if (metadata.upic != null && metadata.upic.ToString().Length > 0)
                         {
-                            BitmapImage bm = new(metadata.upic);
+                            BitmapImage bm = ImageCacheManager.GetCachedBitmap(metadata.upic);
                             Image image = new()
                             {
                                 Source = bm,
@@ -1420,7 +1412,7 @@ namespace DivaModManager
                     para.Inlines.Add("Category: ");
                     if (metadata.caticon != null && metadata.caticon.ToString().Length > 0)
                     {
-                        BitmapImage bm = new(metadata.caticon);
+                        BitmapImage bm = ImageCacheManager.GetCachedBitmap(metadata.caticon);
                         Image image = new()
                         {
                             Source = bm,
@@ -1445,14 +1437,24 @@ namespace DivaModManager
                     var init = ConvertToFlowParagraph(text);
                     DescriptionWindow.Document.Blocks.Add(init);
                 }
+                // メタデータ画像をバックグラウンドでキャッシュ（次回選択時に即表示）
+                if (metadata != null)
+                {
+                    if (metadata.avi != null && metadata.avi.ToString().Length > 0)
+                        _ = ImageCacheManager.PreCacheAsync(metadata.avi, -1);
+                    if (metadata.upic != null && metadata.upic.ToString().Length > 0)
+                        _ = ImageCacheManager.PreCacheAsync(metadata.upic, -1);
+                    if (metadata.caticon != null && metadata.caticon.ToString().Length > 0)
+                        _ = ImageCacheManager.PreCacheAsync(metadata.caticon, -1);
+                }
                 // Wine環境で落ちるのでいったんバイパス
                 if (!Global.IsWine)
                 {
-                    if (previewFiles != null && previewFiles.Length > 0)
+                    if (previewFiles != null && previewFiles.Count > 0)
                     {
                         try
                         {
-                            string imagePath = previewFiles[0].FullName; // ファイルのフルパスを取得
+                            string imagePath = previewFiles[0]; // ファイルのフルパスを取得
 
                             // --- MemoryStream を使わずに UriSource で直接読み込む ---
                             var img = new BitmapImage();
@@ -1471,7 +1473,7 @@ namespace DivaModManager
                                 img.Freeze();
                             }
 
-                            Dispatcher.InvokeAsync(() =>
+                            Dispatcher.InvokeAsync(async () =>
                             {
                                 ImageBehavior.SetAnimatedSource(Preview, img);
                                 ImageBehavior.SetAnimatedSource(PreviewBG, img);
@@ -1479,27 +1481,27 @@ namespace DivaModManager
                         }
                         catch (UriFormatException ex)
                         {
-                            Logger.WriteLine($"Invalid URI format for image path '{previewFiles[0].FullName}': {ex.Message}", LoggerType.Error);
+                            Logger.WriteLine($"Invalid URI format for image path '{previewFiles[0]}': {ex.Message}", LoggerType.Error);
                             SetDefaultPreviewImage();
                         }
                         catch (FileNotFoundException) // UriSource でもファイルが見つからない場合
                         {
-                            Logger.WriteLine($"Preview file not found (UriSource): '{previewFiles[0].FullName}'", LoggerType.Warning);
+                            Logger.WriteLine($"Preview file not found (UriSource): '{previewFiles[0]}'", LoggerType.Warning);
                             SetDefaultPreviewImage();
                         }
                         catch (IOException ex) // ファイル読み込み中のIOエラー
                         {
-                            Logger.WriteLine($"IO error loading preview image from UriSource '{previewFiles[0].FullName}': {ex.Message}", LoggerType.Error);
+                            Logger.WriteLine($"IO error loading preview image from UriSource '{previewFiles[0]}': {ex.Message}", LoggerType.Error);
                             SetDefaultPreviewImage();
                         }
                         catch (NotSupportedException ex) // サポートされていない画像形式
                         {
-                            Logger.WriteLine($"Unsupported image format for preview file '{previewFiles[0].FullName}': {ex.Message}", LoggerType.Warning);
+                            Logger.WriteLine($"Unsupported image format for preview file '{previewFiles[0]}': {ex.Message}", LoggerType.Warning);
                             SetDefaultPreviewImage();
                         }
                         catch (Exception ex)
                         {
-                            Logger.WriteLine($"Error loading preview image '{previewFiles[0].FullName}': {ex}", LoggerType.Error);
+                            Logger.WriteLine($"Error loading preview image '{previewFiles[0]}': {ex}", LoggerType.Error);
                             SetDefaultPreviewImage();
                         }
                     }
@@ -1519,6 +1521,8 @@ namespace DivaModManager
                                 // if (bitmap.CanFreeze) bitmap.Freeze();
                                 ImageBehavior.SetAnimatedSource(Preview, bitmap);
                                 ImageBehavior.SetAnimatedSource(PreviewBG, bitmap);
+
+                                Logger.WriteLine($"Download preview: {metadata.preview}", LoggerType.Debug);
                             }
                             else
                             {
@@ -1529,27 +1533,6 @@ namespace DivaModManager
                         {
                             Logger.WriteLine($"Error loading preview image from URI '{mod.name}/mod.json': {ex.Message}", LoggerType.Error);
                             SetDefaultPreviewImage();
-                        }
-                    }
-
-                    if (previewFiles != null && previewFiles.Length > 0)
-                    {
-                        try
-                        {
-                            byte[] imageBytes = File.ReadAllBytes(previewFiles[0].FullName);
-                            using var stream = new MemoryStream(imageBytes);
-                            var img = new BitmapImage();
-
-                            img.BeginInit();
-                            img.StreamSource = stream;
-                            img.CacheOption = BitmapCacheOption.OnLoad;
-                            img.EndInit();
-                            ImageBehavior.SetAnimatedSource(Preview, img);
-                            ImageBehavior.SetAnimatedSource(PreviewBG, img);
-                        }
-                        catch (Exception ex)
-                        {
-                            Logger.WriteLine(ex.Message, LoggerType.Error);
                         }
                     }
                     else
@@ -1620,7 +1603,7 @@ namespace DivaModManager
                 {
                     await new ModDownloader().BrowserDownload(Global.GAME_ID, item, onExtractAsync: async (extractInfo) =>
                     {
-                        await Dispatcher.InvokeAsync(() =>
+                        await Dispatcher.InvokeAsync(async () =>
                         {
                             IsEnabledControls(false);
                             ModsWatcher?.StopWatching();
@@ -1651,7 +1634,7 @@ namespace DivaModManager
                 {
                     await new ModDownloader().DMABrowserDownload(Global.games[GameBox.SelectedIndex], item, onExtractAsync: async (extractInfo) =>
                     {
-                        await Dispatcher.InvokeAsync(() =>
+                        await Dispatcher.InvokeAsync(async () =>
                         {
                             IsEnabledControls(false);
                             ModsWatcher?.StopWatching();
@@ -1671,7 +1654,7 @@ namespace DivaModManager
                 MMPWatcherTOML?.StartWatching();
             }
         }
-        private void AltDownload_Click(object sender, RoutedEventArgs e)
+        private void GBAltDownload_Click(object sender, RoutedEventArgs e)
         {
             Button button = sender as Button;
             var item = button.DataContext as GameBananaRecord;
@@ -1679,7 +1662,7 @@ namespace DivaModManager
                 item.Link.AbsoluteUri).ShowDialog();
         }
 
-        private void GBHomepage_Click(object sender, RoutedEventArgs e)
+        private void GBHomepageButton_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button && button.DataContext is GameBananaRecord item && item.Link != null)
             {
@@ -1698,67 +1681,67 @@ namespace DivaModManager
         private int imageCounter;
         private int imageCount;
 
-        private void MoreInfo_Click(object sender, RoutedEventArgs e)
+        private async void MoreInfo_Click(object sender, RoutedEventArgs e)
         {
-            HomepageButton.Content = $"{(TypeBox.SelectedValue as ComboBoxItem).Content.ToString().Trim().TrimEnd('s')} Page";
+            GBHomepageButton.Content = $"{(GBTypeBox.SelectedValue as ComboBoxItem).Content.ToString().Trim().TrimEnd('s')} Page";
             Button button = sender as Button;
             var item = button.DataContext as GameBananaRecord;
             if (item.Compatible)
-                DownloadButton.Visibility = Visibility.Visible;
+                GBDownloadButton.Visibility = Visibility.Visible;
             else
-                DownloadButton.Visibility = Visibility.Collapsed;
+                GBDownloadButton.Visibility = Visibility.Collapsed;
             if (item.HasAltLinks)
-                AltButton.Visibility = Visibility.Visible;
+                GBAltButton.Visibility = Visibility.Visible;
             else
-                AltButton.Visibility = Visibility.Collapsed;
-            DescPanel.DataContext = button.DataContext;
-            MediaPanel.DataContext = button.DataContext;
-            DescText.ScrollToHome();
+                GBAltButton.Visibility = Visibility.Collapsed;
+            GBDescPanel.DataContext = button.DataContext;
+            GBMediaPanel.DataContext = button.DataContext;
+            GBDescText.ScrollToHome();
             var text = "";
             text += item.ConvertedText;
-            DescText.Document = ConvertToFlowDocument(text);
-            ImageLeft.IsEnabled = true;
-            ImageRight.IsEnabled = true;
-            BigImageLeft.IsEnabled = true;
-            BigImageRight.IsEnabled = true;
+            GBDescText.Document = ConvertToFlowDocument(text);
+            GBImageLeft.IsEnabled = true;
+            GBImageRight.IsEnabled = true;
+            GBBigImageLeft.IsEnabled = true;
+            GBBigImageRight.IsEnabled = true;
             imageCount = item.Media.Where(x => x.Type == "image").ToList().Count;
             imageCounter = 0;
             if (imageCount > 0)
             {
-                Grid.SetColumnSpan(DescText, 1);
-                ImagePanel.Visibility = Visibility.Visible;
-                var image = new BitmapImage(new Uri($"{item.Media[imageCounter].Base}/{item.Media[imageCounter].File}"));
-                Screenshot.Source = image;
-                BigScreenshot.Source = image;
-                CaptionText.Text = item.Media[imageCounter].Caption;
-                BigCaptionText.Text = item.Media[imageCounter].Caption;
-                if (!string.IsNullOrEmpty(CaptionText.Text))
+                Grid.SetColumnSpan(GBDescText, 1);
+                GBImagePanel.Visibility = Visibility.Visible;
+                var image = await ImageCacheManager.GetCachedBitmapAsync(new Uri($"{item.Media[imageCounter].Base}/{item.Media[imageCounter].File}"), GB_IMAGE_CACHE_HOURS);
+                GBScreenshot.Source = image;
+                GBBigScreenshot.Source = image;
+                GBCaptionText.Text = item.Media[imageCounter].Caption;
+                GBBigCaptionText.Text = item.Media[imageCounter].Caption;
+                if (!string.IsNullOrEmpty(GBCaptionText.Text))
                 {
-                    BigCaptionText.Visibility = Visibility.Visible;
-                    CaptionText.Visibility = Visibility.Visible;
+                    GBBigCaptionText.Visibility = Visibility.Visible;
+                    GBCaptionText.Visibility = Visibility.Visible;
                 }
                 else
                 {
-                    BigCaptionText.Visibility = Visibility.Collapsed;
-                    CaptionText.Visibility = Visibility.Collapsed;
+                    GBBigCaptionText.Visibility = Visibility.Collapsed;
+                    GBCaptionText.Visibility = Visibility.Collapsed;
                 }
             }
             else
             {
-                Grid.SetColumnSpan(DescText, 2);
-                ImagePanel.Visibility = Visibility.Collapsed;
+                Grid.SetColumnSpan(GBDescText, 2);
+                GBImagePanel.Visibility = Visibility.Collapsed;
             }
             if (imageCount == 1)
             {
-                ImageLeft.IsEnabled = false;
-                ImageRight.IsEnabled = false;
-                BigImageLeft.IsEnabled = false;
-                BigImageRight.IsEnabled = false;
+                GBImageLeft.IsEnabled = false;
+                GBImageRight.IsEnabled = false;
+                GBBigImageLeft.IsEnabled = false;
+                GBBigImageRight.IsEnabled = false;
             }
 
-            DescPanel.Visibility = Visibility.Visible;
+            GBDescPanel.Visibility = Visibility.Visible;
         }
-        private void DMAMoreInfo_Click(object sender, RoutedEventArgs e)
+        private async void DMAMoreInfo_Click(object sender, RoutedEventArgs e)
         {
             DMAHomepageButton.Content = $"Mod Page";
             Button button = sender as Button;
@@ -1779,7 +1762,7 @@ namespace DivaModManager
             {
                 Grid.SetColumnSpan(DMADescText, 1);
                 DMAImagePanel.Visibility = Visibility.Visible;
-                var image = new BitmapImage(item.Images[imageCounter]);
+                var image = await ImageCacheManager.GetCachedBitmapAsync(item.Images[imageCounter], DMA_IMAGE_CACHE_HOURS);
                 DMAScreenshot.Source = image;
                 DMABigScreenshot.Source = image;
             }
@@ -1802,90 +1785,91 @@ namespace DivaModManager
         {
             DMADescPanel.Visibility = Visibility.Collapsed;
         }
-        private void CloseDesc_Click(object sender, RoutedEventArgs e)
+        private void GBCloseDesc_Click(object sender, RoutedEventArgs e)
         {
-            DescPanel.Visibility = Visibility.Collapsed;
+            GBDescPanel.Visibility = Visibility.Collapsed;
         }
         private void DMACloseMedia_Click(object sender, RoutedEventArgs e)
         {
             DMAMediaPanel.Visibility = Visibility.Collapsed;
         }
-        private void CloseMedia_Click(object sender, RoutedEventArgs e)
+        private void GBCloseMedia_Click(object sender, RoutedEventArgs e)
         {
-            MediaPanel.Visibility = Visibility.Collapsed;
+            GBMediaPanel.Visibility = Visibility.Collapsed;
         }
         private void DMAImage_Click(object sender, RoutedEventArgs e)
         {
             DMAMediaPanel.Visibility = Visibility.Visible;
         }
-        private void Image_Click(object sender, RoutedEventArgs e)
+        private void GBImage_Click(object sender, RoutedEventArgs e)
         {
-            MediaPanel.Visibility = Visibility.Visible;
+            GBMediaPanel.Visibility = Visibility.Visible;
         }
-        private void DMAImageLeft_Click(object sender, RoutedEventArgs e)
+        private async void DMAImageLeft_Click(object sender, RoutedEventArgs e)
         {
             Button button = sender as Button;
             var item = button.DataContext as DivaModArchivePost;
             if (--imageCounter == -1)
                 imageCounter = imageCount - 1;
-            var image = new BitmapImage(item.Images[imageCounter]);
+            var image = await ImageCacheManager.GetCachedBitmapAsync(item.Images[imageCounter], DMA_IMAGE_CACHE_HOURS);
             DMAScreenshot.Source = image;
             DMABigScreenshot.Source = image;
         }
-        private void ImageLeft_Click(object sender, RoutedEventArgs e)
+        private async void GBImageLeft_Click(object sender, RoutedEventArgs e)
         {
             Button button = sender as Button;
             var item = button.DataContext as GameBananaRecord;
             if (--imageCounter == -1)
                 imageCounter = imageCount - 1;
-            var image = new BitmapImage(new Uri($"{item.Media[imageCounter].Base}/{item.Media[imageCounter].File}"));
-            Screenshot.Source = image;
-            CaptionText.Text = item.Media[imageCounter].Caption;
-            BigScreenshot.Source = image;
-            BigCaptionText.Text = item.Media[imageCounter].Caption;
-            if (!string.IsNullOrEmpty(CaptionText.Text))
+            var image = await ImageCacheManager.GetCachedBitmapAsync(new Uri($"{item.Media[imageCounter].Base}/{item.Media[imageCounter].File}"), GB_IMAGE_CACHE_HOURS);
+            GBScreenshot.Source = image;
+            GBCaptionText.Text = item.Media[imageCounter].Caption;
+            GBBigScreenshot.Source = image;
+            GBBigCaptionText.Text = item.Media[imageCounter].Caption;
+            if (!string.IsNullOrEmpty(GBCaptionText.Text))
             {
-                BigCaptionText.Visibility = Visibility.Visible;
-                CaptionText.Visibility = Visibility.Visible;
+                GBBigCaptionText.Visibility = Visibility.Visible;
+                GBCaptionText.Visibility = Visibility.Visible;
             }
             else
             {
-                BigCaptionText.Visibility = Visibility.Collapsed;
-                CaptionText.Visibility = Visibility.Collapsed;
+                GBBigCaptionText.Visibility = Visibility.Collapsed;
+                GBCaptionText.Visibility = Visibility.Collapsed;
             }
         }
-        private void DMAImageRight_Click(object sender, RoutedEventArgs e)
+        private async void DMAImageRight_Click(object sender, RoutedEventArgs e)
         {
             Button button = sender as Button;
             var item = button.DataContext as DivaModArchivePost;
             if (++imageCounter == imageCount)
                 imageCounter = 0;
-            var image = new BitmapImage(item.Images[imageCounter]);
+            var image = await ImageCacheManager.GetCachedBitmapAsync(item.Images[imageCounter], DMA_IMAGE_CACHE_HOURS);
             DMAScreenshot.Source = image;
             DMABigScreenshot.Source = image;
         }
-        private void ImageRight_Click(object sender, RoutedEventArgs e)
+        private async void GBImageRight_Click(object sender, RoutedEventArgs e)
         {
             Button button = sender as Button;
             var item = button.DataContext as GameBananaRecord;
             if (++imageCounter == imageCount)
                 imageCounter = 0;
-            var image = new BitmapImage(new Uri($"{item.Media[imageCounter].Base}/{item.Media[imageCounter].File}"));
-            Screenshot.Source = image;
-            CaptionText.Text = item.Media[imageCounter].Caption;
-            BigScreenshot.Source = image;
-            BigCaptionText.Text = item.Media[imageCounter].Caption;
-            if (!string.IsNullOrEmpty(CaptionText.Text))
+            var image = await ImageCacheManager.GetCachedBitmapAsync(new Uri($"{item.Media[imageCounter].Base}/{item.Media[imageCounter].File}"), GB_IMAGE_CACHE_HOURS);
+            GBScreenshot.Source = image;
+            GBCaptionText.Text = item.Media[imageCounter].Caption;
+            GBBigScreenshot.Source = image;
+            GBBigCaptionText.Text = item.Media[imageCounter].Caption;
+            if (!string.IsNullOrEmpty(GBCaptionText.Text))
             {
-                BigCaptionText.Visibility = Visibility.Visible;
-                CaptionText.Visibility = Visibility.Visible;
+                GBBigCaptionText.Visibility = Visibility.Visible;
+                GBCaptionText.Visibility = Visibility.Visible;
             }
             else
             {
-                BigCaptionText.Visibility = Visibility.Collapsed;
-                CaptionText.Visibility = Visibility.Collapsed;
+                GBBigCaptionText.Visibility = Visibility.Collapsed;
+                GBCaptionText.Visibility = Visibility.Collapsed;
             }
         }
+
         private static bool selected = false;
 
         private static Dictionary<GameFilter, Dictionary<Features.Feed.TypeFilter, List<GameBananaCategory>>> cats = new();
@@ -1908,11 +1892,11 @@ namespace DivaModManager
         }.ToList();
         private async void InitializeGBBrowser()
         {
-            await Dispatcher.InvokeAsync(() =>
+            await Dispatcher.InvokeAsync(async () => 
             {
-                LoadingBar.Visibility = Visibility.Visible;
-                ErrorPanel.Visibility = Visibility.Collapsed;
-                BrowserRefreshButton.Visibility = Visibility.Collapsed;
+                GBLoadingBar.Visibility = Visibility.Visible;
+                GBErrorPanel.Visibility = Visibility.Collapsed;
+                GBBrowserRefreshButton.Visibility = Visibility.Collapsed;
             });
 
             var gameIDS = new string[] { Global.GAME_ID };
@@ -1925,10 +1909,13 @@ namespace DivaModManager
                 {
                     var counter = 0;
                     double totalPages = 0;
+                    var perPage = 5;
                     foreach (var type in types)
                     {
+                        //var requestUrl = $"https://gamebanana.com/apiv4/{type}Category/ByGame?_aGameRowIds[]={gameID}&_sRecordSchema=Custom" +
+                        //    "&_csvProperties=_idRow,_sName,_sProfileUrl,_sIconUrl,_idParentCategoryRow&_nPerpage=50";
                         var requestUrl = $"https://gamebanana.com/apiv4/{type}Category/ByGame?_aGameRowIds[]={gameID}&_sRecordSchema=Custom" +
-                            "&_csvProperties=_idRow,_sName,_sProfileUrl,_sIconUrl,_idParentCategoryRow&_nPerpage=50";
+                            $"&_csvProperties=_idRow,_sName,_sProfileUrl,_sIconUrl,_idParentCategoryRow&_nPerpage={perPage}";
                         string responseString = "";
                         HttpResponseMessage responseMessage = null;
                         try
@@ -1940,7 +1927,7 @@ namespace DivaModManager
                             var numRecords = responseMessage.GetHeader("X-GbApi-Metadata_nRecordCount");
                             if (numRecords != -1)
                             {
-                                totalPages = Math.Ceiling(numRecords / 50);
+                                totalPages = Math.Ceiling(numRecords / perPage);
                             }
                         }
                         catch (HttpRequestException ex)
@@ -1998,10 +1985,10 @@ namespace DivaModManager
                                 }
                                 catch (HttpRequestException ex)
                                 {
-                                    LoadingBar.Visibility = Visibility.Collapsed;
-                                    ErrorPanel.Visibility = Visibility.Visible;
-                                    BrowserRefreshButton.Visibility = Visibility.Visible;
-                                    BrowserMessage.Text = Regex.Match(ex.Message, @"\d+").Value switch
+                                    GBLoadingBar.Visibility = Visibility.Collapsed;
+                                    GBErrorPanel.Visibility = Visibility.Visible;
+                                    GBBrowserRefreshButton.Visibility = Visibility.Visible;
+                                    GBBrowserMessage.Text = Regex.Match(ex.Message, @"\d+").Value switch
                                     {
                                         "443" => "Your internet connection is down.",
                                         "500" or "503" or "504" => "GameBanana's servers are down.",
@@ -2011,10 +1998,10 @@ namespace DivaModManager
                                 }
                                 catch (Exception ex)
                                 {
-                                    LoadingBar.Visibility = Visibility.Collapsed;
-                                    ErrorPanel.Visibility = Visibility.Visible;
-                                    BrowserRefreshButton.Visibility = Visibility.Visible;
-                                    BrowserMessage.Text = ex.Message;
+                                    GBLoadingBar.Visibility = Visibility.Collapsed;
+                                    GBErrorPanel.Visibility = Visibility.Visible;
+                                    GBBrowserRefreshButton.Visibility = Visibility.Visible;
+                                    GBBrowserMessage.Text = ex.Message;
                                     return;
                                 }
                                 try
@@ -2023,10 +2010,10 @@ namespace DivaModManager
                                 }
                                 catch (Exception)
                                 {
-                                    LoadingBar.Visibility = Visibility.Collapsed;
-                                    ErrorPanel.Visibility = Visibility.Visible;
-                                    BrowserRefreshButton.Visibility = Visibility.Visible;
-                                    BrowserMessage.Text = "Uh oh! Something went wrong while deserializing the categories...";
+                                    GBLoadingBar.Visibility = Visibility.Collapsed;
+                                    GBErrorPanel.Visibility = Visibility.Visible;
+                                    GBBrowserRefreshButton.Visibility = Visibility.Visible;
+                                    GBBrowserMessage.Text = "Uh oh! Something went wrong while deserializing the categories...";
                                     return;
                                 }
                                 cats[(GameFilter)gameCounter][(Features.Feed.TypeFilter)counter] = cats[(GameFilter)gameCounter][(Features.Feed.TypeFilter)counter].Concat(response).ToList();
@@ -2037,19 +2024,19 @@ namespace DivaModManager
                     gameCounter++;
                 }
 
-                await Dispatcher.InvokeAsync(() =>
+                await Dispatcher.InvokeAsync(async () => 
                 {
                     filterSelect = true;
-                    FilterBox.ItemsSource = FilterBoxList;
-                    CatBox.ItemsSource = All.Concat(cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Where(x => x.RootID == 0).OrderBy(y => y.ID));
-                    SubCatBox.ItemsSource = None;
-                    CatBox.SelectedIndex = 0;
-                    SubCatBox.SelectedIndex = 0;
-                    FilterBox.SelectedIndex = 1;
+                    GBSortBox.ItemsSource = FilterBoxList;
+                    GBCatBox.ItemsSource = All.Concat(cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)GBTypeBox.SelectedIndex].Where(x => x.RootID == 0).OrderBy(y => y.ID));
+                    GBSubCatBox.ItemsSource = None;
+                    GBCatBox.SelectedIndex = 0;
+                    GBSubCatBox.SelectedIndex = 0;
+                    GBSortBox.SelectedIndex = 1;
                     filterSelect = false;
-                    LoadingBar.Visibility = Visibility.Collapsed;
+                    GBLoadingBar.Visibility = Visibility.Collapsed;
                     selected = true;
-                    RefreshFilter();
+                    GBRefreshFilterAsync();
                 });
             }
             catch (Exception ex)
@@ -2059,21 +2046,21 @@ namespace DivaModManager
             }
             finally
             {
-                await Dispatcher.InvokeAsync(() =>
+                await Dispatcher.InvokeAsync(async () =>
                 {
-                    if (LoadingBar.Visibility == Visibility.Visible) LoadingBar.Visibility = Visibility.Collapsed;
+                    if (GBLoadingBar.Visibility == Visibility.Visible) GBLoadingBar.Visibility = Visibility.Collapsed;
                 });
             }
 
             filterSelect = true;
-            FilterBox.ItemsSource = FilterBoxList;
-            CatBox.ItemsSource = All.Concat(cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Where(x => x.RootID == 0).OrderBy(y => y.ID));
-            SubCatBox.ItemsSource = None;
-            CatBox.SelectedIndex = 0;
-            SubCatBox.SelectedIndex = 0;
-            FilterBox.SelectedIndex = 1;
+            GBSortBox.ItemsSource = FilterBoxList;
+            GBCatBox.ItemsSource = All.Concat(cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)GBTypeBox.SelectedIndex].Where(x => x.RootID == 0).OrderBy(y => y.ID));
+            GBSubCatBox.ItemsSource = None;
+            GBCatBox.SelectedIndex = 0;
+            GBSubCatBox.SelectedIndex = 0;
+            GBSortBox.SelectedIndex = 1;
             filterSelect = false;
-            RefreshFilter();
+            GBRefreshFilterAsync();
             selected = true;
         }
 
@@ -2109,19 +2096,19 @@ namespace DivaModManager
 
         private void ShowBrowserError(string message)
         {
-            Dispatcher.InvokeAsync(() =>
+            Dispatcher.InvokeAsync(async () =>
             {
-                LoadingBar.Visibility = Visibility.Collapsed;
-                ErrorPanel.Visibility = Visibility.Visible;
-                BrowserRefreshButton.Visibility = Visibility.Visible;
-                BrowserMessage.Text = message;
-                FeedBox.ItemsSource = null;
-                FeedBox.Visibility = Visibility.Collapsed;
+                GBLoadingBar.Visibility = Visibility.Collapsed;
+                GBErrorPanel.Visibility = Visibility.Visible;
+                GBBrowserRefreshButton.Visibility = Visibility.Visible;
+                GBBrowserMessage.Text = message;
+                GBFeedBox.ItemsSource = null;
+                GBFeedBox.Visibility = Visibility.Collapsed;
             });
         }
         private void ShowDMAError(string message)
         {
-            Dispatcher.InvokeAsync(() =>
+            Dispatcher.InvokeAsync(async () =>
             {
                 DMALoadingBar.Visibility = Visibility.Collapsed;
                 DMAErrorPanel.Visibility = Visibility.Visible;
@@ -2133,15 +2120,6 @@ namespace DivaModManager
         }
         private void GBModBrowserTab_Selected(object sender, RoutedEventArgs e)
         {
-            //if (Global.IsWine)
-            //{
-            //    App.Current.Dispatcher.Invoke(() =>
-            //    {
-            //        WindowHelper.DMMWindowOpen(27);
-            //    });
-            //    return;
-            //}
-
             if (!selected)
             {
                 InitializeGBBrowser();
@@ -2149,15 +2127,6 @@ namespace DivaModManager
         }
         private void DMAModBrowserTab_Selected(object sender, RoutedEventArgs e)
         {
-            //if (Global.IsWine)
-            //{
-            //    App.Current.Dispatcher.Invoke(() =>
-            //    {
-            //        WindowHelper.DMMWindowOpen(27);
-            //    });
-            //    return;
-            //}
-
             if (!DMAselected)
             {
                 DMARefreshFilterAsync();
@@ -2170,15 +2139,15 @@ namespace DivaModManager
 
         private static int page = 1;
         private static int DMApage = 1;
-        private void DecrementPage(object sender, RoutedEventArgs e)
+        private void GBPageLeft_Click(object sender, RoutedEventArgs e)
         {
             --page;
-            RefreshFilter();
+            GBRefreshFilterAsync();
         }
-        private void IncrementPage(object sender, RoutedEventArgs e)
+        private void GBPageRight_Click(object sender, RoutedEventArgs e)
         {
             ++page;
-            RefreshFilter();
+            GBRefreshFilterAsync();
         }
         private void DMADecrementPage(object sender, RoutedEventArgs e)
         {
@@ -2190,51 +2159,53 @@ namespace DivaModManager
             ++DMApage;
             DMARefreshFilterAsync();
         }
-        private void DMABrowserRefresh(object sender, RoutedEventArgs e)
+        private void DMABrowserRefreshButton_Click(object sender, RoutedEventArgs e)
         {
         }
-        private void BrowserRefresh(object sender, RoutedEventArgs e)
+        private void GBBrowserRefreshButton_Click(object sender, RoutedEventArgs e)
         {
             if (!selected)
                 InitializeGBBrowser();
             else
-                RefreshFilter();
+                GBRefreshFilterAsync();
         }
-        private void ClearCache(object sender, RoutedEventArgs e)
+        private void GBClearCacheButton_Click(object sender, RoutedEventArgs e)
         {
             FeedGenerator.ClearCache();
-            RefreshFilter();
+            ImageCacheManager.ClearCache();
+            GBRefreshFilterAsync();
         }
-        private void DMAClearCache(object sender, RoutedEventArgs e)
+        private void DMAClearCacheButton_Click(object sender, RoutedEventArgs e)
         {
-            DMAFeedGenerator.ClearCache();
+            DMAFeedGenerator.DMAClearCache();
+            ImageCacheManager.ClearCache();
             DMARefreshFilterAsync();
         }
         private static bool filterSelect;
         private static bool searched = false;
-        private async void RefreshFilter()
+        private async void GBRefreshFilterAsync()
         {
             IsEnabledControls(false);
 
-            await Dispatcher.InvokeAsync(() =>
+            await Dispatcher.InvokeAsync(async () =>
             {
-                ErrorPanel.Visibility = Visibility.Collapsed;
-                LoadingBar.Visibility = Visibility.Visible;
-                FeedBox.Visibility = Visibility.Collapsed;
-                Page.Text = $"Page {page}";
+                GBErrorPanel.Visibility = Visibility.Collapsed;
+                GBLoadingBar.Visibility = Visibility.Visible;
+                GBFeedBox.Visibility = Visibility.Collapsed;
+                GBPageText.Text = $"Page {page}";
             });
 
             try
             {
-                var search = searched ? SearchBar.Text : null;
+                var search = searched ? GBSearchBar.Text : null;
                 if (!string.IsNullOrEmpty(search) && search.Contains("'"))
                 {
                     search = search.Replace("'", "\\'");
                 }
                 try
                 {
-                    await FeedGenerator.GetFeed(page, (GameFilter)GameBox.SelectedIndex, (Features.Feed.TypeFilter)TypeBox.SelectedIndex, (FeedFilter)FilterBox.SelectedIndex, (GameBananaCategory)CatBox.SelectedItem,
-                         (GameBananaCategory)SubCatBox.SelectedItem, (PerPageBox.SelectedIndex + 1) * 10, (bool)NSFWCheckbox.IsChecked, search);
+                    await FeedGenerator.GetFeed(page, (GameFilter)GameBox.SelectedIndex, (Features.Feed.TypeFilter)GBTypeBox.SelectedIndex, (FeedFilter)GBSortBox.SelectedIndex, (GameBananaCategory)GBCatBox.SelectedItem,
+                         (GameBananaCategory)GBSubCatBox.SelectedItem, (GBPerPageBox.SelectedIndex + 1) * 10, (bool)GBNSFWCheckbox.IsChecked, search, GB_API_CACHE_HOURS);
                 }
                 catch (HttpRequestException ex)
                 {
@@ -2259,18 +2230,18 @@ namespace DivaModManager
                     ShowBrowserError($"An unexpected error occurred while fetching the feed: {ex.Message}");
                     return;
                 }
-                FeedBox.ItemsSource = FeedGenerator.CurrentFeed.Records;
+                GBFeedBox.ItemsSource = FeedGenerator.CurrentFeed.Records;
                 if (FeedGenerator.error)
                 {
-                    LoadingBar.Visibility = Visibility.Collapsed;
-                    ErrorPanel.Visibility = Visibility.Visible;
-                    BrowserRefreshButton.Visibility = Visibility.Visible;
+                    GBLoadingBar.Visibility = Visibility.Collapsed;
+                    GBErrorPanel.Visibility = Visibility.Visible;
+                    GBBrowserRefreshButton.Visibility = Visibility.Visible;
                     if (FeedGenerator.exception.Message.Contains("JSON tokens"))
                     {
-                        BrowserMessage.Text = "Uh oh! DivaModManager by Enomoto failed to deserialize the GameBanana feed.";
+                        GBBrowserMessage.Text = "Uh oh! DivaModManager by Enomoto failed to deserialize the GameBanana feed.";
                         return;
                     }
-                    BrowserMessage.Text = Regex.Match(FeedGenerator.exception.Message, @"\d+").Value switch
+                    GBBrowserMessage.Text = Regex.Match(FeedGenerator.exception.Message, @"\d+").Value switch
                     {
                         "443" => "Your internet connection is down.",
                         "500" or "503" or "504" => "GameBanana's servers are down.",
@@ -2279,48 +2250,48 @@ namespace DivaModManager
                     return;
                 }
                 if (page < FeedGenerator.CurrentFeed.TotalPages)
-                    PageRight.IsEnabled = true;
+                    GBPageRight.IsEnabled = true;
                 if (page != 1)
-                    PageLeft.IsEnabled = true;
-                if (FeedBox.Items.Count > 0)
+                    GBPageLeft.IsEnabled = true;
+                if (GBFeedBox.Items.Count > 0)
                 {
-                    FeedBox.ScrollIntoView(FeedBox.Items[0]);
-                    FeedBox.Visibility = Visibility.Visible;
+                    GBFeedBox.ScrollIntoView(GBFeedBox.Items[0]);
+                    GBFeedBox.Visibility = Visibility.Visible;
                 }
                 else
                 {
-                    ErrorPanel.Visibility = Visibility.Visible;
-                    BrowserRefreshButton.Visibility = Visibility.Collapsed;
-                    BrowserMessage.Visibility = Visibility.Visible;
-                    BrowserMessage.Text = "DivaModManager by Enomoto couldn't find any mods.";
+                    GBErrorPanel.Visibility = Visibility.Visible;
+                    GBBrowserRefreshButton.Visibility = Visibility.Collapsed;
+                    GBBrowserMessage.Visibility = Visibility.Visible;
+                    GBBrowserMessage.Text = "DivaModManager by Enomoto couldn't find any mods.";
                 }
-                PageBox.ItemsSource = Enumerable.Range(1, (int)FeedGenerator.CurrentFeed.TotalPages);
-                await Dispatcher.InvokeAsync(() =>
+                GBPageBox.ItemsSource = Enumerable.Range(1, (int)FeedGenerator.CurrentFeed.TotalPages);
+                await Dispatcher.InvokeAsync(async () =>
                 {
-                    FeedBox.ItemsSource = FeedGenerator.CurrentFeed?.Records;
+                    GBFeedBox.ItemsSource = FeedGenerator.CurrentFeed?.Records;
 
                     if (FeedGenerator.CurrentFeed?.Records != null && FeedGenerator.CurrentFeed.Records.Any())
                     {
-                        FeedBox.Visibility = Visibility.Visible;
-                        FeedBox.ScrollIntoView(FeedBox.Items[0]);
+                        GBFeedBox.Visibility = Visibility.Visible;
+                        GBFeedBox.ScrollIntoView(GBFeedBox.Items[0]);
                         // ページネーションボタンの有効/無効設定
-                        PageRight.IsEnabled = page < FeedGenerator.CurrentFeed.TotalPages;
-                        PageLeft.IsEnabled = page > 1;
-                        PageBox.ItemsSource = Enumerable.Range(1, (int)FeedGenerator.CurrentFeed.TotalPages);
+                        GBPageRight.IsEnabled = page < FeedGenerator.CurrentFeed.TotalPages;
+                        GBPageLeft.IsEnabled = page > 1;
+                        GBPageBox.ItemsSource = Enumerable.Range(1, (int)FeedGenerator.CurrentFeed.TotalPages);
                         filterSelect = true; //ItemsSource変更後にSelectedIndexを設定するため
-                        PageBox.SelectedValue = page;
+                        GBPageBox.SelectedValue = page;
                         filterSelect = false;
 
                     }
                     else
                     {
-                        FeedBox.Visibility = Visibility.Collapsed;
+                        GBFeedBox.Visibility = Visibility.Collapsed;
                         ShowBrowserError("DivaModManager by Enomoto couldn't find any mods matching the criteria.");
-                        PageRight.IsEnabled = false;
-                        PageLeft.IsEnabled = false;
-                        PageBox.ItemsSource = null;
+                        GBPageRight.IsEnabled = false;
+                        GBPageLeft.IsEnabled = false;
+                        GBPageBox.ItemsSource = null;
                     }
-                    LoadingBar.Visibility = Visibility.Collapsed;
+                    GBLoadingBar.Visibility = Visibility.Collapsed;
                 });
             }
             catch (Exception ex)
@@ -2332,9 +2303,9 @@ namespace DivaModManager
             finally
             {
                 IsEnabledControls(true);
-                await Dispatcher.InvokeAsync(() =>
+                await Dispatcher.InvokeAsync(async () =>
                 {
-                    if (LoadingBar.Visibility == Visibility.Visible) LoadingBar.Visibility = Visibility.Collapsed;
+                    if (GBLoadingBar.Visibility == Visibility.Visible) GBLoadingBar.Visibility = Visibility.Collapsed;
                 });
             }
         }
@@ -2344,7 +2315,7 @@ namespace DivaModManager
             Logger.WriteLine($"DMARefreshFilterAsync Start. id:{Environment.CurrentManagedThreadId}", LoggerType.Debug);
 
             IsEnabledControls(false);
-            await Dispatcher.InvokeAsync(() =>
+            await Dispatcher.InvokeAsync(async () =>
             {
                 DMAErrorPanel.Visibility = Visibility.Collapsed;
                 DMALoadingBar.Visibility = Visibility.Visible;
@@ -2355,7 +2326,7 @@ namespace DivaModManager
             {
                 try
                 {
-                    await DMAFeedGenerator.GetFeed(DMApage, (DMAFeedSort)DMASortBox.SelectedIndex, (DMAFeedFilter)DMAFilterBox.SelectedIndex, DMASearchBar.Text, (DMAPerPageBox.SelectedIndex + 1) * 10);
+                    await DMAFeedGenerator.GetFeed(DMApage, (DMAFeedSort)DMASortBox.SelectedIndex, (DMAFeedFilter)DMAFilterBox.SelectedIndex, DMASearchBar.Text, (DMAPerPageBox.SelectedIndex + 1) * 10, DMA_API_CACHE_HOURS);
                 }
                 catch (HttpRequestException ex)
                 {
@@ -2380,7 +2351,7 @@ namespace DivaModManager
                     ShowBrowserError($"An unexpected error occurred while fetching the feed: {ex.Message}");
                     return;
                 }
-                await Dispatcher.InvokeAsync(() =>
+                await Dispatcher.InvokeAsync(async () =>
                 {
                     DMAFeedBox.ItemsSource = DMAFeedGenerator.CurrentFeed.Posts;
                     if (DMAFeedGenerator.error)
@@ -2429,7 +2400,7 @@ namespace DivaModManager
             finally
             {
                 IsEnabledControls(true);
-                await Dispatcher.InvokeAsync(() =>
+                await Dispatcher.InvokeAsync(async () =>
                 {
                     if (DMALoadingBar.Visibility == Visibility.Visible) DMALoadingBar.Visibility = Visibility.Collapsed;
                 });
@@ -2445,30 +2416,30 @@ namespace DivaModManager
                 DMARefreshFilterAsync();
             }
         }
-        private void FilterSelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void GBSortSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (IsLoaded && !filterSelect)
             {
-                if (!searched || FilterBox.SelectedIndex != 3)
+                if (!searched || GBSortBox.SelectedIndex != 3)
                 {
                     filterSelect = true;
-                    var temp = FilterBox.SelectedIndex;
-                    FilterBox.ItemsSource = FilterBoxList;
-                    FilterBox.SelectedIndex = temp;
+                    var temp = GBSortBox.SelectedIndex;
+                    GBSortBox.ItemsSource = FilterBoxList;
+                    GBSortBox.SelectedIndex = temp;
                     filterSelect = false;
                 }
-                SearchBar.Clear();
+                GBSearchBar.Clear();
                 searched = false;
                 page = 1;
-                RefreshFilter();
+                GBRefreshFilterAsync();
             }
         }
-        private void PerPageSelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void GBPerPageSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (IsLoaded && !filterSelect)
             {
                 page = 1;
-                RefreshFilter();
+                GBRefreshFilterAsync();
             }
         }
         private void DMAPerPageSelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -2483,92 +2454,92 @@ namespace DivaModManager
         {
             if (IsLoaded && !filterSelect)
             {
-                SearchBar.Clear();
+                GBSearchBar.Clear();
                 searched = false;
                 filterSelect = true;
                 if (!searched)
                 {
-                    FilterBox.ItemsSource = FilterBoxList;
-                    FilterBox.SelectedIndex = 1;
+                    GBSortBox.ItemsSource = FilterBoxList;
+                    GBSortBox.SelectedIndex = 1;
                 }
                 // Set categories
-                if (cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Any(x => x.RootID == 0))
-                    CatBox.ItemsSource = All.Concat(cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Where(x => x.RootID == 0).OrderBy(y => y.ID));
+                if (cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)GBTypeBox.SelectedIndex].Any(x => x.RootID == 0))
+                    GBCatBox.ItemsSource = All.Concat(cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)GBTypeBox.SelectedIndex].Where(x => x.RootID == 0).OrderBy(y => y.ID));
                 else
-                    CatBox.ItemsSource = None;
-                CatBox.SelectedIndex = 0;
-                var cat = (GameBananaCategory)CatBox.SelectedValue;
-                if (cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Any(x => x.RootID == cat.ID))
-                    SubCatBox.ItemsSource = All.Concat(cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Where(x => x.RootID == cat.ID).OrderBy(y => y.ID));
+                    GBCatBox.ItemsSource = None;
+                GBCatBox.SelectedIndex = 0;
+                var cat = (GameBananaCategory)GBCatBox.SelectedValue;
+                if (cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)GBTypeBox.SelectedIndex].Any(x => x.RootID == cat.ID))
+                    GBSubCatBox.ItemsSource = All.Concat(cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)GBTypeBox.SelectedIndex].Where(x => x.RootID == cat.ID).OrderBy(y => y.ID));
                 else
-                    SubCatBox.ItemsSource = None;
-                SubCatBox.SelectedIndex = 0;
+                    GBSubCatBox.ItemsSource = None;
+                GBSubCatBox.SelectedIndex = 0;
                 filterSelect = false;
                 page = 1;
-                RefreshFilter();
+                GBRefreshFilterAsync();
             }
         }
-        private void TypeFilterSelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void GBTypeFilterSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (IsLoaded && !filterSelect)
             {
-                SearchBar.Clear();
+                GBSearchBar.Clear();
                 searched = false;
                 filterSelect = true;
                 if (!searched)
                 {
-                    FilterBox.ItemsSource = FilterBoxList;
-                    FilterBox.SelectedIndex = 1;
+                    GBSortBox.ItemsSource = FilterBoxList;
+                    GBSortBox.SelectedIndex = 1;
                 }
                 // Set categories
-                if (cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Any(x => x.RootID == 0))
-                    CatBox.ItemsSource = All.Concat(cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Where(x => x.RootID == 0).OrderBy(y => y.ID));
+                if (cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)GBTypeBox.SelectedIndex].Any(x => x.RootID == 0))
+                    GBCatBox.ItemsSource = All.Concat(cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)GBTypeBox.SelectedIndex].Where(x => x.RootID == 0).OrderBy(y => y.ID));
                 else
-                    CatBox.ItemsSource = None;
-                CatBox.SelectedIndex = 0;
-                var cat = (GameBananaCategory)CatBox.SelectedValue;
-                if (cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Any(x => x.RootID == cat.ID))
-                    SubCatBox.ItemsSource = All.Concat(cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Where(x => x.RootID == cat.ID).OrderBy(y => y.ID));
+                    GBCatBox.ItemsSource = None;
+                GBCatBox.SelectedIndex = 0;
+                var cat = (GameBananaCategory)GBCatBox.SelectedValue;
+                if (cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)GBTypeBox.SelectedIndex].Any(x => x.RootID == cat.ID))
+                    GBSubCatBox.ItemsSource = All.Concat(cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)GBTypeBox.SelectedIndex].Where(x => x.RootID == cat.ID).OrderBy(y => y.ID));
                 else
-                    SubCatBox.ItemsSource = None;
-                SubCatBox.SelectedIndex = 0;
+                    GBSubCatBox.ItemsSource = None;
+                GBSubCatBox.SelectedIndex = 0;
                 filterSelect = false;
                 page = 1;
-                RefreshFilter();
+                GBRefreshFilterAsync();
             }
         }
-        private void MainFilterSelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void GBMainFilterSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (IsLoaded && !filterSelect)
             {
-                SearchBar.Clear();
+                GBSearchBar.Clear();
                 searched = false;
                 filterSelect = true;
                 if (!searched)
                 {
-                    FilterBox.ItemsSource = FilterBoxList;
-                    FilterBox.SelectedIndex = 1;
+                    GBSortBox.ItemsSource = FilterBoxList;
+                    GBSortBox.SelectedIndex = 1;
                 }
                 // Set Categories
-                var cat = (GameBananaCategory)CatBox.SelectedValue;
-                if (cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Any(x => x.RootID == cat.ID))
-                    SubCatBox.ItemsSource = All.Concat(cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Where(x => x.RootID == cat.ID).OrderBy(y => y.ID));
+                var cat = (GameBananaCategory)GBCatBox.SelectedValue;
+                if (cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)GBTypeBox.SelectedIndex].Any(x => x.RootID == cat.ID))
+                    GBSubCatBox.ItemsSource = All.Concat(cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)GBTypeBox.SelectedIndex].Where(x => x.RootID == cat.ID).OrderBy(y => y.ID));
                 else
-                    SubCatBox.ItemsSource = None;
-                SubCatBox.SelectedIndex = 0;
+                    GBSubCatBox.ItemsSource = None;
+                GBSubCatBox.SelectedIndex = 0;
                 filterSelect = false;
                 page = 1;
-                RefreshFilter();
+                GBRefreshFilterAsync();
             }
         }
-        private void SubFilterSelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void GBSubFilterSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (!filterSelect && IsLoaded)
             {
-                SearchBar.Clear();
+                GBSearchBar.Clear();
                 searched = false;
                 page = 1;
-                RefreshFilter();
+                GBRefreshFilterAsync();
             }
         }
         private void UniformGrid_SizeChanged(object sender, SizeChangedEventArgs e)
@@ -2578,15 +2549,15 @@ namespace DivaModManager
         }
         private void OnResize(object sender, RoutedEventArgs e)
         {
-            BigScreenshot.MaxHeight = ActualHeight - 240;
+            GBBigScreenshot.MaxHeight = ActualHeight - 240;
         }
 
-        private void PageBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void GBPageBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (!filterSelect && IsLoaded)
             {
-                page = PageBox.SelectedValue == null ? 1 : (int)PageBox.SelectedValue;
-                RefreshFilter();
+                page = GBPageBox.SelectedValue == null ? 1 : (int)GBPageBox.SelectedValue;
+                GBRefreshFilterAsync();
             }
         }
         private void DMAPageBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -2597,21 +2568,38 @@ namespace DivaModManager
                 DMARefreshFilterAsync();
             }
         }
-        private void NSFWCheckbox_Checked(object sender, RoutedEventArgs e)
+        private void GBNSFWCheckbox_Checked(object sender, RoutedEventArgs e)
         {
             if (!filterSelect && IsLoaded)
             {
                 if (searched)
                 {
                     filterSelect = true;
-                    FilterBox.ItemsSource = FilterBoxList;
-                    FilterBox.SelectedIndex = 1;
+                    GBSortBox.ItemsSource = FilterBoxList;
+                    GBSortBox.SelectedIndex = 1;
                     filterSelect = false;
                 }
-                SearchBar.Clear();
+                GBSearchBar.Clear();
                 searched = false;
                 page = 1;
-                RefreshFilter();
+                GBRefreshFilterAsync();
+            }
+        }
+        private void NSFWCheckboxDMA_Checked(object sender, RoutedEventArgs e)
+        {
+            if (!DMAFilterSelect && IsLoaded)
+            {
+                if (searched)
+                {
+                    DMAFilterSelect = true;
+                    GBSortBox.ItemsSource = FilterBoxList;
+                    GBSortBox.SelectedIndex = 1;
+                    DMAFilterSelect = false;
+                }
+                DMASearchBar.Clear();
+                searched = false;
+                page = 1;
+                DMARefreshFilterAsync();
             }
         }
 
@@ -2626,7 +2614,6 @@ namespace DivaModManager
             string ParamInfo = $"caller:{caller}, id:{Thread.CurrentThread.ManagedThreadId}";
             Logger.WriteLine(string.Join(" ", MeInfo, $"Start."), LoggerType.Debug, param: ParamInfo);
 
-            LauncherOptionsBox.ItemsSource = LauncherOptions;
             ConfigJson.SetupGame();
             while (Global.ConfigJson.IsNew || Global.ConfigJson.CurrentConfig.LauncherOptionIndex == -1)
             {
@@ -2724,7 +2711,7 @@ namespace DivaModManager
                 });
             }
         }
-        private async void EditLoadouts_Click(object sender, RoutedEventArgs e)
+        private async void EditLoadoutsButton_Click(object sender, RoutedEventArgs e)
         {
             if (WorkManager.IsBusy || App.IsAlreadyRunningOtherProcess(false) != 0)
             {
@@ -2936,30 +2923,30 @@ namespace DivaModManager
             direction = direction == ListSortDirection.Descending ? ListSortDirection.Ascending : ListSortDirection.Descending;
         }
 
-        // call by GBSearchBar_KeyDown, SearchButton_Click
+        // call by GBSearchBar_KeyDown, GBSearchButton_Click
         private void GBSearch()
         {
             if (!filterSelect && IsLoaded)
             {
                 filterSelect = true;
-                FilterBox.ItemsSource = FilterBoxListWhenSearched;
-                FilterBox.SelectedIndex = 3;
+                GBSortBox.ItemsSource = FilterBoxListWhenSearched;
+                GBSortBox.SelectedIndex = 3;
                 // Set categories
-                if (cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Any(x => x.RootID == 0))
-                    CatBox.ItemsSource = All.Concat(cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Where(x => x.RootID == 0).OrderBy(y => y.ID));
+                if (cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)GBTypeBox.SelectedIndex].Any(x => x.RootID == 0))
+                    GBCatBox.ItemsSource = All.Concat(cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)GBTypeBox.SelectedIndex].Where(x => x.RootID == 0).OrderBy(y => y.ID));
                 else
-                    CatBox.ItemsSource = None;
-                CatBox.SelectedIndex = 0;
-                var cat = (GameBananaCategory)CatBox.SelectedValue;
-                if (cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Any(x => x.RootID == cat.ID))
-                    SubCatBox.ItemsSource = All.Concat(cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)TypeBox.SelectedIndex].Where(x => x.RootID == cat.ID).OrderBy(y => y.ID));
+                    GBCatBox.ItemsSource = None;
+                GBCatBox.SelectedIndex = 0;
+                var cat = (GameBananaCategory)GBCatBox.SelectedValue;
+                if (cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)GBTypeBox.SelectedIndex].Any(x => x.RootID == cat.ID))
+                    GBSubCatBox.ItemsSource = All.Concat(cats[(GameFilter)GameBox.SelectedIndex][(Features.Feed.TypeFilter)GBTypeBox.SelectedIndex].Where(x => x.RootID == cat.ID).OrderBy(y => y.ID));
                 else
-                    SubCatBox.ItemsSource = None;
-                SubCatBox.SelectedIndex = 0;
+                    GBSubCatBox.ItemsSource = None;
+                GBSubCatBox.SelectedIndex = 0;
                 filterSelect = false;
                 searched = true;
                 page = 1;
-                RefreshFilter();
+                GBRefreshFilterAsync();
             }
         }
         private void GBSearchBar_KeyDown(object sender, KeyEventArgs e)
@@ -3015,7 +3002,7 @@ namespace DivaModManager
             }
             else if (e.Key == Key.F2)
             {
-                Rename_Mod_Click(sender, e);
+                RenameMod_Click(sender, e);
                 e.Handled = true;
             }
         }
@@ -3058,7 +3045,7 @@ namespace DivaModManager
                         Key.Tab or Key.F2 or Key.Escape;
         }
 
-        private void SearchModList_Click(object sender, RoutedEventArgs e)
+        private void SearchModListButton_Click(object sender, RoutedEventArgs e)
         {
             if (ModGridAddAfterAction != default)
                 ModGridAddAfterAction = default;
@@ -3066,7 +3053,7 @@ namespace DivaModManager
             UpdateModGridAsync(isSearch: true);
         }
 
-        private void SearchClear_Click(object sender, RoutedEventArgs e)
+        private void SearchClearButton_Click(object sender, RoutedEventArgs e)
         {
             UpdateModGridAsync();
         }
@@ -3273,31 +3260,31 @@ namespace DivaModManager
             switch (action)
             {
                 case "open":
-                    Open_Mod_Click(sender, _e);
+                    OpenMod_Click(sender, _e);
                     break;
                 //case "rename":
-                //    Rename_Mod_Click(sender, _e);
+                //    RenameMod_Click(sender, _e);
                 //    break;
                 case "configure":
-                    Configure_Mod_Click(sender, _e);
+                    ConfigureMod_Click(sender, _e);
                     break;
                 case "homepage":
-                    Open_Homepage_Click(sender, _e);
+                    OpenHomePage_Click(sender, _e);
                     break;
                 //case "fetch":
-                //    Fetch_Mod_Click(sender, _e);
+                //    FetchMod_Click(sender, _e);
                 //    break;
                 //case "update":
-                //    Clean_Update_Mod_Click(sender, _e);
+                //    CleanUpdateMod_Click(sender, _e);
                 //    break;
                 //case "delete":
-                //    Delete_Mod_Click(sender, _e);
+                //    DeleteMod_Click(sender, _e);
                 //    break;
                 case "nothing":
                     break;
                 default:
                     // All unknown characters are treated as Open.
-                    Open_Mod_Click(sender, _e);
+                    OpenMod_Click(sender, _e);
                     break;
             }
         }
@@ -3319,7 +3306,7 @@ namespace DivaModManager
                 case "category":
                     if (mod.category != newText)
                     {
-                        await App.Current.Dispatcher.InvokeAsync(() => CategoryComboInit());
+                        await App.Current.Dispatcher.InvokeAsync(async () => CategoryComboInit());
                     }
                     break;
                 default:
@@ -3665,18 +3652,18 @@ namespace DivaModManager
             // Modグリッド
             ModGrid.IsEnabled = isDMLInstalled;
 
-            SearchBar.IsEnabled = isDMLInstalled;
-            SearchButton.IsEnabled = isDMLInstalled;
-            FilterBox.IsEnabled = isDMLInstalled;
-            TypeBox.IsEnabled = isDMLInstalled;
-            CatBox.IsEnabled = isDMLInstalled;
-            SubCatBox.IsEnabled = isDMLInstalled;
-            PageLeft.IsEnabled = isDMLInstalled && page > 1;
-            PageRight.IsEnabled = FeedGenerator.CurrentFeed == null ? false : isDMLInstalled && page < FeedGenerator.CurrentFeed.TotalPages;
-            PageBox.IsEnabled = isDMLInstalled;
-            PerPageBox.IsEnabled = isDMLInstalled;
-            ClearCacheButton.IsEnabled = isDMLInstalled;
-            NSFWCheckbox.IsEnabled = isDMLInstalled;
+            GBSearchBar.IsEnabled = isDMLInstalled;
+            GBSearchButton.IsEnabled = isDMLInstalled;
+            GBSortBox.IsEnabled = isDMLInstalled;
+            GBTypeBox.IsEnabled = isDMLInstalled;
+            GBCatBox.IsEnabled = isDMLInstalled;
+            GBSubCatBox.IsEnabled = isDMLInstalled;
+            GBPageLeft.IsEnabled = isDMLInstalled && page > 1;
+            GBPageRight.IsEnabled = FeedGenerator.CurrentFeed == null ? false : isDMLInstalled && page < FeedGenerator.CurrentFeed.TotalPages;
+            GBPageBox.IsEnabled = isDMLInstalled;
+            GBPerPageBox.IsEnabled = isDMLInstalled;
+            GBClearCacheButton.IsEnabled = isDMLInstalled;
+            GBNSFWCheckbox.IsEnabled = isDMLInstalled;
 
             DMASearchBar.IsEnabled = isDMLInstalled;
             DMASearchButton.IsEnabled = isDMLInstalled;
@@ -3812,7 +3799,7 @@ namespace DivaModManager
 
         #endregion
 
-        private async void ScreenShot_Click(object sender, RoutedEventArgs e)
+        private async void ModGridScreenShotButton_Click(object sender, RoutedEventArgs e)
         {
             string MeInfo = Logger.GetMeInfo(new StackFrame());
             string ParamInfo = $"id:{Thread.CurrentThread.ManagedThreadId}";
@@ -3835,7 +3822,7 @@ namespace DivaModManager
 
             await WorkManager.RunAsync(async () =>
             {
-                Logger.WriteLine($"ScreenShot making...", LoggerType.Info);
+                Logger.WriteLine($"GBScreenshot making...", LoggerType.Info);
                 Directory.CreateDirectory(Global.screenshotBaseLocation);
                 string filePathNoExtention = Path.Combine(Global.screenshotBaseLocation, $"ModGrid_{DateTime.Now:yyyyMMdd_HHmmss}");
 
@@ -3846,7 +3833,7 @@ namespace DivaModManager
                     maxHeightPx: Global.ConfigToml.ScreenShotMaxPixel
                 );
 
-                Logger.WriteLine($"Screenshot making Complete! Path: \"{Path.GetDirectoryName(filePathNoExtention)}\"", LoggerType.Info);
+                Logger.WriteLine($"GBScreenshot making Complete! Path: \"{Path.GetDirectoryName(filePathNoExtention)}\"", LoggerType.Info);
                 ProcessHelper.TryStartProcess(Path.GetDirectoryName(filePathNoExtention));
             });
         }
@@ -3896,7 +3883,7 @@ namespace DivaModManager
             RegistryConfig.CheckGBHandler();
         }
 
-        private void Open_Homepage_Click(object sender, RoutedEventArgs e)
+        private void OpenHomePage_Click(object sender, RoutedEventArgs e)
         {
             var selectedMods = ModGrid.SelectedItems.OfType<Mod>().ToList().Where(x => !string.IsNullOrEmpty(x.metadataManager?.metadata?.homepage?.ToString()));
             // 設定ファイルいらないと思ったのでハードコーディング(開くタブが多い場合はメッセージ)

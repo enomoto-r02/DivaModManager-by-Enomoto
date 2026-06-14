@@ -1,5 +1,4 @@
-﻿using DivaModManager;
-using DivaModManager.Features.Debug;
+﻿using DivaModManager.Features.Debug;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
