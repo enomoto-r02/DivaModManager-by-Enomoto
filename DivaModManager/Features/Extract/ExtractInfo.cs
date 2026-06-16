@@ -49,6 +49,10 @@ namespace DivaModManager.Features.Extract
         //    private set { }
         //}
 
+        // エラーが発生したファイル
+        [JsonIgnore]
+        public List<string> ErrorFilePathList { get; set; } = new();
+
         public long GetFullPathSize()
         {
             return FullPathInfo.Count == 0 ? DirectorySize : FullPathInfo.OfType<FileInfo>().ToList().Sum(x => x.Length) + FullPathInfo.OfType<DirectoryInfo>().ToList().Count;
@@ -157,6 +161,7 @@ namespace DivaModManager.Features.Extract
             SIZE_UNMATCH,
             UNSUPPORTED,
             EXCEPTION,
+            PATH_LENGTH_OVER_LIMIT,
             DANGEROUS_FILE,
             NO_CONFIG_TOML,
             MULTI_CONFIG_TOML,

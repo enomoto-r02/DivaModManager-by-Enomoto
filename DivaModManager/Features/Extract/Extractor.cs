@@ -19,6 +19,7 @@ using System.Threading.Tasks;
 using Tomlyn;
 using Tomlyn.Model;
 using static DivaModManager.Common.Helpers.WindowHelper;
+using static DivaModManager.Features.Extract.ExtractInfo;
 
 namespace DivaModManager.Features.Extract
 {
@@ -41,6 +42,8 @@ namespace DivaModManager.Features.Extract
         private static readonly string SEVENZIP_CONSOLE_EXE_LOCAL_HASH_SHA256 = "2bff20bd679d45166b8c2d039044a4ca16189e6d69ff9c82345b4c1306986ec4";
         private static readonly int MAX_LOOP_RECURSION = 10000;
         public static int MoveCount = 0;
+        private static readonly int PATH_LENGTH_LIMIT_WINDOWS = 260;
+        private static readonly int PATH_LENGTH_LIMIT_LINUX = 4096;
 
 
 
@@ -511,7 +514,6 @@ namespace DivaModManager.Features.Extract
                     var resultWindow = WindowHelper.WindowCloseStatus.None;
                     App.Current.Dispatcher.Invoke(() =>
                     {
-                        List<string> replaceList = new() { SEVENZIP_NAME, ConfigJson.SEVENZIP_INCLUDE_PRODUCT_VERSION.ToString() };
                         resultWindow = extractCoreResult switch
                         {
                             // ファイルサイズがゼロの場合、処理を終了する
@@ -520,6 +522,11 @@ namespace DivaModManager.Features.Extract
                             // サイズが一致しない場合、処理の継続を確認する
                             ExtractInfo.EXTRACT_RESULT.SIZE_UNMATCH =>
                                 WindowHelper.DMMWindowOpenAsync(11, path: extract.MoveInfoList.LastOrDefault().FullPathResult).Result,
+                            // パス長が超過の場合、処理を終了する
+                            ExtractInfo.EXTRACT_RESULT.PATH_LENGTH_OVER_LIMIT =>
+                                WindowHelper.DMMWindowOpenAsync(79, 
+                                    path: extract.MoveInfoList.LastOrDefault().FullPathResult,
+                                    replaceList: new List<string>() { PATH_LENGTH_LIMIT_WINDOWS.ToString(), extract.MoveInfoList.LastOrDefault().ErrorFilePathList.Max(x => x.Length).ToString()}).Result,
                             // Exceptionの場合、処理を終了する
                             ExtractInfo.EXTRACT_RESULT.EXCEPTION =>
                                 WindowHelper.DMMWindowOpenAsync(12).Result,
@@ -536,7 +543,7 @@ namespace DivaModManager.Features.Extract
                             ExtractInfo.EXTRACT_RESULT.DANGEROUS_FILE =>
                                 WindowHelper.DMMWindowOpenAsync(16).Result,
                             ExtractInfo.EXTRACT_RESULT.NOT_FOUND_SEVENZIP =>
-                                WindowHelper.DMMWindowOpenAsync(9, replaceList).Result,
+                                WindowHelper.DMMWindowOpenAsync(9, replaceList: new List<string>() { SEVENZIP_NAME, ConfigJson.SEVENZIP_INCLUDE_PRODUCT_VERSION.ToString() }).Result,
                             // 呼ばれない想定(警告回避のため)
                             _ => throw new Exception($"Unknown Error! {MeInfo}, Name:{extract.WindowLoggerViewFileName}, Return:{extractCoreResult}")
                         };
@@ -1571,7 +1578,7 @@ namespace DivaModManager.Features.Extract
             Logger.WriteLine(string.Join(" ", MeInfo, $"Start."), LoggerType.Debug, param: ParamInfo);
 
             var ret = false;
-            extract.UseExtractComponentZipSlipCheck = "SharpCompress (0.48.1)";
+            extract.UseExtractComponentZipSlipCheck = "SharpCompress (0.49.1)";
 
             MoveInfoData mv = extract.MoveInfoList.LastOrDefault();
             using var archive = ArchiveFactory.OpenArchive(mv.FullPath);
@@ -1587,16 +1594,17 @@ namespace DivaModManager.Features.Extract
 
                 string ioPath = fullDest;
 
-                // 危険パスチェック
-                if (IsDangerousPath(fullDest, fullRoot))
+                // 危険パス、パス長チェック
+                var pathResult = IsDangerousPath(fullDest, fullRoot);
+                if (pathResult != EXTRACT_RESULT.NONE)
                 {
-                    extract.MoveInfoList.LastOrDefault().Result =
-                        ExtractInfo.EXTRACT_RESULT.EXCEPTION;
+                    extract.MoveInfoList.LastOrDefault().Result = pathResult;
+                    extract.MoveInfoList.LastOrDefault().ErrorFilePathList.Add(fullDest);
 
                     Logger.WriteLine(
                         $"{Path.GetFileName(mv.FullPath)},{entry}," +
                         $"{extract.UseExtractComponentZipSlipCheck}," +
-                        $"Blocked Dangerous Path,{fullDest}",
+                        $"Blocked File Path,{fullDest}",
                         LoggerType.Info,
                         param: ParamInfo);
 
@@ -1606,8 +1614,8 @@ namespace DivaModManager.Features.Extract
                 // ReparsePoint拒否
                 if (ContainsReparsePoint(Path.GetDirectoryName(fullDest)!, fullRoot))
                 {
-                    extract.MoveInfoList.LastOrDefault().Result =
-                        ExtractInfo.EXTRACT_RESULT.DANGEROUS_FILE;
+                    extract.MoveInfoList.LastOrDefault().Result = ExtractInfo.EXTRACT_RESULT.DANGEROUS_FILE;
+                    extract.MoveInfoList.LastOrDefault().ErrorFilePathList.Add(fullDest);
 
                     Logger.WriteLine(
                         $"{Path.GetFileName(mv.FullPath)},{entry}," +
@@ -1621,39 +1629,13 @@ namespace DivaModManager.Features.Extract
 
                 var dirToCheck = fullDest;
 
-                //if (!e.IsDirectory)
-                //{
-                //    dirToCheck = Path.GetDirectoryName(fullDest)!;
-                //}
-
-                //// ディレクトリ扱いのエントリはディレクトリ作成してスキップ
-                //if (e.IsDirectory || entry.EndsWith("/"))
-                //{
-                //    Directory.CreateDirectory(fullDest);
-                //    mv.FileAndDirectoryCount.Add(new DirectoryInfo(fullDest));
-                //    continue;
-                //}
-
-                // 親ディレクトリを確実に作成
-                //var parentDir = Path.GetDirectoryName(fullDest);
-                //if (!string.IsNullOrEmpty(parentDir) && !Directory.Exists(parentDir))
-                //{
-                //    Directory.CreateDirectory(parentDir);
-                //    mv.FileAndDirectoryCount.Add(new DirectoryInfo(parentDir));
-                //}
-
-                // ストリームを書き込み（FileInfo.OpenWrite を使わず直接 FileStream）
-                //using var entryStream = e.OpenEntryStream();
-                //using var fileStream = new FileStream(fullDest, FileMode.Create, FileAccess.Write, FileShare.None);
-                //entryStream.CopyTo(fileStream);
-
                 mv.FileAndDirectoryCount.Add(new FileInfo(fullDest));
             }
 
-            // 全走査した時点で結果をチェック
-            if (extract.MoveInfoList.LastOrDefault().Result is ExtractInfo.EXTRACT_RESULT.DANGEROUS_FILE or ExtractInfo.EXTRACT_RESULT.EXCEPTION)
+            // 全走査した時点で結果をチェック＠記載漏れからバグになりやすい部分なのでロジック見直し
+            if (extract.MoveInfoList.LastOrDefault().Result is ExtractInfo.EXTRACT_RESULT.DANGEROUS_FILE or ExtractInfo.EXTRACT_RESULT.EXCEPTION or ExtractInfo.EXTRACT_RESULT.PATH_LENGTH_OVER_LIMIT)
             {
-                Logger.WriteLine(string.Join(" ", MeInfo, $"End.", $"Return:{ret}", $"This file cannot be extracted because it may be dangerous. File:{mv.FullPath}"), LoggerType.Error, param: ParamInfo);
+                Logger.WriteLine(string.Join(" ", MeInfo, $"End.", $"Return:{ret}", $"This file cannot be extracted because it may be supported file. File:{mv.FullPath}"), LoggerType.Error, param: ParamInfo);
                 return ret;
             }
 
@@ -2122,31 +2104,31 @@ namespace DivaModManager.Features.Extract
         /// <param name="fullDest"></param>
         /// <param name="fullRoot"></param>
         /// <returns></returns>
-        private static bool IsDangerousPath(string fullDest, string fullRoot)
+        private static EXTRACT_RESULT IsDangerousPath(string fullDest, string fullRoot)
         {
             // 正規化
             fullDest = Path.GetFullPath(fullDest);
             fullRoot = Path.GetFullPath(fullRoot);
 
             // ZipSlip
-            if (!fullDest.StartsWith(fullRoot, StringComparison.OrdinalIgnoreCase))
-                return true;
+            if (!FileHelper.PathStartsWith(fullDest, fullRoot))
+                return EXTRACT_RESULT.DANGEROUS_FILE;
 
             // 長いパス拒否
             // MAX_PATH を少し余裕持って制限
-            var maxPath = OperatingSystem.IsWindows() ? 260 : 4096;
+            var maxPath = OperatingSystem.IsWindows() ? PATH_LENGTH_LIMIT_WINDOWS : PATH_LENGTH_LIMIT_LINUX;
             if (fullDest.Length >= maxPath)
-                return true;
+                return EXTRACT_RESULT.PATH_LENGTH_OVER_LIMIT;
 
             // UNC拒否 (Windowsのみ)
             if (OperatingSystem.IsWindows() && fullDest.StartsWith(@"\\"))
-                return true;
+                return EXTRACT_RESULT.DANGEROUS_FILE;
 
             // NTプレフィックス拒否 (Windowsのみ)
             if (OperatingSystem.IsWindows() && fullDest.StartsWith(@"\\?\"))
-                return true;
+                return EXTRACT_RESULT.DANGEROUS_FILE;
 
-            return false;
+            return EXTRACT_RESULT.NONE;
         }
 
         /// <summary>

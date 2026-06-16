@@ -1,37 +1,41 @@
 
-DivaMoaManager by Enomoto v1.3.1.35 for Linux Mint/Ubuntu (alpha4)
+DivaMoaManager by Enomoto v1.3.1.35 (beta1)
 
------ Notice (Please read carefully!!) -------------------------
+----- Note (Please read carefully!!) -------------------------
 
-- This executable is intended for users on OSes other than Windows (Linux, macOS, Steam Deck).
-  It essentially restricts features compared to the Windows version of DivaMoaManager by Enomoto v1.3.1.34.
-  (If you use Windows, this version is unnecessary.)
-
+- It includes features that are restricted from the Windows version DivaMoaManager by Enomoto v1.3.1.34 and unstable functions.
 - Use at your own risk.
-- Operation outside the environments listed below as [Verified Operating Environments] has not been confirmed.
-- Especially on Linux distributions that differ or in macOS environments, there is a possibility that the OS may become non-functional.
-
-- Installing .NET is not required (the executable size is very large instead).
-- First priority is to implement features as close as possible to the Windows version; therefore feature requests are generally not accepted.
+- Operation outside the [verified environments] listed below has not been confirmed.
+- Especially on Linux distributions that differ or in environments like macOS, the OS may become non-functional.
+- Installing .NET is not required (however, the executable size is very large).
+- Since we prioritize implementing features as close to the Windows version as possible, feature requests are generally not accepted.
 
 ----- Bugs and Feature Restrictions -------------------------
 
-This version limits functionality as a "mod management tool for users who already have a complete mod operating environment."
-Specifically, changes from the Windows version of DivaMoaManager by Enomoto v1.3.1.34 include:
+Launching this tool on Linux or Steam Deck assumes that a Mod operation environment has already been fully set up for users.
+Specifically, the following changes have been made from the Windows version DivaMoaManager by Enomoto v1.3.1.34
 
-- Pre‑implementation of UI changes in the next version.
-- Hiding functions of tabs other than Mods.
-- Stopping automatic download and placement of DivaModLoader at startup.
-- Disabling the Update Core button functionality.
-- Disabling mod deletion via right‑click, etc.
+### Common to Windows and Linux
+- UI changes
+- Changed to the font installed by default on the OS
+- Implementation of cache functionality
+  For some slower connections or in the GameBanana tab, initial operation may be slower than previous versions.
+  Additionally, cache accumulates in the DivaModManager/cache folder (please note the capacity).
+  Once a cache has been generated, reduced load times and controlled excessive API access are expected.
+- Error reporting template included.
+
+### Restrictions on Linux
+- We have confirmed operation on Wine or Proton (Steam).
+  (Please note that it is not native to Linux).
+- Stopped the feature of automatically downloading and placing DivaModLoader at startup.
+- Disabled the Update Core button functionality.
 - Popup windows do not become active (may be made a specification).
-- Switching to fonts installed by default on the OS (temporary).
-- Files are generally moved to the recycle bin when deleted.
-  Temporary files are extracted to the DivaModManager/Downloads folder, so please watch your free space.
+- Files are generally moved to the trash when deleted.
+  Temporary files are extracted into the DivaModManager/Downloads folder, so please be aware of available space.
 
------ Verified Operating Environments -------------------------
+----- Verified Environments -------------------------
 
-alpha4
+### beta1
 - Windows 11 Home 25H2
-- Ubuntu 26.04 (on VMware Workstation) + Proton Experimental 11.0‑20260522b
+- Ubuntu 26.04 (on VMware Workstation) + Proton Experimental 11.0
 

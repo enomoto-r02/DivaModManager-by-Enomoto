@@ -35,6 +35,10 @@
     <None Remove="Assets\dml.png" />
     <None Remove="Assets\dml_backup.png" />
     <None Remove="Assets\dummy.png" />
+    <None Remove="Assets\fontawesome\circle-info.png" />
+    <None Remove="Assets\fontawesome\discord.png" />
+    <None Remove="Assets\fontawesome\search.png" />
+    <None Remove="Assets\fontawesome\times-circle.png" />
     <None Remove="Assets\load.gif" />
     <None Remove="Assets\load.webp" />
     <None Remove="Assets\noimage.png" />
@@ -48,9 +52,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="Assets\fontawesome\discord.png" />
+    <Resource Include="Assets\fontawesome\times-circle.png" />
     <Resource Include="Assets\miku.ico">
       <CopyToOutputDirectory></CopyToOutputDirectory>
     </Resource>
+    <Resource Include="Assets\fontawesome\circle-info.png" />
+    <Resource Include="Assets\fontawesome\search.png" />
     <Content Include="Downloads\Do not place files under this folder">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -170,6 +178,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="ErrorReportTemplate\ErrorReportTemplate Example%28EN%29.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="ErrorReportTemplate\ErrorReportTemplate(EN).txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -178,6 +192,12 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="readme_jp.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="ErrorReportTemplate\エラー報告用テンプレート 記入例(JP).txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="ErrorReportTemplate\エラー報告用テンプレート(JP).txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
