@@ -10,6 +10,7 @@
 Steam Deck (SteamOS 3.4, based on Arch Linux)
 
 ### DivaModManagerのバージョン
+### 原則として、最新版（安定版）バージョンを使用して発生したバグの報告のみを受け付けています
 1.3.1.35 (alpha5)
 
 ### DivaModManagerのアップデート後にこの問題が発生しましたか？

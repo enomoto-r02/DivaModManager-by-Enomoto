@@ -23,6 +23,7 @@ While your report may help users experiencing the same issue, please be careful 
 ### OS
 
 ### DivaModManager Version
+### As a general rule, we only accept bug reports that occur when using the latest (stable) version.
 
 ### Did this issue start after updating DivaModManager?
 ### If so, please tell us which version you were using before the update.

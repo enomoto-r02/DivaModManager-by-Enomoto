@@ -10,6 +10,7 @@ Around 11:05 AM on June 10, 2026
 Steam Deck (SteamOS 3.4, based on Arch Linux)
 
 ### DivaModManager Version
+### As a general rule, we only accept bug reports that occur when using the latest (stable) version.
 1.3.1.35 (alpha5)
 
 ### Did this issue start after updating DivaModManager?
