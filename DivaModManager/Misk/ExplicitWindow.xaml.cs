@@ -7,10 +7,10 @@ namespace DivaModManager
     public partial class ExplicitWindow : Window
     {
         public bool YesNo = false;
-        public ExplicitWindow(DivaModArchivePost post)
+        public ExplicitWindow(string message)
         {
             InitializeComponent();
-            ExplicitReasonText.Text = ViewStr(post.Explicit_Reason, 1000);
+            ExplicitReasonText.Text = ViewStr(message, 1000);
         }
         private void Yes_Click(object sender, RoutedEventArgs e)
         {

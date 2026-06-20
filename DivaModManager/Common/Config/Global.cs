@@ -78,6 +78,9 @@ public static class Global
     }
     private static string _ModsFolder { get; set; } = string.Empty;
 
+    // MM+ゲームベース情報(SongDataやModuleData保持用)
+    public static Mod GameBase { get; set; } = new();
+
     private static ObservableCollection<Mod>? _ModList { get; set; } = new();
     public static ObservableCollection<Mod> ModList
     {

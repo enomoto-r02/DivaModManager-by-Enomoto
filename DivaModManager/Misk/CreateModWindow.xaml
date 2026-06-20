@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:DivaModManager.Common.Converters"
         mc:Ignorable="d"
         Title="DivaModManager by Enomoto" WindowStartupLocation="CenterScreen"
-        ResizeMode="NoResize" MinWidth="400" MaxWidth="750" FontFamily="{StaticResource DmmeFont}"
+        ResizeMode="NoResize" MinWidth="400" MaxWidth="750" FontFamily="{StaticResource DmmFont}"
         Background="#202020" ShowActivated="True" SizeToContent="WidthAndHeight">
     <Window.Resources>
         <local:FileNameConverter x:Key="FileNameConverter"/>

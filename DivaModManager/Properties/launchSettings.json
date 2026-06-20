@@ -1,8 +1,11 @@
 {
   "profiles": {
-    "DivaModManager": {
+    "DivaModManager_Debug": {
       "commandName": "Project",
       "commandLineArgs": "-debug"
+    },
+    "DivaModManager": {
+      "commandName": "Project"
     }
   }
 }

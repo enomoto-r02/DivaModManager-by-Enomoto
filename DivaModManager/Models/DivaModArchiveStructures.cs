@@ -35,7 +35,6 @@ namespace DivaModManager.Models
         public long Downloads { get; set; }
         [JsonPropertyName("like_count")]
         public long Likes { get; set; }
-        //public int Likes { get; set; }
         [JsonIgnore]
         public string DownloadString => Downloads.ToString();
         [JsonIgnore]

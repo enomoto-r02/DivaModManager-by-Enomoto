@@ -186,8 +186,15 @@ namespace DivaModManager.Common.Config
 
         public string GetGameLocation()
         {
-            return (Path.GetDirectoryName(CurrentConfig?.Launcher) ?? string.Empty) + Path.DirectorySeparatorChar;
+            return string.IsNullOrWhiteSpace(Path.GetDirectoryName(CurrentConfig?.Launcher)) ? null : Path.GetDirectoryName(CurrentConfig?.Launcher) + Path.DirectorySeparatorChar;
         }
+
+        public string GetModsLocation()
+        {
+            // "mods"は面倒だからハードコーディングだけど、そのうち直す
+            return string.IsNullOrWhiteSpace(GetGameLocation()) ? null : GetGameLocation() + Path.DirectorySeparatorChar + "mods" + Path.DirectorySeparatorChar;
+        }
+
 
         public static async Task<bool> UpdateConfigAsync([CallerMemberName] string caller = "")
         {
