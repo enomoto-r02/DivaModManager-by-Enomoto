@@ -19,17 +19,11 @@
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
-        <StackPanel Orientation="Vertical" Grid.Row="0">
-            <Button Foreground="#f2f2f2" FontFamily="{StaticResource DmmeFont}" FontWeight="Normal" Height="30" Background="#303030" BorderBrush="#353535" VerticalAlignment="Center" HorizontalAlignment="Stretch" Margin="5,5,5,5" Content="Do Hang" Click="Hang_Click" Cursor=""/>
-        </StackPanel>
-        <StackPanel Orientation="Vertical" Grid.Row="1">
-            <Button Foreground="#f2f2f2" FontFamily="{StaticResource DmmeFont}" FontWeight="Normal" Height="30" Background="#303030" BorderBrush="#353535" VerticalAlignment="Center" HorizontalAlignment="Stretch" Margin="5,5,5,5" Content="Do Window Out" Click="WindowOut_Click"/>
-        </StackPanel>
-        <StackPanel Orientation="Vertical" Grid.Row="2">
-            <Button Foreground="#f2f2f2" FontFamily="{StaticResource DmmeFont}" FontWeight="Normal" Height="30" Background="#303030" BorderBrush="#353535" VerticalAlignment="Center" HorizontalAlignment="Stretch" Margin="5,5,5,5" Content="Setting Files Open" Click="SettingFilesOpen_Click"/>
-        </StackPanel>
-        <StackPanel Orientation="Vertical" Grid.Row="3" x:Name="DeveloperStackPanel">
-            <Button x:Name="GlobalModListDumpButton" Foreground="#f2f2f2" FontFamily="{StaticResource DmmeFont}" FontWeight="Normal" Height="30" Background="#303030" BorderBrush="#353535" VerticalAlignment="Center" HorizontalAlignment="Stretch" Margin="5,5,5,5" Content="ModList_Dump" Click="Global_ModList_Dump_Click"/>
+        <Button Grid.Column="0" Grid.Row="0" Foreground="#f2f2f2" FontFamily="{StaticResource DmmFont}" FontWeight="Normal" Height="30" Background="#303030" BorderBrush="#353535" VerticalAlignment="Center" HorizontalAlignment="Stretch" Margin="5,5,5,5" Content="Do Hang" Click="Hang_Click" Cursor=""/>
+        <Button Grid.Column="0" Grid.Row="1" Foreground="#f2f2f2" FontFamily="{StaticResource DmmFont}" FontWeight="Normal" Height="30" Background="#303030" BorderBrush="#353535" VerticalAlignment="Center" HorizontalAlignment="Stretch" Margin="5,5,5,5" Content="Do Window Out" Click="WindowOut_Click"/>
+        <Button Grid.Column="0" Grid.Row="2" Foreground="#f2f2f2" FontFamily="{StaticResource DmmFont}" FontWeight="Normal" Height="30" Background="#303030" BorderBrush="#353535" VerticalAlignment="Center" HorizontalAlignment="Stretch" Margin="5,5,5,5" Content="Setting Files Open" Click="SettingFilesOpen_Click"/>
+        <StackPanel x:Name="DeveloperStackPanel" Orientation="Vertical" Grid.Column="1" Visibility="Hidden">
+            <Button x:Name="GlobalModListDumpButton" Grid.Column="0" Foreground="#f2f2f2" FontFamily="{StaticResource DmmFont}" FontWeight="Normal" Height="30" Background="#303030" BorderBrush="#353535" VerticalAlignment="Center" HorizontalAlignment="Stretch" Margin="5,5,5,5" Content="ModList_Dump" Click="Global_ModList_Dump_Click"/>
         </StackPanel>
     </Grid>
 </UserControl>

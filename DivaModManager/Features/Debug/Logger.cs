@@ -31,12 +31,8 @@ namespace DivaModManager.Features.Debug
             {
                 LogPath = Global.textLogBackgroundLocation;
             }
-#if DEBUG
-            Mode = DEBUG_MODE.DEVELOPER;
-#else
             if (e.Args.ToList().Contains("-deb") || e.Args.ToList().Contains("-debug")) Mode = DEBUG_MODE.DEBUG;
             else if (e.Args.ToList().Contains("-dev") || e.Args.ToList().Contains("-developer")) Mode = DEBUG_MODE.DEVELOPER;
-#endif
         }
 
         public static string SetLastStartUpModeRegistry()

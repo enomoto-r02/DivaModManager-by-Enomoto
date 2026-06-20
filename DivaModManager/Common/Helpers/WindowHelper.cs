@@ -35,7 +35,7 @@ namespace DivaModManager.Common.Helpers
             string ParamInfo = $"message_no:{message_no}, replaceList:{Util.GetListToParamString(replaceList)}";
             Logger.WriteLine(string.Join(" ", MeInfo, $"Start."), LoggerType.Debug, param: ParamInfo);
 
-            WindowInfo info = WindowListClass.MessageWindowNo(message_no, replaceList);
+            WindowInfo info = WindowList.MessageWindowNo(message_no, replaceList);
             var ret = WindowCloseStatus.None;
 
             if (info.WindowType.ToString().ToUpper() == WindowInfo.MESSAGE_WINDOW.OK.ToString().ToUpper())
@@ -239,15 +239,15 @@ namespace DivaModManager.Common.Helpers
             var choices = new List<DmmChoiceModel>();
             for (var i = 0; i < message_no_list.Count - 1; i++)
             {
-                var info = WindowListClass.MessageWindowNo(message_no_list[i], replaceList);
+                var info = WindowList.MessageWindowNo(message_no_list[i], replaceList);
                 if (info.WindowType.ToString().ToUpper() == WindowInfo.MESSAGE_WINDOW.Choice.ToString().ToUpper())
                 {
                     DmmChoiceModel item1 = new DmmChoiceModel() { MessageInfo = info.Info(), MessageText = info.Context(), Index = i };
                     choices.Add(item1);
                 }
-                infoList.Add(WindowListClass.MessageWindowNo(message_no_list[i], replaceList));
+                infoList.Add(WindowList.MessageWindowNo(message_no_list[i], replaceList));
             }
-            var choice_button = WindowListClass.MessageWindowNo(message_no_list[message_no_list.Count - 1]);
+            var choice_button = WindowList.MessageWindowNo(message_no_list[message_no_list.Count - 1]);
             do
             {
                 DmmChoiceWindow choiceWindow = new(choices, $"[{infoList[0].WindowId()}] {infoList[0].WindowTitle()}");
@@ -297,7 +297,7 @@ namespace DivaModManager.Common.Helpers
             string ParamInfo = $"message_no:{message_no}, replaceList:{Util.GetListToParamString(replaceList)}";
             Logger.WriteLine(string.Join(" ", MeInfo, $"Start."), LoggerType.Debug, param: ParamInfo);
 
-            WindowInfo info = WindowListClass.MessageWindowNo(message_no);
+            WindowInfo info = WindowList.MessageWindowNo(message_no);
             info.replaceList = replaceList;
             MessageBoxResult ret;
             if (window == null)

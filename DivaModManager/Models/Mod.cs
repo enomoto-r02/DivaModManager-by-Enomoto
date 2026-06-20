@@ -2,6 +2,8 @@
 using DivaModManager.Common.Helpers;
 using DivaModManager.Common.MessageWindow;
 using DivaModManager.Features.DML;
+using DivaModManager.Features.Module;
+using DivaModManager.Features.Song;
 using DivaModManager.Structures;
 using System;
 using System.Collections.Generic;
@@ -100,6 +102,7 @@ namespace DivaModManager.Models
         public MetadataManager metadataManager = new();
         [JsonIgnore]
         public bool selected { get; set; }
+        // Priority列(rowとは違うので注意)
         [JsonIgnore]
         public virtual string? priority
         {
@@ -357,6 +360,9 @@ namespace DivaModManager.Models
 
         [JsonIgnore]
         public ConfigTomlMod ConfigToml { get; set; } = new();
+        // 現在設定されているModGridでの順番(Priorityとは違い実際のリストに並んでいる値)
+        [JsonIgnore]
+        private int row { get; set; } = -1;
 
         public virtual string GetErrorString()
         {
@@ -408,14 +414,14 @@ namespace DivaModManager.Models
             // config.tomlなし(0002E)
             if (config_toml_all.Length == 0)
             {
-                var addError = WindowListClass.MessageWindowNo(2);
+                var addError = WindowList.MessageWindowNo(2);
                 if (!Errors.Contains(addError)) Errors.Add(addError);
             }
 
             // config.tomlの配置誤り(0003E)
             if (config_toml_top.Length == 0 && config_toml_all.Count() == 1)
             {
-                var addError = WindowListClass.MessageWindowNo(3);
+                var addError = WindowList.MessageWindowNo(3);
                 if (!Errors.Contains(addError)) Errors.Add(addError);
             }
 
@@ -423,14 +429,14 @@ namespace DivaModManager.Models
             // config.tomlが複数(0001W)
             if (config_toml_all.Length >= 2)
             {
-                var addError = WindowListClass.MessageWindowNo(1);
+                var addError = WindowList.MessageWindowNo(1);
                 if (!Errors.Contains(addError)) Errors.Add(addError);
             }
 
             // フォルダ内にModのファイルが存在しない(0056W)
             if (FileHelper.GetDirectorySize(directory_path, SkipFileWhenSizeCheckPathList) == 0)
             {
-                var addError = WindowListClass.MessageWindowNo(56);
+                var addError = WindowList.MessageWindowNo(56);
                 if (!Errors.Contains(addError)) Errors.Add(addError);
             }
 
@@ -504,7 +510,7 @@ namespace DivaModManager.Models
                 sameModNameList.Insert(0, name);
                 sameModNameList.Sort();
                 var sameModListDirStr = $"{prefix}{string.Join($"\n{prefix}", sameModNameList)}";
-                var addError = WindowListClass.MessageWindowNo(57, new List<string>() { sameModListDirStr });
+                var addError = WindowList.MessageWindowNo(57, new List<string>() { sameModListDirStr });
                 if (!Errors.Any(x => x.ID == 57)) Errors.Add(addError);
                 // 一致判定されたModのErrorsに情報を追加する
                 // 理由：New Classic → New Classic (1)は検索できるが、逆は不可のため
@@ -521,26 +527,26 @@ namespace DivaModManager.Models
 
             // MM+、DMLで取り込み済(0058W)
             if (metadataManager != null && metadataManager.metadata != null && metadataManager.metadata.homepage != null
-                && WindowListClass.WINDOW_LIST_NO_58.ContainsKey(metadataManager.metadata.homepage.ToString()))
+                && WindowList.WINDOW_LIST_NO_58.ContainsKey(metadataManager.metadata.homepage.ToString()))
             {
                 var replaceList = new List<string>() { DMLUpdater.MODULE_NAME };
-                var addError = WindowListClass.MessageWindowNo(58, replaceList);
+                var addError = WindowList.MessageWindowNo(58, replaceList);
                 if (!Errors.Any(x => x.ID == 58)) Errors.Add(addError);
             }
 
             // セーブデータ注意(0059W)
             var Error_59_List = Global.ModList_All.Where(x => x.directory_name != directory_name).ToList();
             if (!string.IsNullOrEmpty(metadataManager?.metadata?.homepage?.ToString())
-                && WindowListClass.WINDOW_LIST_NO_59.Contains(metadataManager?.metadata?.homepage?.ToString()))
+                && WindowList.WINDOW_LIST_NO_59.Contains(metadataManager?.metadata?.homepage?.ToString()))
             {
-                var addError = WindowListClass.MessageWindowNo(59);
+                var addError = WindowList.MessageWindowNo(59);
                 if (!Errors.Any(x => x.ID == 59)) Errors.Add(addError);
             }
 
             // 日本語文字(0073E)
             if (Encoding.GetEncoding("Shift_JIS").GetByteCount(name) > name.Length)
             {
-                var addError = WindowListClass.MessageWindowNo(73, new List<string>());
+                var addError = WindowList.MessageWindowNo(73, new List<string>());
                 if (!Errors.Any(x => x.ID == 73)) Errors.Add(addError);
             }
 
@@ -553,6 +559,12 @@ namespace DivaModManager.Models
             OnPropertyChanged("IsError");
             OnPropertyChanged("IsWarn");
         }
+
+        [JsonIgnore]
+        public SongData songData = new();
+
+        [JsonIgnore]
+        public ModuleData moduleData = new();
     }
 
     public class SearchMod : Mod

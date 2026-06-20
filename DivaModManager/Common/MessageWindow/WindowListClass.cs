@@ -17,7 +17,7 @@ using Tomlyn;
 
 namespace DivaModManager.Common.MessageWindow
 {
-    public static class WindowListClass
+    public static class WindowList
     {
         public static string WINDOW_LIST_NAME { get; set; } = "Message.toml";
         public static string WINDOW_LIST_PATH = $"{Global.assemblyLocation}{WINDOW_LIST_NAME}";
@@ -38,7 +38,7 @@ namespace DivaModManager.Common.MessageWindow
         };
 
 
-        public static Dictionary<string, WindowInfo> WindowList { get; set; } = new();
+        public static Dictionary<string, WindowInfo> WindowDictionary { get; set; } = new();
 
         public static bool InitWindowList([CallerMemberName] string caller = "")
         {
@@ -60,7 +60,7 @@ namespace DivaModManager.Common.MessageWindow
                 Logger.WriteLine(string.Join(" ", $"Initialization was performed because {WINDOW_LIST_PATH} could not be read.", $"ex.Message:{ex.Message}", $"ex.StackTrace:{ex.StackTrace}"), LoggerType.Error, param: ParamInfo);
             }
 
-            Logger.WriteLine(string.Join(" ", MeInfo, $"End.", $"WindowList.Count:{WindowList.Count()} Return:{ret}"), LoggerType.Debug, param: ParamInfo);
+            Logger.WriteLine(string.Join(" ", MeInfo, $"End.", $"WindowList.Count:{WindowDictionary.Count()} Return:{ret}"), LoggerType.Debug, param: ParamInfo);
             return ret;
         }
 
@@ -84,7 +84,7 @@ namespace DivaModManager.Common.MessageWindow
                 using StreamReader reader = new(stream);
                 var content = reader.ReadToEnd();
 
-                WindowList = Toml.ToModel<Dictionary<string, WindowInfo>>(content);
+                WindowDictionary = Toml.ToModel<Dictionary<string, WindowInfo>>(content);
                 ret = true;
             }
 
@@ -182,13 +182,13 @@ namespace DivaModManager.Common.MessageWindow
         public static WindowInfo MessageWindowNo(int ID)
         {
             var key = ID.ToString("WINDOW-0000");
-            return WindowList[key].DeepCopy();    // windowListはstaticなので、コピーして別インスタンスにする
+            return WindowDictionary[key].DeepCopy();    // windowListはstaticなので、コピーして別インスタンスにする
         }
 
         public static WindowInfo MessageWindowNo(int ID, List<string> replaceList)
         {
             var key = ID.ToString("WINDOW-0000");
-            var info = WindowList[key].DeepCopy();    // windowListはstaticなので、コピーして別インスタンスにする
+            var info = WindowDictionary[key].DeepCopy();    // windowListはstaticなので、コピーして別インスタンスにする
             info.replaceList = replaceList;
 
             return info;
@@ -199,7 +199,7 @@ namespace DivaModManager.Common.MessageWindow
             var ret = false;
             try
             {
-                string tomlString = Toml.FromModel(WindowList);
+                string tomlString = Toml.FromModel(WindowDictionary);
                 ret = FileHelper.TryWriteAllText(WINDOW_LIST_PATH, tomlString);
             }
             catch (Exception ex)
@@ -208,6 +208,14 @@ namespace DivaModManager.Common.MessageWindow
                 Logger.WriteLine(string.Join(" ", $"Unexpected error loading {WINDOW_LIST_PATH}: {ex.Message}. Using default {WINDOW_LIST_PATH} in {AssemblyName.GetAssemblyName}."), LoggerType.Error);
             }
             return ret;
+        }
+
+        public static string MessageString(int ID, [CallerMemberName] string caller = "")
+        {
+            var key = ID.ToString("WINDOW-0000");
+            var info = WindowDictionary[key].DeepCopy();    // windowListはstaticなので、コピーして別インスタンスにする
+
+            return info.Info();
         }
     }
     public class WindowInfo
@@ -251,9 +259,9 @@ namespace DivaModManager.Common.MessageWindow
         public string Info_EN { get; set; }
         public string Info()
         {
-            if (Global.ConfigToml == null) return WindowListClass.ReplaceMessage(Info_EN, replaceList);
-            else if (Global.ConfigToml.Language == ConfigTomlDmm.Lang.JP.ToString()) return WindowListClass.ReplaceMessage(Info_JP, replaceList);
-            else if (Global.ConfigToml.Language == ConfigTomlDmm.Lang.EN.ToString()) return WindowListClass.ReplaceMessage(Info_EN, replaceList);
+            if (Global.ConfigToml == null) return WindowList.ReplaceMessage(Info_EN, replaceList);
+            else if (Global.ConfigToml.Language == ConfigTomlDmm.Lang.JP.ToString()) return WindowList.ReplaceMessage(Info_JP, replaceList);
+            else if (Global.ConfigToml.Language == ConfigTomlDmm.Lang.EN.ToString()) return WindowList.ReplaceMessage(Info_EN, replaceList);
             else return string.Empty;
         }
         [DataMember(Name = "context_jp")]
@@ -263,9 +271,9 @@ namespace DivaModManager.Common.MessageWindow
         public string Context()
         {
             if (Global.ConfigToml.Language == ConfigTomlDmm.Lang.JP.ToString())
-                return WindowListClass.ReplaceMessage(Context_JP, replaceList);
+                return WindowList.ReplaceMessage(Context_JP, replaceList);
             else if (Global.ConfigToml.Language == ConfigTomlDmm.Lang.EN.ToString())
-                return WindowListClass.ReplaceMessage(Context_EN, replaceList);
+                return WindowList.ReplaceMessage(Context_EN, replaceList);
             else return string.Empty;
         }
 
@@ -278,9 +286,9 @@ namespace DivaModManager.Common.MessageWindow
         public string WindowTitle_EN { get; set; }
         public string WindowTitle()
         {
-            if (Global.ConfigToml == null) return WindowListClass.ReplaceMessage(WindowTitle_EN, replaceList);
-            else if (Global.ConfigToml.Language == ConfigTomlDmm.Lang.JP.ToString()) return WindowListClass.ReplaceMessage(WindowTitle_JP, replaceList);
-            else if (Global.ConfigToml.Language == ConfigTomlDmm.Lang.EN.ToString()) return WindowListClass.ReplaceMessage(WindowTitle_EN, replaceList);
+            if (Global.ConfigToml == null) return WindowList.ReplaceMessage(WindowTitle_EN, replaceList);
+            else if (Global.ConfigToml.Language == ConfigTomlDmm.Lang.JP.ToString()) return WindowList.ReplaceMessage(WindowTitle_JP, replaceList);
+            else if (Global.ConfigToml.Language == ConfigTomlDmm.Lang.EN.ToString()) return WindowList.ReplaceMessage(WindowTitle_EN, replaceList);
             else return string.Empty;
         }
         // button_1
@@ -323,8 +331,8 @@ namespace DivaModManager.Common.MessageWindow
         public string Check_1_EN { get; set; }
         public string Check_1()
         {
-            if (Global.ConfigToml.Language == ConfigTomlDmm.Lang.JP.ToString()) return WindowListClass.ReplaceMessage(Check_1_JP, replaceList);
-            else if (Global.ConfigToml.Language == ConfigTomlDmm.Lang.EN.ToString()) return WindowListClass.ReplaceMessage(Check_1_EN, replaceList);
+            if (Global.ConfigToml.Language == ConfigTomlDmm.Lang.JP.ToString()) return WindowList.ReplaceMessage(Check_1_JP, replaceList);
+            else if (Global.ConfigToml.Language == ConfigTomlDmm.Lang.EN.ToString()) return WindowList.ReplaceMessage(Check_1_EN, replaceList);
             else return string.Empty;
         }
 

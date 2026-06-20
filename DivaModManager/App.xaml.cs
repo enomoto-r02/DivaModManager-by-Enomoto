@@ -21,7 +21,8 @@ namespace DivaModManager
     public partial class App : Application
     {
         public static readonly string Version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
-        public static readonly string TestVersion = " (beta1)";
+
+        public static readonly string TestVersion = " (beta2)";
 
         [DllImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -65,7 +66,7 @@ namespace DivaModManager
 
             // 設定ファイル初期化
             // 初期化順をミスるとNull Pointer Exceptionで落ちるので注意
-            if (!WindowListClass.InitWindowList())
+            if (!WindowList.InitWindowList())
             {
                 Environment.Exit(0);
             }

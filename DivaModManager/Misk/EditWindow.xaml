@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:DivaModManager" FocusManager.FocusedElement="{Binding ElementName=NameBox}"
-        mc:Ignorable="d" Background="#202020" WindowStartupLocation="CenterScreen" FontFamily="{StaticResource DmmeFont}"
+        mc:Ignorable="d" Background="#202020" WindowStartupLocation="CenterScreen" FontFamily="{StaticResource DmmFont}"
         Height="120" Width="500" MinHeight="120" MinWidth="500">
     <Grid>
         <Grid.RowDefinitions>

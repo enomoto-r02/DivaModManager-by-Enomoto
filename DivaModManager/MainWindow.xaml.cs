@@ -1,5 +1,6 @@
 using DivaModManager.Common.Config;
 using DivaModManager.Common.Helpers;
+using DivaModManager.Common.MessageWindow;
 using DivaModManager.Features.AltLink;
 using DivaModManager.Features.Debug;
 using DivaModManager.Features.DML;
@@ -7,6 +8,8 @@ using DivaModManager.Features.DMM;
 using DivaModManager.Features.Download;
 using DivaModManager.Features.Extract;
 using DivaModManager.Features.Feed;
+using DivaModManager.Features.Module;
+using DivaModManager.Features.Song;
 using DivaModManager.Misk;
 using DivaModManager.Models;
 using DivaModManager.Structures;
@@ -75,6 +78,9 @@ namespace DivaModManager
         private SearchMod ModGridSearch = new();
         // DMMeやDMLバージョンなど
         private string InfoText = string.Empty;
+        // 現在表示しているmetadataの画像情報
+        private List<string> previewFiles = new();
+        private int previewFilesIndex = 0;
 
         #region IDisposable 実装
 
@@ -253,6 +259,9 @@ namespace DivaModManager
                 var bitmap = new BitmapImage(new Uri("pack://application:,,,/DivaModManager;component/Assets/preview_enomoto.png"));
                 ImageBehavior.SetAnimatedSource(Preview, bitmap);
                 ImageBehavior.SetAnimatedSource(PreviewBG, null);
+
+                ThumbnailCountRect.Visibility = Visibility.Collapsed;
+                ThumbnailCountText.Visibility = Visibility.Collapsed;
             }
             catch (Exception ex)
             {
@@ -1228,12 +1237,6 @@ namespace DivaModManager
             string MeInfo = Logger.GetMeInfo(new StackFrame());
             string ParamInfo = $"id:{Thread.CurrentThread.ManagedThreadId}";
 
-            //if (Util.IsWine())
-            //{
-            //    WindowHelper.DMMWindowOpen(27);
-            //    return;
-            //}
-
             if (WorkManager.IsBusy || App.IsAlreadyRunningOtherProcess(false) != 0)
             {
                 WindowHelper.DMMWindowOpen(66);
@@ -1302,7 +1305,9 @@ namespace DivaModManager
             DescriptionWindowInit();
             ViewErrorAndWarningDescriptionWindow(mod);
 
-            List<string> previewFiles = null;
+            previewFilesIndex = 0;
+            previewFiles = null;
+
             try
             {
                 // Delete後に呼ばれた場合はmod == null(初期状態の表示を行うため)
@@ -1313,10 +1318,11 @@ namespace DivaModManager
                 {
                     var allFiles = Directory.GetFiles(path, "*.*").ToList();
                     previewFiles = allFiles.Where(f =>
-                        f.EndsWith(".png", StringComparison.OrdinalIgnoreCase)  ||
-                        f.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase)  ||
-                        f.EndsWith(".gif", StringComparison.OrdinalIgnoreCase)  ||
+                        f.EndsWith(".bmp", StringComparison.OrdinalIgnoreCase) ||
+                        f.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
+                        f.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
                         f.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) ||
+                        f.EndsWith(".gif", StringComparison.OrdinalIgnoreCase) ||
                         f.EndsWith(".webp", StringComparison.OrdinalIgnoreCase)
                     ).ToList();
                 }
@@ -1447,101 +1453,93 @@ namespace DivaModManager
                     if (metadata.caticon != null && metadata.caticon.ToString().Length > 0)
                         _ = ImageCacheManager.PreCacheAsync(metadata.caticon, -1);
                 }
-                // Wine環境で落ちるのでいったんバイパス
-                if (!Global.IsWine)
+                if (previewFiles != null && previewFiles.Count > 0)
                 {
-                    if (previewFiles != null && previewFiles.Count > 0)
+                    try
                     {
-                        try
-                        {
-                            string imagePath = previewFiles[0]; // ファイルのフルパスを取得
+                        string imagePath = previewFiles[previewFilesIndex]; // ファイルのフルパスを取得
 
-                            // --- MemoryStream を使わずに UriSource で直接読み込む ---
-                            var img = new BitmapImage();
-                            img.BeginInit();
-                            // UriSource にファイルパスを設定 (絶対パスを指定)
-                            img.UriSource = new Uri(imagePath, UriKind.Absolute);
-                            // CacheOption は OnLoad のまま推奨 (読み込み完了後にファイルを解放するため)
-                            img.CacheOption = BitmapCacheOption.OnLoad;
-                            // DecodePixelWidth/Height を設定するとメモリ効率が良くなる場合がある (任意)
-                            // img.DecodePixelWidth = (int)Preview.ActualWidth; // または固定値
-                            img.EndInit();
+                        // --- MemoryStream を使わずに UriSource で直接読み込む ---
+                        var img = new BitmapImage();
+                        img.BeginInit();
+                        // UriSource にファイルパスを設定 (絶対パスを指定)
+                        var imageUri = new Uri(imagePath, UriKind.Absolute);
+                        img.UriSource = imageUri;
+                        // CacheOption は OnLoad のまま推奨 (読み込み完了後にファイルを解放するため)
+                        img.CacheOption = BitmapCacheOption.OnLoad;
+                        // DecodePixelWidth/Height を設定するとメモリ効率が良くなる場合がある (任意)
+                        // img.DecodePixelWidth = (int)Preview.ActualWidth; // または固定値
+                        img.EndInit();
 
-                            // Freeze すると別スレッドからのアクセスでも安全になる場合がある
-                            if (img.CanFreeze)
-                            {
-                                img.Freeze();
-                            }
+                        // Freeze すると別スレッドからのアクセスでも安全になる場合がある
+                        if (img.CanFreeze) img.Freeze();
 
-                            Dispatcher.InvokeAsync(async () =>
-                            {
-                                ImageBehavior.SetAnimatedSource(Preview, img);
-                                ImageBehavior.SetAnimatedSource(PreviewBG, img);
-                            });
-                        }
-                        catch (UriFormatException ex)
+                        Dispatcher.InvokeAsync(async () =>
                         {
-                            Logger.WriteLine($"Invalid URI format for image path '{previewFiles[0]}': {ex.Message}", LoggerType.Error);
-                            SetDefaultPreviewImage();
-                        }
-                        catch (FileNotFoundException) // UriSource でもファイルが見つからない場合
-                        {
-                            Logger.WriteLine($"Preview file not found (UriSource): '{previewFiles[0]}'", LoggerType.Warning);
-                            SetDefaultPreviewImage();
-                        }
-                        catch (IOException ex) // ファイル読み込み中のIOエラー
-                        {
-                            Logger.WriteLine($"IO error loading preview image from UriSource '{previewFiles[0]}': {ex.Message}", LoggerType.Error);
-                            SetDefaultPreviewImage();
-                        }
-                        catch (NotSupportedException ex) // サポートされていない画像形式
-                        {
-                            Logger.WriteLine($"Unsupported image format for preview file '{previewFiles[0]}': {ex.Message}", LoggerType.Warning);
-                            SetDefaultPreviewImage();
-                        }
-                        catch (Exception ex)
-                        {
-                            Logger.WriteLine($"Error loading preview image '{previewFiles[0]}': {ex}", LoggerType.Error);
-                            SetDefaultPreviewImage();
-                        }
+                            ImageBehavior.SetAnimatedSource(Preview, img);
+                            ImageBehavior.SetAnimatedSource(PreviewBG, img);
+                        });
                     }
-                    else if (File.Exists(Path.Combine(Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].ModsFolder, mod.name, "mod.json")))
+                    catch (UriFormatException ex)
                     {
-                        try
-                        {
-                            // metadata.preview (Uri) から BitmapImage を作成
-                            metadata = null; // (mod.json からロードする処理が必要)
-                            if (metadata?.preview != null)
-                            {
-                                var bitmap = new BitmapImage();
-                                bitmap.BeginInit();
-                                bitmap.UriSource = metadata.preview; // ネットワークアクセスが発生
-                                bitmap.CacheOption = BitmapCacheOption.OnLoad; // OnLoad推奨
-                                bitmap.EndInit();
-                                // if (bitmap.CanFreeze) bitmap.Freeze();
-                                ImageBehavior.SetAnimatedSource(Preview, bitmap);
-                                ImageBehavior.SetAnimatedSource(PreviewBG, bitmap);
-
-                                Logger.WriteLine($"Download preview: {metadata.preview}", LoggerType.Debug);
-                            }
-                            else
-                            {
-                                SetDefaultPreviewImage();
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            Logger.WriteLine($"Error loading preview image from URI '{mod.name}/mod.json': {ex.Message}", LoggerType.Error);
-                            SetDefaultPreviewImage();
-                        }
-                    }
-                    else
-                    {
+                        Logger.WriteLine($"Invalid URI format for image path '{previewFiles[0]}': {ex.Message}", LoggerType.Error);
                         SetDefaultPreviewImage();
                     }
-
+                    catch (FileNotFoundException) // UriSource でもファイルが見つからない場合
+                    {
+                        Logger.WriteLine($"Preview file not found (UriSource): '{previewFiles[0]}'", LoggerType.Warning);
+                        SetDefaultPreviewImage();
+                    }
+                    catch (IOException ex) // ファイル読み込み中のIOエラー
+                    {
+                        Logger.WriteLine($"IO error loading preview image from UriSource '{previewFiles[0]}': {ex.Message}", LoggerType.Error);
+                        SetDefaultPreviewImage();
+                    }
+                    catch (NotSupportedException ex) // サポートされていない画像形式
+                    {
+                        Logger.WriteLine($"Unsupported image format for preview file '{previewFiles[0]}': {ex.Message}", LoggerType.Warning);
+                        SetDefaultPreviewImage();
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.WriteLine($"Error loading preview image '{previewFiles[0]}': {ex}", LoggerType.Error);
+                        SetDefaultPreviewImage();
+                    }
                 }
+                else if (File.Exists(Path.Combine(Global.ConfigJson.Configs[Global.ConfigJson.CurrentGame].ModsFolder, mod.name, "mod.json")))
+                {
+                    try
+                    {
+                        // metadata.preview (Uri) から BitmapImage を作成
+                        metadata = null; // (mod.json からロードする処理が必要)
+                        if (metadata?.preview != null)
+                        {
+                            var bitmap = new BitmapImage();
+                            bitmap.BeginInit();
+                            bitmap.UriSource = metadata.preview; // ネットワークアクセスが発生
+                            bitmap.CacheOption = BitmapCacheOption.OnLoad; // OnLoad推奨
+                            bitmap.EndInit();
+                            if (bitmap.CanFreeze) bitmap.Freeze();
+                            ImageBehavior.SetAnimatedSource(Preview, bitmap);
+                            ImageBehavior.SetAnimatedSource(PreviewBG, bitmap);
 
+                            Logger.WriteLine($"Download preview: {metadata.preview}", LoggerType.Debug);
+                        }
+                        else
+                        {
+                            SetDefaultPreviewImage();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.WriteLine($"Error loading preview image from URI '{mod.name}/mod.json': {ex.Message}", LoggerType.Error);
+                        SetDefaultPreviewImage();
+                    }
+                }
+                else
+                {
+                    SetDefaultPreviewImage();
+                }
                 if (DescriptionWindow.Document.Blocks.Count == 0)
                 {
                     defaultFlow.Blocks.Add(ConvertToFlowParagraph(defaultText));
@@ -1552,7 +1550,151 @@ namespace DivaModManager
                     var descriptionText = new TextRange(DescriptionWindow.Document.ContentStart, DescriptionWindow.Document.ContentEnd);
                     descriptionText.ApplyPropertyValue(Inline.BaselineAlignmentProperty, BaselineAlignment.Center);
                 }
+                // サムネイル枚数表示
+                if (previewFiles.Count > 1)
+                {
+                    ThumbnailCountText.Text = $"{previewFilesIndex + 1}/{previewFiles.Count.ToString()}";
+
+                    ThumbnailCountRect.Visibility = Visibility.Visible;
+                    ThumbnailCountText.Visibility = Visibility.Visible;
+                }
                 DescriptionWindow.ScrollToHome();
+            }
+        }
+
+        private void ModPreviewLeftButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (previewFiles == null || previewFiles.Count == 0)
+                {
+                    SetDefaultPreviewImage();
+                    return;
+                }
+                if (previewFiles.Count == 1)
+                {
+                    return;
+                }
+                else if (previewFilesIndex == 0)
+                {
+                    previewFilesIndex = previewFiles.Count - 1;
+                }   
+                else
+                {
+                    previewFilesIndex--;
+                }
+
+                var img = new BitmapImage();
+                img.BeginInit();
+                img.UriSource = new Uri(previewFiles[previewFilesIndex], UriKind.Absolute);
+                img.CacheOption = BitmapCacheOption.OnLoad;
+                img.EndInit();
+
+                Dispatcher.InvokeAsync(async () =>
+                {
+                    ImageBehavior.SetAnimatedSource(Preview, img);
+                    ImageBehavior.SetAnimatedSource(PreviewBG, img);
+                });
+
+                if (img.CanFreeze) img.Freeze();
+
+                ThumbnailCountText.Text = $"{previewFilesIndex + 1}/{previewFiles.Count.ToString()}";
+
+                Logger.WriteLine($"previewFiles[previewFilesIndex] : {previewFiles[previewFilesIndex]}", LoggerType.Debug);
+                Logger.WriteLine($"previewFilesIndex : {previewFilesIndex}", LoggerType.Debug);
+            }
+            catch (UriFormatException ex)
+            {
+                Logger.WriteLine($"Invalid URI format for image path '{previewFiles[0]}': {ex.Message}", LoggerType.Error);
+                SetDefaultPreviewImage();
+            }
+            catch (FileNotFoundException) // UriSource でもファイルが見つからない場合
+            {
+                Logger.WriteLine($"Preview file not found (UriSource): '{previewFiles[0]}'", LoggerType.Warning);
+                SetDefaultPreviewImage();
+            }
+            catch (IOException ex) // ファイル読み込み中のIOエラー
+            {
+                Logger.WriteLine($"IO error loading preview image from UriSource '{previewFiles[0]}': {ex.Message}", LoggerType.Error);
+                SetDefaultPreviewImage();
+            }
+            catch (NotSupportedException ex) // サポートされていない画像形式
+            {
+                Logger.WriteLine($"Unsupported image format for preview file '{previewFiles[0]}': {ex.Message}", LoggerType.Warning);
+                SetDefaultPreviewImage();
+            }
+            catch (Exception ex)
+            {
+                Logger.WriteLine($"Error loading preview image '{previewFiles[0]}': {ex}", LoggerType.Error);
+                SetDefaultPreviewImage();
+            }
+        }
+        private void ModPreviewRightButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+
+                if (previewFiles == null || previewFiles.Count == 0)
+                {
+                    SetDefaultPreviewImage();
+                    return;
+                }
+                if (previewFiles.Count == 1)
+                {
+                    return;
+                }
+                else if (previewFilesIndex == previewFiles.Count - 1)
+                {
+                    previewFilesIndex = 0;
+                }
+                else
+                {
+                    previewFilesIndex++;
+                }
+
+                var img = new BitmapImage();
+                img.BeginInit();
+                img.UriSource = new Uri(previewFiles[previewFilesIndex], UriKind.Absolute);
+                img.CacheOption = BitmapCacheOption.OnLoad;
+                img.EndInit();
+
+                Dispatcher.InvokeAsync(async () =>
+                {
+                    ImageBehavior.SetAnimatedSource(Preview, img);
+                    ImageBehavior.SetAnimatedSource(PreviewBG, img);
+                });
+
+                if (img.CanFreeze) img.Freeze();
+
+                ThumbnailCountText.Text = $"{previewFilesIndex + 1}/{previewFiles.Count.ToString()}";
+
+                Logger.WriteLine($"previewFiles[previewFilesIndex] : {previewFiles[previewFilesIndex]}", LoggerType.Debug);
+                Logger.WriteLine($"previewFilesIndex : {previewFilesIndex}", LoggerType.Debug);
+            }
+            catch (UriFormatException ex)
+            {
+                Logger.WriteLine($"Invalid URI format for image path '{previewFiles[0]}': {ex.Message}", LoggerType.Error);
+                SetDefaultPreviewImage();
+            }
+            catch (FileNotFoundException) // UriSource でもファイルが見つからない場合
+            {
+                Logger.WriteLine($"Preview file not found (UriSource): '{previewFiles[0]}'", LoggerType.Warning);
+                SetDefaultPreviewImage();
+            }
+            catch (IOException ex) // ファイル読み込み中のIOエラー
+            {
+                Logger.WriteLine($"IO error loading preview image from UriSource '{previewFiles[0]}': {ex.Message}", LoggerType.Error);
+                SetDefaultPreviewImage();
+            }
+            catch (NotSupportedException ex) // サポートされていない画像形式
+            {
+                Logger.WriteLine($"Unsupported image format for preview file '{previewFiles[0]}': {ex.Message}", LoggerType.Warning);
+                SetDefaultPreviewImage();
+            }
+            catch (Exception ex)
+            {
+                Logger.WriteLine($"Error loading preview image '{previewFiles[0]}': {ex}", LoggerType.Error);
+                SetDefaultPreviewImage();
             }
         }
 
@@ -1565,6 +1707,8 @@ namespace DivaModManager
                 // if (bitmap.CanFreeze) bitmap.Freeze();
                 ImageBehavior.SetAnimatedSource(Preview, bitmap);
                 ImageBehavior.SetAnimatedSource(PreviewBG, null); // BG はクリア
+                ThumbnailCountRect.Visibility = Visibility.Collapsed;
+                ThumbnailCountText.Visibility = Visibility.Collapsed;
             }
             catch (Exception ex)
             {
@@ -1572,6 +1716,8 @@ namespace DivaModManager
                 // デフォルト画像すら読み込めない場合のフォールバック？
                 ImageBehavior.SetAnimatedSource(Preview, null);
                 ImageBehavior.SetAnimatedSource(PreviewBG, null);
+                ThumbnailCountRect.Visibility = Visibility.Collapsed;
+                ThumbnailCountText.Visibility = Visibility.Collapsed;
             }
         }
 
@@ -1596,6 +1742,24 @@ namespace DivaModManager
         {
             Button button = sender as Button;
             var item = button.DataContext as GameBananaRecord;
+            if (item.IsNsfw)
+            {
+                ExplicitWindow explicitWindow = new(WindowList.MessageString(80));
+                explicitWindow.ShowDialog();
+                if (!explicitWindow.YesNo)
+                {
+                    return;
+                }
+            }
+            if (item.IsSpoiler)
+            {
+                ExplicitWindow explicitWindow = new(WindowList.MessageString(81));
+                explicitWindow.ShowDialog();
+                if (!explicitWindow.YesNo)
+                {
+                    return;
+                }
+            }
 
             try
             {
@@ -1626,13 +1790,23 @@ namespace DivaModManager
         private async void DMADownload_Click(object sender, RoutedEventArgs e)
         {
             Button button = sender as Button;
-            var item = button.DataContext as DivaModArchivePost;
+            var post = button.DataContext as DivaModArchivePost;
+
+            if (post.Explicit)
+            {
+                ExplicitWindow explicitWindow = new(post.Explicit_Reason);
+                explicitWindow.ShowDialog();
+                if (!explicitWindow.YesNo)
+                {
+                    return;
+                }
+            }
 
             try
             {
                 await WorkManager.RunAsync(async () =>
                 {
-                    await new ModDownloader().DMABrowserDownload(Global.games[GameBox.SelectedIndex], item, onExtractAsync: async (extractInfo) =>
+                    await new ModDownloader().DMABrowserDownload(Global.games[GameBox.SelectedIndex], post, onExtractAsync: async (extractInfo) =>
                     {
                         await Dispatcher.InvokeAsync(async () =>
                         {
@@ -1686,6 +1860,25 @@ namespace DivaModManager
             GBHomepageButton.Content = $"{(GBTypeBox.SelectedValue as ComboBoxItem).Content.ToString().Trim().TrimEnd('s')} Page";
             Button button = sender as Button;
             var item = button.DataContext as GameBananaRecord;
+            if (item.IsNsfw)
+            {
+                ExplicitWindow explicitWindow = new(WindowList.MessageString(80));
+                explicitWindow.ShowDialog();
+                if (!explicitWindow.YesNo)
+                {
+                    return;
+                }
+            }
+            if (item.IsSpoiler)
+            {
+                ExplicitWindow explicitWindow = new(WindowList.MessageString(81));
+                explicitWindow.ShowDialog();
+                if (!explicitWindow.YesNo)
+                {
+                    return;
+                }
+            }
+
             if (item.Compatible)
                 GBDownloadButton.Visibility = Visibility.Visible;
             else
@@ -1743,6 +1936,18 @@ namespace DivaModManager
         }
         private async void DMAMoreInfo_Click(object sender, RoutedEventArgs e)
         {
+            var btn = (Button)e.Source;
+            var post = (DivaModArchivePost)btn.DataContext;
+            if (post.Explicit)
+            {
+                ExplicitWindow explicitWindow = new(post.Explicit_Reason);
+                explicitWindow.ShowDialog();
+                if (!explicitWindow.YesNo)
+                {
+                    return;
+                }
+            }
+
             DMAHomepageButton.Content = $"Mod Page";
             Button button = sender as Button;
             var item = button.DataContext as DivaModArchivePost;
@@ -1912,8 +2117,6 @@ namespace DivaModManager
                     var perPage = 5;
                     foreach (var type in types)
                     {
-                        //var requestUrl = $"https://gamebanana.com/apiv4/{type}Category/ByGame?_aGameRowIds[]={gameID}&_sRecordSchema=Custom" +
-                        //    "&_csvProperties=_idRow,_sName,_sProfileUrl,_sIconUrl,_idParentCategoryRow&_nPerpage=50";
                         var requestUrl = $"https://gamebanana.com/apiv4/{type}Category/ByGame?_aGameRowIds[]={gameID}&_sRecordSchema=Custom" +
                             $"&_csvProperties=_idRow,_sName,_sProfileUrl,_sIconUrl,_idParentCategoryRow&_nPerpage={perPage}";
                         string responseString = "";
@@ -1972,7 +2175,6 @@ namespace DivaModManager
                         if (!cats[(GameFilter)gameCounter].ContainsKey((Features.Feed.TypeFilter)counter))
                             cats[(GameFilter)gameCounter].Add((Features.Feed.TypeFilter)counter, response);
 
-                        // Make more requests if needed
                         if (totalPages > 1)
                         {
                             for (double i = 2; i <= totalPages; i++)
@@ -2110,7 +2312,7 @@ namespace DivaModManager
         {
             Dispatcher.InvokeAsync(async () =>
             {
-                DMALoadingBar.Visibility = Visibility.Collapsed;
+                DMALoadPanel.Visibility = Visibility.Collapsed;
                 DMAErrorPanel.Visibility = Visibility.Visible;
                 DMABrowserRefreshButton.Visibility = Visibility.Visible;
                 DMABrowserMessage.Text = message;
@@ -2185,7 +2387,7 @@ namespace DivaModManager
         private static bool searched = false;
         private async void GBRefreshFilterAsync()
         {
-            IsEnabledControls(false);
+            IsEnabledControls(false, isEnableTabs: true);
 
             await Dispatcher.InvokeAsync(async () =>
             {
@@ -2314,11 +2516,11 @@ namespace DivaModManager
         {
             Logger.WriteLine($"DMARefreshFilterAsync Start. id:{Environment.CurrentManagedThreadId}", LoggerType.Debug);
 
-            IsEnabledControls(false);
+            IsEnabledControls(false, isEnableTabs:true);
             await Dispatcher.InvokeAsync(async () =>
             {
                 DMAErrorPanel.Visibility = Visibility.Collapsed;
-                DMALoadingBar.Visibility = Visibility.Visible;
+                DMALoadPanel.Visibility = Visibility.Visible;
                 DMAFeedBox.Visibility = Visibility.Collapsed;
                 DMAPage.Text = $"Page {DMApage}";
             });
@@ -2356,7 +2558,7 @@ namespace DivaModManager
                     DMAFeedBox.ItemsSource = DMAFeedGenerator.CurrentFeed.Posts;
                     if (DMAFeedGenerator.error)
                     {
-                        DMALoadingBar.Visibility = Visibility.Collapsed;
+                        DMALoadPanel.Visibility = Visibility.Collapsed;
                         DMAErrorPanel.Visibility = Visibility.Visible;
                         DMABrowserRefreshButton.Visibility = Visibility.Visible;
                         if (DMAFeedGenerator.exception.Message.Contains("JSON tokens"))
@@ -2402,7 +2604,14 @@ namespace DivaModManager
                 IsEnabledControls(true);
                 await Dispatcher.InvokeAsync(async () =>
                 {
-                    if (DMALoadingBar.Visibility == Visibility.Visible) DMALoadingBar.Visibility = Visibility.Collapsed;
+                    if (DMALoadPanel.Visibility == Visibility.Visible)
+                    {
+                        DMALoadPanel.Visibility = Visibility.Collapsed;
+                    }
+                    if (DMALoadingBar.Visibility == Visibility.Visible)
+                    {
+                        DMALoadingBar.Visibility = Visibility.Collapsed;
+                    }
                 });
             }
             Logger.WriteLine($"DMARefreshFilterAsync End. CurrentManagedThreadId:{Environment.CurrentManagedThreadId}", LoggerType.Debug);
@@ -3599,7 +3808,7 @@ namespace DivaModManager
         /// 
         /// </summary>
         /// <param name="isEnabled"></param>
-        public void IsEnabledControls(bool isEnable, [CallerMemberName] string caller = "")
+        public void IsEnabledControls(bool isEnable, bool isEnableTabs = false, [CallerMemberName] string caller = "")
         {
             // MM+がインストールされている状態
             var isMMPInstalled = !string.IsNullOrEmpty(Global.ConfigJson.CurrentConfig.Launcher)
@@ -3618,11 +3827,15 @@ namespace DivaModManager
 
 
             // ブラウザタブ
-            ModManagerTab.IsEnabled = setEnabledFirst;
+            ModManagerTab.IsEnabled = setEnabledFirst | isEnableTabs;
             GBModBrowserTab.Visibility = Visibility.Visible;
-            GBModBrowserTab.IsEnabled = isDMLInstalled;
+            GBModBrowserTab.IsEnabled = isDMLInstalled | isEnableTabs;
             DMAModBrowserTab.Visibility = Visibility.Visible;
             DMAModBrowserTab.IsEnabled = isDMLInstalled;
+            SongTab.Visibility = Visibility.Visible;
+            SongTab.IsEnabled = isDMLInstalled;
+            ModuleTab.Visibility = Visibility.Visible;
+            ModuleTab.IsEnabled = isDMLInstalled;
             OptionTab.Visibility = isWine ? Visibility.Hidden : Visibility.Visible;
             OptionTab.IsEnabled = setEnabledFirst && !isWine;
             DebugTabItem.Visibility = isWine ? Visibility.Hidden : Visibility.Visible;
@@ -3844,14 +4057,14 @@ namespace DivaModManager
         /// <param name="e"></param>
         public void DebugTab_TabSelected(object sender, RoutedEventArgs e)
         {
-            if (Global.IsWine)
-            {
-                App.Current.Dispatcher.Invoke(() =>
-                {
-                    WindowHelper.DMMWindowOpen(27);
-                });
-                return;
-            }
+            //if (Global.IsWine)
+            //{
+            //    App.Current.Dispatcher.Invoke(() =>
+            //    {
+            //        WindowHelper.DMMWindowOpen(27);
+            //    });
+            //    return;
+            //}
 
             var tabName = DebugTabItem.Header;
             if (Logger.Mode == Logger.DEBUG_MODE.DEBUG)
@@ -3861,16 +4074,74 @@ namespace DivaModManager
             }
         }
 
+        private void SongTab_TabSelected(object sender, RoutedEventArgs e)
+        {
+            var tabItem = sender as TabItem;
+            var msg = App.Current.Dispatcher.Invoke(() => WindowHelper.DMMWindowOpen(82));
+            if (msg == WindowHelper.WindowCloseStatus.Yes)
+            {
+                SongLogic.Init((SongTab)tabItem.Content);
+            }
+            else
+            {
+                SongLogic.Clear((SongTab)tabItem.Content);
+                tabItem.IsSelected = false;
+                e.Handled = true;
+            }
+        }
+
+        private void ModuleTab_TabSelected(object sender, RoutedEventArgs e)
+        {
+            var tabItem = sender as TabItem;
+            var msg = App.Current.Dispatcher.Invoke(() => WindowHelper.DMMWindowOpen(83));
+            if (msg == WindowHelper.WindowCloseStatus.Yes)
+            {
+                ModuleLogic.Init((ModuleTab)tabItem.Content);
+            }
+            else
+            {
+                ModuleLogic.Clear((ModuleTab)tabItem.Content);
+                tabItem.IsSelected = false;
+                e.Handled = true;
+            }
+        }
+
+        // タブを離れた時にメモリを解放する
+        private void SongTab_TabUnselected(object sender, RoutedEventArgs e)
+        {
+            var tabItem = sender as TabItem;
+            var songTab = (SongTab)tabItem.Content;
+            SongLogic.Clear(songTab);
+            Global.GameBase.songData.Clear();
+            foreach (var mod in Global.ModList)
+            {
+                mod.songData.Clear();
+            }
+        }
+
+        // タブを離れた時にメモリを解放する
+        private void ModuleTab_TabUnselected(object sender, RoutedEventArgs e)
+        {
+            var tabItem = sender as TabItem;
+            var moduleTab = (ModuleTab)tabItem.Content;
+            ModuleLogic.Clear(moduleTab);
+            Global.GameBase.moduleData.Clear();
+            foreach (var mod in Global.ModList)
+            {
+                mod.moduleData.Clear();
+            }
+        }
+
         private void OptionTab_TabSelected(object sender, RoutedEventArgs e)
         {
-            if (Global.IsWine)
-            {
-                App.Current.Dispatcher.Invoke(() =>
-                {
-                    WindowHelper.DMMWindowOpen(27);
-                });
-                return;
-            }
+            //if (Global.IsWine)
+            //{
+            //    App.Current.Dispatcher.Invoke(() =>
+            //    {
+            //        WindowHelper.DMMWindowOpen(27);
+            //    });
+            //    return;
+            //}
         }
 
         private void OneClickInstallButton_Click(object sender, RoutedEventArgs e)

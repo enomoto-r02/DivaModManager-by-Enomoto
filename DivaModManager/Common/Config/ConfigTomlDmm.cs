@@ -93,24 +93,24 @@ namespace DivaModManager.Common.Config
         private bool? _LanguageDialog { get; set; } = true;
 
         [DataMember(Name = "divamodloader_update_check")]
-        [DataMemberCommentEN("Check for updates to DivaModLoader when the tool starts.\nDefault : false")]
-        [DataMemberCommentJP("ツールの起動時にDivaModLoader のアップデートを確認します。\nDefault：false")]
+        [DataMemberCommentEN("Check for updates to DivaModLoader when the tool starts.\nDefault : true")]
+        [DataMemberCommentJP("ツールの起動時にDivaModLoader のアップデートを確認します。\nDefault：true")]
         public bool DivaModLoaderUpdateCheck
         {
             get { return _DivaModLoaderUpdateCheck != null && (bool)_DivaModLoaderUpdateCheck; }
             set { _DivaModLoaderUpdateCheck = value; }
         }
-        private bool? _DivaModLoaderUpdateCheck { get; set; } = false;
+        private bool? _DivaModLoaderUpdateCheck { get; set; } = true;
 
         [DataMember(Name = "divamodmanager_update_check")]
-        [DataMemberCommentEN("Check for updates to DivaModManager by Enomoto when the tool starts.\nDefault : false")]
-        [DataMemberCommentJP("ツールの起動時にDivaModManager by Enomoto のアップデートを確認します。\nDefault：false")]
+        [DataMemberCommentEN("Check for updates to DivaModManager by Enomoto when the tool starts.\nDefault : true")]
+        [DataMemberCommentJP("ツールの起動時にDivaModManager by Enomoto のアップデートを確認します。\nDefault：true")]
         public bool DivaModManagerUpdateCheck
         {
             get { return _DivaModManagerUpdateCheck != null && (bool)_DivaModManagerUpdateCheck; }
             set { _DivaModManagerUpdateCheck = value; }
         }
-        private bool? _DivaModManagerUpdateCheck { get; set; } = false;
+        private bool? _DivaModManagerUpdateCheck { get; set; } = true;
 
         [DataMember(Name = "github_api_timeout")]
         [DataMemberCommentEN("GitHub API timeout in seconds.\n(we are currently testing whether this parameter works as expected)\nDefault : 100")]

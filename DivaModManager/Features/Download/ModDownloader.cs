@@ -152,7 +152,7 @@ namespace DivaModManager.Features.Download
 
             if (post.Explicit)
             {
-                ExplicitWindow explicitWindow = new(post);
+                ExplicitWindow explicitWindow = new(post.Explicit_Reason);
                 explicitWindow.ShowDialog();
                 if (!explicitWindow.YesNo)
                 {
