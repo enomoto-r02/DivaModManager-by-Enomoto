@@ -1,5 +1,5 @@
 
-DivaMoaManager by Enomoto v1.3.1.35 (beta3)
+DivaModManager by Enomoto v1.3.1.35 (beta3)
 
 ----- Note (Please read carefully!!) -------------------------
 

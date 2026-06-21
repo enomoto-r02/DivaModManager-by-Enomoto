@@ -1,10 +1,10 @@
 
-DivaMoaManager by Enomoto v1.3.1.35 (beta3)
+DivaModManager by Enomoto v1.3.1.35 (beta3)
 
 
 ----- 注意(必ず読んでください！！) -------------------------
 
-- 一部Windows版DivaMoaManager by Enomoto v1.3.1.34から機能を制限しているものや動作不安定な機能を含みます
+- 一部Windows版DivaModManager by Enomoto v1.3.1.34から機能を制限しているものや動作不安定な機能を含みます
 
 - 自己責任で利用してください
 - 下に記載した[動作確認済の環境]以外での動作は未確認です
@@ -17,7 +17,7 @@ DivaMoaManager by Enomoto v1.3.1.35 (beta3)
 ----- 不具合や機能制限など -------------------------
 
 本ツールのLinuxやSteam Deck上の起動は、"既にMod動作環境が構築完了している方々向けのMod管理ツール"を前提といます
-具体的には、Windows版DivaMoaManager by Enomoto v1.3.1.34から以下の変更があります
+具体的には、Windows版DivaModManager by Enomoto v1.3.1.34から以下の変更があります
 
 ### Windows・Linux共通
 - UI変更
