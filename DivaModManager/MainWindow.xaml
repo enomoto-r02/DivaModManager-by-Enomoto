@@ -1248,7 +1248,7 @@
                             <SolidColorBrush Color="Black" Opacity="0.75"/>
                         </Border.Background>
                         <ListView Margin="5" Panel.ZIndex="1" Style="{StaticResource ListviewStyle}" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="1" 
-                                  VerticalContentAlignment="Top" ScrollViewer.CanContentScroll="False" ScrollViewer.HorizontalScrollBarVisibility="Disabled" Background="Transparent" 
+                                  VerticalContentAlignment="Top" ScrollViewer.CanContentScroll="True" ScrollViewer.HorizontalScrollBarVisibility="Disabled" Background="Transparent" 
                                   BorderBrush="Transparent" Name="GBFeedBox" ItemTemplate="{StaticResource GBModTemplate}">
                             <ListView.ItemContainerStyle>
                                 <Style TargetType="{x:Type ListViewItem}">
@@ -1482,7 +1482,7 @@
                             <SolidColorBrush Color="Black" Opacity="0.75"/>
                         </Border.Background>
                         <ListView Margin="5" Panel.ZIndex="1" Style="{StaticResource ListviewStyle}" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="1"
-                                  VerticalContentAlignment="Top" ScrollViewer.CanContentScroll="False" ScrollViewer.HorizontalScrollBarVisibility="Disabled" 
+                                  VerticalContentAlignment="Top" ScrollViewer.CanContentScroll="True" ScrollViewer.HorizontalScrollBarVisibility="Disabled" 
                                   Background="Transparent" BorderBrush="Transparent" Name="DMAFeedBox" ItemTemplate="{StaticResource DMAModTemplate}">
                             <ListView.ItemContainerStyle>
                                 <Style TargetType="{x:Type ListViewItem}">

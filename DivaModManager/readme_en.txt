@@ -1,5 +1,5 @@
 
-DivaMoaManager by Enomoto v1.3.1.35 (beta1)
+DivaMoaManager by Enomoto v1.3.1.35 (beta3)
 
 ----- Note (Please read carefully!!) -------------------------
 
@@ -17,11 +17,15 @@ Specifically, the following changes have been made from the Windows version Diva
 
 ### Common to Windows and Linux
 - UI changes
-- Changed to the font installed by default on the OS
+- Preliminary implementation of the Module tab and Song tab
+  Please refer to GitHub for usage instructions.
 - Implementation of cache functionality
   For some slower connections or in the GameBanana tab, initial operation may be slower than previous versions.
   Additionally, cache accumulates in the DivaModManager/cache folder (please note the capacity).
   Once a cache has been generated, reduced load times and controlled excessive API access are expected.
+  The following times are currently set by the program.
+    API cache for GameBanana and DivaModArchive: 3 hours
+    Image cache for GameBanana and DivaModArchive: 72 hours
 - Error reporting template included.
 
 ### Restrictions on Linux
@@ -35,7 +39,7 @@ Specifically, the following changes have been made from the Windows version Diva
 
 ----- Verified Environments -------------------------
 
-### beta1
+### beta3
 - Windows 11 Home 25H2
 - Ubuntu 26.04 (on VMware Workstation) + Proton Experimental 11.0
 

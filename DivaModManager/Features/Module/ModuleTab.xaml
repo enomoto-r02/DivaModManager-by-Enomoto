@@ -8,10 +8,46 @@
     xmlns:gif="http://wpfanimatedgif.codeplex.com"
     Background="#131313"
     mc:Ignorable="d"
-    d:DesignHeight="400" d:DesignWidth="600"
 >
-    <Grid>
+    <Grid x:Name="GridItem">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition MinWidth="30"/>
+            <ColumnDefinition MinWidth="30"/>
+            <ColumnDefinition MinWidth="30"/>
+            <ColumnDefinition MinWidth="30"/>
+            <ColumnDefinition MinWidth="30"/>
+            <ColumnDefinition MinWidth="30"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="40"/>
+            <RowDefinition MinHeight="200"/>
+        </Grid.RowDefinitions>
+        <ComboBox Grid.Column="0" Margin="5" FontFamily="{StaticResource DmmFont}" Name="ModFilterComboBox" DropDownClosed="ModFilterComboBox_DropDownClosed">
+            <ComboBoxItem Content="Mod Filter" />
+            <ComboBoxItem Content="BASE"/>
+            <ComboBoxItem Content="Mod" IsSelected="True"/>
+        </ComboBox>
+        <ComboBox Grid.Column="1" Margin="5" FontFamily="{StaticResource DmmFont}" Name="TypeFilterComboBox" DropDownClosed="TypeFilterComboBox_DropDownClosed">
+            <ComboBoxItem Content="Type Filter"/>
+            <ComboBoxItem Content="module" IsSelected="True"/>
+            <ComboBoxItem Content="custumize"/>
+        </ComboBox>
+        <ComboBox Grid.Column="2" Margin="5" FontFamily="{StaticResource DmmFont}" Name="KeyFilterComboBox" DropDownClosed="KeyFilterComboBox_DropDownClosed">
+            <ComboBoxItem Content="Key Filter"/>
+            <ComboBoxItem Content="xxx.xxx.attr"/>
+            <ComboBoxItem Content="xxx.xxx.chara"/>
+            <ComboBoxItem Content="xxx.xxx.cos" IsSelected="True"/>
+            <ComboBoxItem Content="xxx.xxx.id"/>
+            <ComboBoxItem Content="xxx.xxx.name"/>
+            <ComboBoxItem Content="xxx.xxx.sort_index"/>
+        </ComboBox>
+        <ComboBox Grid.Column="3" Margin="5" FontFamily="{StaticResource DmmFont}" Name="ConflictFilterComboBox" DropDownClosed="ConflictFilterComboBox_DropDownClosed" Visibility="Collapsed">
+            <ComboBoxItem Content="Conflict Filter" IsSelected="True"/>
+            <ComboBoxItem Content="ON"/>
+        </ComboBox>
         <DataGrid
+            Grid.Row="1"
+            Grid.ColumnSpan="6"
             Name="ModuleGrid"
             AlternatingRowBackground="#2A2A2A"
             AutoGenerateColumns="False"
@@ -31,9 +67,8 @@
             RowBackground="#202020"
             SelectionMode="Extended"
             VerticalScrollBarVisibility="Auto"
-            VirtualizingPanel.VirtualizationMode="Standard"
-            VirtualizingStackPanel.IsVirtualizing="True"
-        >
+            VirtualizingPanel.VirtualizationMode="Recycling"
+            VirtualizingStackPanel.IsVirtualizing="True">
             <DataGrid.CellStyle>
                 <Style TargetType="{x:Type DataGridCell}">
                     <Setter Property="BorderThickness" Value="1,0,1,0"/>
@@ -66,12 +101,12 @@
                 </Style>
             </DataGrid.ColumnHeaderStyle>
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Mod Name" Binding="{Binding ModName}" Width="Auto" />
-                <DataGridTextColumn Header="Module File Path" Binding="{Binding ModuleFilePath}" Width="Auto" />
-                <DataGridTextColumn Header="Line" Binding="{Binding Line}" Width="Auto" />
-                <DataGridTextColumn Header="Item No" Binding="{Binding ItemNo}" Width="Auto" />
-                <DataGridTextColumn Header="Key" Binding="{Binding Key}" Width="Auto" />
-                <DataGridTextColumn Header="Value" Binding="{Binding Value}" Width="Auto" />
+                <DataGridTextColumn Header="Mod Name" Binding="{Binding ModName}" MinWidth="30" Width="320" />
+                <!-- <DataGridTextColumn Header="Module File Path" Binding="{Binding ModuleFilePath}" MinWidth="30" Width="360" /> -->
+                <DataGridTextColumn Header="Line" Binding="{Binding Line}" MinWidth="30" Width="60" />
+                <DataGridTextColumn Header="Cos ID" Binding="{Binding CosID}" MinWidth="30" Width="60" />
+                <DataGridTextColumn Header="Key" Binding="{Binding Key}" MinWidth="30" Width="180" />
+                <DataGridTextColumn Header="Value" Binding="{Binding Value}" MinWidth="30" Width="300" />
             </DataGrid.Columns>
         </DataGrid>
     </Grid>

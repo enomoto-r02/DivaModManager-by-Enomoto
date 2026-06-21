@@ -1,4 +1,5 @@
 ﻿using DivaModManager.Common.Helpers;
+using DivaModManager.Features.Module;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -7,7 +8,7 @@ namespace DivaModManager.Features.Song
 {
     public class SongData
     {
-        private static string BASE_FOLDER_NAME = "BASE";
+        public static string BASE_FOLDER_NAME = "BASE";
 
         private static List<string> BASE_DIR_PATTERN = new()
         {
@@ -124,13 +125,17 @@ namespace DivaModManager.Features.Song
             {
                 lineCnt++;
                 if (string.IsNullOrWhiteSpace(line)) continue;
+                if (line.Trim().StartsWith("#")) continue;
                 var i = line.IndexOf('=');
                 if (i == -1) continue;
                 var key = line.Substring(0, i).Split(".").ToList();
                 var value = line.Substring(i + 1);
                 var songTabView = new SongTabView();
-                songTabView.Set(Path.GetFileName(modFolderPath), relativePath, lineCnt, modFolderPath, key, value);
-                songTabViewList.Add(songTabView);
+                songTabView.Set(SongTab.ViewKeys, Path.GetFileName(modFolderPath), relativePath, lineCnt, modFolderPath, key, value);
+                if (songTabView.ViewFlg)
+                {
+                    songTabViewList.Add(songTabView);
+                }
             }
             return ret;
         }
