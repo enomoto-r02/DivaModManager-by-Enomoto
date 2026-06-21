@@ -50,9 +50,7 @@ namespace DivaModManager.Features.Debug
         }
 
         public static List<string> MaskAddDropFilePathList { get; set; } = new();
-
-        //private static int LogStackMaxSize = 1073741824;     // 1GB
-        private static int LogStackMaxSize = 100 * 1000 * 1000;     // 100MB
+        private static int LogStackMaxSize = 5 * 1000 * 1000;     // 5MB
         private static string LastCaller { get; set; } = string.Empty;
 
         private static StringBuilder _TextLog = new(LogStackMaxSize);
@@ -66,7 +64,6 @@ namespace DivaModManager.Features.Debug
                 if (Global.IsMainWindowLoaded)
                 {
                     WriteOut();
-                    _TextLog = new(LogStackMaxSize);
                 }
             }
         }
@@ -148,9 +145,11 @@ namespace DivaModManager.Features.Debug
         public static void WriteOut()
         {
             if (string.IsNullOrWhiteSpace(_TextLog.ToString()))
+            {
                 return;
+            }
             FileHelper.AppendAllText(LogPath, TextLog.ToString(), appendInfo: LastCaller);
-            _TextLog = new(LogStackMaxSize);
+            _TextLog.Clear();
         }
 
         public static void OpenEditor()

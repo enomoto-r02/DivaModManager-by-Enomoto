@@ -54,10 +54,10 @@ namespace DivaModManager
         }
 
         #region Cache constants (後日外部ファイル化予定)
-        private const int GB_API_CACHE_HOURS = -1;      // -1 で永続
-        private const int DMA_API_CACHE_HOURS = -1;     // -1 で永続
-        private const int GB_IMAGE_CACHE_HOURS = -1;    // -1 で永続
-        private const int DMA_IMAGE_CACHE_HOURS = -1;   // -1 で永続
+        private const int GB_API_CACHE_HOURS = 3;       // -1 で永続
+        private const int GB_IMAGE_CACHE_HOURS = 72;    // -1 で永続
+        private const int DMA_API_CACHE_HOURS = 3;      // -1 で永続
+        private const int DMA_IMAGE_CACHE_HOURS = 72;   // -1 で永続
         #endregion
 
         private FlowDocument defaultFlow = new();
@@ -1578,7 +1578,7 @@ namespace DivaModManager
                 else if (previewFilesIndex == 0)
                 {
                     previewFilesIndex = previewFiles.Count - 1;
-                }   
+                }
                 else
                 {
                     previewFilesIndex--;
@@ -2097,7 +2097,7 @@ namespace DivaModManager
         }.ToList();
         private async void InitializeGBBrowser()
         {
-            await Dispatcher.InvokeAsync(async () => 
+            await Dispatcher.InvokeAsync(async () =>
             {
                 GBLoadingBar.Visibility = Visibility.Visible;
                 GBErrorPanel.Visibility = Visibility.Collapsed;
@@ -2226,7 +2226,7 @@ namespace DivaModManager
                     gameCounter++;
                 }
 
-                await Dispatcher.InvokeAsync(async () => 
+                await Dispatcher.InvokeAsync(async () =>
                 {
                     filterSelect = true;
                     GBSortBox.ItemsSource = FilterBoxList;
@@ -2516,7 +2516,7 @@ namespace DivaModManager
         {
             Logger.WriteLine($"DMARefreshFilterAsync Start. id:{Environment.CurrentManagedThreadId}", LoggerType.Debug);
 
-            IsEnabledControls(false, isEnableTabs:true);
+            IsEnabledControls(false, isEnableTabs: true);
             await Dispatcher.InvokeAsync(async () =>
             {
                 DMAErrorPanel.Visibility = Visibility.Collapsed;

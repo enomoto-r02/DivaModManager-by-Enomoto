@@ -524,9 +524,9 @@ namespace DivaModManager.Features.Extract
                                 WindowHelper.DMMWindowOpenAsync(11, path: extract.MoveInfoList.LastOrDefault().FullPathResult).Result,
                             // パス長が超過の場合、処理を終了する
                             ExtractInfo.EXTRACT_RESULT.PATH_LENGTH_OVER_LIMIT =>
-                                WindowHelper.DMMWindowOpenAsync(79, 
+                                WindowHelper.DMMWindowOpenAsync(79,
                                     path: extract.MoveInfoList.LastOrDefault().FullPathResult,
-                                    replaceList: new List<string>() { PATH_LENGTH_LIMIT_WINDOWS.ToString(), extract.MoveInfoList.LastOrDefault().ErrorFilePathList.Max(x => x.Length).ToString()}).Result,
+                                    replaceList: new List<string>() { PATH_LENGTH_LIMIT_WINDOWS.ToString(), extract.MoveInfoList.LastOrDefault().ErrorFilePathList.Max(x => x.Length).ToString() }).Result,
                             // Exceptionの場合、処理を終了する
                             ExtractInfo.EXTRACT_RESULT.EXCEPTION =>
                                 WindowHelper.DMMWindowOpenAsync(12).Result,

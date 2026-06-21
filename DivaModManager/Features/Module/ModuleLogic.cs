@@ -1,6 +1,4 @@
-﻿using DivaModManager.Features.Song;
-
-namespace DivaModManager.Features.Module
+﻿namespace DivaModManager.Features.Module
 {
     public static class ModuleLogic
     {
@@ -18,7 +16,7 @@ namespace DivaModManager.Features.Module
             Global.GameBase.moduleData.Load();
 
             // mods
-            foreach (var mod in Global.ModList)
+            foreach (var mod in Global.ModList_All)
             {
                 if (mod.enabled)
                 {

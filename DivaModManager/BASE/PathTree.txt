@@ -1,0 +1,48 @@
+DivaModManager
+└─BASE
+   ├─diva_dlc00
+   │
+   ├─diva_dlc00_region
+   │  │
+   │  └─rom_steam_region_dlc
+   │      └─rom
+   │          ├─gm_customize_item_tbl
+   │          │      gm_customize_item_id.bin
+   │          │
+   │          └─gm_module_tbl
+   │                  gm_module_id.bin
+   │
+   ├─diva_main
+   │  │
+   │  ├─rom_ps4
+   │  │  └─rom
+   │  │      ├─gm_customize_item_tbl
+   │  │      │      gm_customize_item_id.bin
+   │  │      │
+   │  │      └─gm_module_tbl
+   │  │              gm_module_id.bin
+   │  │
+   │  ├─rom_ps4_patch
+   │  │  └─rom
+   │  │
+   │  ├─rom_steam_region
+   │  │  └─rom
+   │  │          pv_db.txt
+   │  │
+   │  └─rom_switch
+   │      └─rom
+   │          ├─gm_customize_item_tbl
+   │          │      gm_customize_item_id.bin
+   │          │
+   │          └─gm_module_tbl
+   │                  gm_module_id.bin
+   │
+   └─diva_main_region
+       │
+       └─rom_steam_region
+           └─rom
+               ├─gm_customize_item_tbl
+               │      gm_customize_item_id.bin
+               │
+               └─gm_module_tbl
+                       gm_module_id.bin

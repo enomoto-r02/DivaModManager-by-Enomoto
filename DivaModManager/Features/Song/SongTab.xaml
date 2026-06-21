@@ -8,10 +8,59 @@
     xmlns:gif="http://wpfanimatedgif.codeplex.com"
     Background="#131313"
     mc:Ignorable="d"
-    d:DesignHeight="400" d:DesignWidth="600"
 >
-    <Grid>
+    <Grid x:Name="GridItem">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition MinWidth="30"/>
+            <ColumnDefinition MinWidth="30"/>
+            <ColumnDefinition MinWidth="30"/>
+            <ColumnDefinition MinWidth="30"/>
+            <ColumnDefinition MinWidth="30"/>
+            <ColumnDefinition MinWidth="30"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="40"/>
+            <RowDefinition MinHeight="200"/>
+        </Grid.RowDefinitions>
+        <ComboBox Grid.Column="0" Margin="5" FontFamily="{StaticResource DmmFont}" Name="ModFilterComboBox" DropDownClosed="ModFilterComboBox_DropDownClosed">
+            <ComboBoxItem Content="Mod Filter" IsSelected="True"/>
+            <ComboBoxItem Content="BASE"/>
+            <ComboBoxItem Content="Mod"/>
+        </ComboBox>
+        <ComboBox Grid.Column="1" Margin="5" FontFamily="{StaticResource DmmFont}" Name="TypeFilterComboBox" DropDownClosed="TypeFilterComboBox_DropDownClosed">
+            <ComboBoxItem Content="Type Filter" IsSelected="True"/>
+            <ComboBoxItem Content="Song"/>
+            <ComboBoxItem Content="Another Song"/>
+        </ComboBox>
+        <ComboBox Grid.Column="2" Margin="5" FontFamily="{StaticResource DmmFont}" Name="KeyFilterComboBox" DropDownClosed="KeyFilterComboBox_DropDownClosed">
+            <ComboBoxItem Content="Key Filter" IsSelected="True"/>
+            <ComboBoxItem Content="xxx.xxx.another_song"/>
+            <ComboBoxItem Content="xxx.xxx.arranger"/>
+            <ComboBoxItem Content="xxx.xxx.chara"/>
+            <ComboBoxItem Content="xxx.xxx.extra"/>
+            <ComboBoxItem Content="xxx.xxx.illustrator"/>
+            <ComboBoxItem Content="xxx.xxx.level"/>
+            <ComboBoxItem Content="xxx.xxx.lyrics"/>
+            <ComboBoxItem Content="xxx.xxx.movie_file_name"/>
+            <ComboBoxItem Content="xxx.xxx.music"/>
+            <ComboBoxItem Content="xxx.xxx.script_file_name"/>
+            <ComboBoxItem Content="xxx.xxx.song_name"/>
+            <ComboBoxItem Content="xxx.xxx.song_name_en"/>
+            <ComboBoxItem Content="xxx.xxx.song_name_en2"/>
+            <ComboBoxItem Content="xxx.xxx.song_name_reading"/>
+            <ComboBoxItem Content="xxx.xxx.song_name_reading_en"/>
+            <ComboBoxItem Content="xxx.xxx.song_name_ro"/>
+            <ComboBoxItem Content="xxx.xxx.type"/>
+            <ComboBoxItem Content="xxx.xxx.vocal_disp_name"/>
+            <ComboBoxItem Content="xxx.xxx.vocal_disp_name_en"/>
+        </ComboBox>
+        <ComboBox Grid.Column="3" Margin="5" FontFamily="{StaticResource DmmFont}" Name="ConflictFilterComboBox" DropDownClosed="ConflictFilterComboBox_DropDownClosed" Visibility="Collapsed">
+            <ComboBoxItem Content="Conflict Filter" IsSelected="True"/>
+            <ComboBoxItem Content="ON"/>
+        </ComboBox>
         <DataGrid
+            Grid.Row="1"
+            Grid.ColumnSpan="6"
             Name="SongGrid"
             AlternatingRowBackground="#2A2A2A"
             AutoGenerateColumns="False"
@@ -31,7 +80,7 @@
             RowBackground="#202020"
             SelectionMode="Extended"
             VerticalScrollBarVisibility="Auto"
-            VirtualizingPanel.VirtualizationMode="Standard"
+            VirtualizingPanel.VirtualizationMode="Recycling"
             VirtualizingStackPanel.IsVirtualizing="True"
         >
             <DataGrid.CellStyle>
@@ -66,12 +115,13 @@
                 </Style>
             </DataGrid.ColumnHeaderStyle>
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Mod Name" Binding="{Binding ModName}" Width="Auto" />
-                <DataGridTextColumn Header="Song File Path" Binding="{Binding SongFilePath}" Width="Auto" />
-                <DataGridTextColumn Header="Line" Binding="{Binding Line}" Width="Auto" />
-                <DataGridTextColumn Header="Song ID" Binding="{Binding SongID}" Width="Auto" />
-                <DataGridTextColumn Header="Key" Binding="{Binding Key}" Width="Auto" />
-                <DataGridTextColumn Header="Value" Binding="{Binding Value}" Width="Auto" />
+                <DataGridTextColumn Header="Mod Name" Binding="{Binding ModName}" MinWidth="30" Width="320" />
+                <!-- <DataGridTextColumn Header="Song File Path" Binding="{Binding SongFilePath}" MinWidth="30" Width="360" /> -->
+                <DataGridTextColumn Header="Line" Binding="{Binding Line}" MinWidth="30" Width="60" />
+                <DataGridTextColumn Header="Another Song" Binding="{Binding TypeValue}" MinWidth="30" Width="90" />
+                <DataGridTextColumn Header="Song ID" Binding="{Binding SongID}" MinWidth="30" Width="60" />
+                <DataGridTextColumn Header="Key" Binding="{Binding Key}" MinWidth="30" Width="300" />
+                <DataGridTextColumn Header="Value" Binding="{Binding Value}" MinWidth="30" Width="450" />
             </DataGrid.Columns>
         </DataGrid>
     </Grid>

@@ -1,5 +1,4 @@
-﻿using DivaModManager.Models;
-using System;
+﻿using System;
 using System.Windows;
 
 namespace DivaModManager

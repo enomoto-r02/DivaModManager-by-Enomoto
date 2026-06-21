@@ -1,5 +1,5 @@
 
-DivaMoaManager by Enomoto v1.3.1.35 (beta1)
+DivaMoaManager by Enomoto v1.3.1.35 (beta3)
 
 
 ----- 注意(必ず読んでください！！) -------------------------
@@ -21,11 +21,15 @@ DivaMoaManager by Enomoto v1.3.1.35 (beta1)
 
 ### Windows・Linux共通
 - UI変更
-- OSに標準インストールされているフォントに変更
+- Moduleタブ、Songタブの仮実装
+  使用方法はGitHubをご覧ください
 - キャッシュ機能の実装
   一部回線が遅い方やGameBananaタブにおいて、過去バージョンよりも初回動作が遅くなる可能性があります
   またDivaModManager/cacheフォルダにキャッシュが蓄積されます(容量にご注意ください)
   一度キャッシュを生成した状態であれば読み込み時間の短縮やAPIへの過剰なアクセス制御が期待されます
+  現在以下の時間がプログラムによって設定されています。
+    GameBanana、DivaModArchiveのAPIキャッシュ : 3時間
+    GameBanana、DivaModArchiveの画像キャッシュ : 72時間
 - エラー報告用テンプレートを同梱
 
 ### Linuxでの制限
@@ -40,7 +44,7 @@ DivaMoaManager by Enomoto v1.3.1.35 (beta1)
 
 ----- 動作確認済の環境 -------------------------
 
-### beta1
+### beta3
 - Windows 11 Home 25H2
 - Ubuntu 26.04 (on VMware Workstation) + Proton Experimental 11.0
 

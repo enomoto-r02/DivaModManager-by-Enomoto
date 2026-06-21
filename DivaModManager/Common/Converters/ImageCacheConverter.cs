@@ -2,7 +2,6 @@ using DivaModManager.Common.Helpers;
 using System;
 using System.Globalization;
 using System.Windows.Data;
-using System.Windows.Media.Imaging;
 
 namespace DivaModManager.Common.Converters
 {

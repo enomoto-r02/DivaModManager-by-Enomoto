@@ -7,7 +7,7 @@ namespace DivaModManager.Features.Module
 {
     public class ModuleData
     {
-        private static string BASE_FOLDER_NAME = "BASE";
+        public static string BASE_FOLDER_NAME = "BASE";
 
         private static List<string> BASE_DIR_PATTERN = new()
         {
@@ -126,7 +126,6 @@ namespace DivaModManager.Features.Module
             bool ret = false;
             if (!FileHelper.FileExists(pvDbPath))
             {
-                //Logger.WriteLine($"'{pvDbPath}' is not Found.", LoggerType.Debug);
                 return ret;
             }
             var pvDbAllLineList = FileHelper.TryReadAllText(pvDbPath).Replace("\r", "").Split("\n").ToList();
@@ -135,13 +134,17 @@ namespace DivaModManager.Features.Module
             {
                 lineCnt++;
                 if (string.IsNullOrWhiteSpace(line)) continue;
+                if (line.Trim().StartsWith("#")) continue;
                 var i = line.IndexOf('=');
                 if (i == -1) continue;
                 var key = line.Substring(0, i).Split(".").ToList();
                 var value = line.Substring(i + 1);
                 var moduleTabView = new ModuleTabView();
                 moduleTabView.Set(ModuleTab.ViewKeys, Path.GetFileName(modFolderPath), relativePath, lineCnt, modFolderPath, key, value);
-                moduleTabViewList.Add(moduleTabView);
+                if (moduleTabView.ViewFlg)
+                {
+                    moduleTabViewList.Add(moduleTabView);
+                }
             }
             return ret;
         }
