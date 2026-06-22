@@ -53,7 +53,7 @@ public static class ObjectDumper
         {
 #if DEBUG
 #else
-                sb.AppendLine($"{prefix}{instanceName} : null");
+            sb.AppendLine($"{prefix}{instanceName} : null");
 #endif
             return;
         }
@@ -66,7 +66,7 @@ public static class ObjectDumper
 #if DEBUG
             if (!string.IsNullOrEmpty(obj.ToString())) { sb.AppendLine($"{prefix}{instanceName} : \"{obj}\""); }
 #else
-                sb.AppendLine($"{prefix}{instanceName} : \"{obj}\"");
+            sb.AppendLine($"{prefix}{instanceName} : \"{obj}\"");
 #endif
 
             return;
@@ -122,7 +122,7 @@ public static class ObjectDumper
 #if DEBUG
         foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
 #else
-            foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
+        foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
 #endif
         {
             if (prop.GetIndexParameters().Length > 0) continue; // インデクサは無視

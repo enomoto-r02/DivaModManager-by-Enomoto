@@ -11,16 +11,18 @@
             bool ret = false;
 
             moduleTab.Clear();
+            var loadPriority = 0;
 
             // BASE_GAME
-            Global.GameBase.moduleData.Load();
+            Global.GameBase.moduleData.Load(loadPriority);
 
             // mods
             foreach (var mod in Global.ModList_All)
             {
                 if (mod.enabled)
                 {
-                    mod.moduleData.Load(mod.directory_path);
+                    loadPriority++;
+                    mod.moduleData.Load(loadPriority, mod.directory_path);
                 }
             }
 

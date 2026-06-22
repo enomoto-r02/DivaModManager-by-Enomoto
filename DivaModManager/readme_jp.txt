@@ -1,5 +1,5 @@
 
-DivaModManager by Enomoto v1.3.1.35 (beta3)
+DivaModManager by Enomoto v1.3.1.35 (beta4)
 
 
 ----- 注意(必ず読んでください！！) -------------------------
@@ -44,7 +44,7 @@ DivaModManager by Enomoto v1.3.1.35 (beta3)
 
 ----- 動作確認済の環境 -------------------------
 
-### beta3
+### beta4
 - Windows 11 Home 25H2
 - Ubuntu 26.04 (on VMware Workstation) + Proton Experimental 11.0
 

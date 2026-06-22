@@ -563,7 +563,7 @@
     </Window.Resources>
     <Grid>
         <StackPanel Panel.ZIndex="10" Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Right" Grid.ColumnSpan="5" Cursor="" Margin="20,0,0,0">
-            <TextBox BorderThickness="0" FontSize="20" FontFamily="{StaticResource DmmFont}" Margin="5" Background="Transparent" BorderBrush="Transparent" IsReadOnly="True" Foreground="#f2f2f2" FontWeight="Normal" x:Name="Stats" Panel.ZIndex="0"/>
+            <!-- <TextBox BorderThickness="0" FontSize="20" FontFamily="{StaticResource DmmFont}" Margin="5" Background="Transparent" BorderBrush="Transparent" IsReadOnly="True" Foreground="#f2f2f2" FontWeight="Normal" x:Name="Stats" Panel.ZIndex="0" Visibility="Collapsed"/> -->
             <StackPanel Background="Transparent" Margin="5,0,5,0" Orientation="Horizontal" x:Name="InfoTextPanel" PreviewMouseLeftButtonDown="InfoText_Click" Cursor="Hand">
                 <Image x:Name="InfoTextImage" Source="/Assets/fontawesome/circle-info.png" Height="28" Width="28"/>
                 <Popup IsOpen="{Binding IsMouseDirectlyOver, ElementName=InfoTextImage, Mode=OneWay}" AllowsTransparency="True">

@@ -1,5 +1,4 @@
 ﻿using DivaModManager.Common.Helpers;
-using DivaModManager.Features.Module;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;

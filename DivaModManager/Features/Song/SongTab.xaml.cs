@@ -60,7 +60,7 @@ namespace DivaModManager.Features.Song
             SearchTypeFilter = 1;
             TypeFilterComboBox.SelectedIndex = 1;
             // song_name
-            SearchKeyFilter = 11;   
+            SearchKeyFilter = 11;
             KeyFilterComboBox.SelectedIndex = 11;
 
             FilterSearch();
@@ -194,6 +194,8 @@ namespace DivaModManager.Features.Song
                     .ToList();
             }
             SongGrid.ItemsSource = viewSongDataList;
+
+            var InstallMsg = App.Current.Dispatcher.BeginInvoke(() => WindowHelper.DMMWindowOpen(27));
         }
     }
 
