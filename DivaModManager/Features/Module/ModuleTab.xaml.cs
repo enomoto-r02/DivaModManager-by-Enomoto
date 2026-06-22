@@ -1,17 +1,22 @@
 ﻿using DivaModManager.Common.Helpers;
+using DivaModManager.Features.MikuMikuLibrary;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using static DivaModManager.Features.Module.ModuleTabView;
 
 namespace DivaModManager.Features.Module
 {
     public partial class ModuleTab : UserControl
     {
+        public static readonly string TAB_NAME = "Module";
+
         public static string[] ViewKeys = new[]
         {
             "cos", "name",
@@ -20,6 +25,19 @@ namespace DivaModManager.Features.Module
         };
         List<ModuleTabView> viewModuleDataListAll = new();
         List<ModuleTabView> viewModuleDataList = new();
+
+        // Linux対応するためPath.Combine
+        List<string> BaseModulePath = new()
+        {
+            @"\BASE\diva_main_region\rom_steam_region\rom\gm_module_tbl\gm_module_id.bin",
+            @"\BASE\diva_main_region\rom_steam_region\rom\gm_customize_item_tbl\gm_customize_item_id.bin",
+            @"\BASE\diva_main\rom_switch\rom\gm_module_tbl\gm_module_id.bin",
+            @"\BASE\diva_main\rom_switch\rom\gm_customize_item_tbl\gm_customize_item_id.bin",
+            @"\BASE\diva_main\rom_ps4\rom\gm_module_tbl\gm_module_id.bin",
+            @"\BASE\diva_main\rom_ps4\rom\gm_customize_item_tbl\gm_customize_item_id.bin",
+            @"\BASE\diva_dlc00_region\rom_steam_region_dlc\rom\gm_module_tbl\gm_module_id.bin",
+            @"\BASE\diva_dlc00_region\rom_steam_region_dlc\rom\gm_customize_item_tbl\gm_customize_item_id.bin",
+        };
 
         public ModuleTab()
         {
@@ -42,9 +60,12 @@ namespace DivaModManager.Features.Module
             // Module
             SearchTypeFilter = 1;
             TypeFilterComboBox.SelectedIndex = 1;
-            // CosID
+            // CosID/ID
             SearchKeyFilter = 3;
             KeyFilterComboBox.SelectedIndex = 3;
+            // Chara Filter
+            SearchCharaFilter = 0;
+            CharaFilterComboBox.SelectedIndex = 0;
             // Conflict Filter
             SearchConflictFilter = 0;
             ConflictFilterComboBox.SelectedIndex = 0;
@@ -60,6 +81,52 @@ namespace DivaModManager.Features.Module
             ModuleGrid.ItemsSource = null;
         }
 
+        // 実装途中
+        public void InitSetting()
+        {
+            var isMMLSetting = false;
+
+            // ここにベースファイルのチェック
+
+
+            // ベースファイルが足りない場合、MMLのインストールを促す
+            if (string.IsNullOrEmpty(Global.ConfigJson.MikuMikuLibraryDllFilePath) || Directory.Exists(Global.ConfigJson.MikuMikuLibraryDllFilePath))
+            {
+                if (File.Exists(System.IO.Path.Combine(Global.ConfigJson.MikuMikuLibraryDllFilePath, Global.MIKU_MIKU_LIBRALY_DLL)))
+                {
+                    isMMLSetting = true;
+                }
+            }
+            if (!isMMLSetting)
+            {
+                var InstallMsg = App.Current.Dispatcher.Invoke(() => WindowHelper.DMMWindowOpen(84, replaceList: new List<string>() { TAB_NAME }));
+                if (InstallMsg == WindowHelper.WindowCloseStatus.Yes)
+                {
+                    var mmlDllFilePath = Global.assemblyLocation;
+                    var dialog = new Microsoft.Win32.OpenFileDialog
+                    {
+                        Multiselect = false,
+                        Title = $"{Global.MIKU_MIKU_LIBRALY_DLL}を選択してください",
+                        InitialDirectory = mmlDllFilePath,
+
+                    };
+                    if (dialog.ShowDialog() == true)
+                    {
+                        mmlDllFilePath = dialog.FileName;
+                    }
+
+                    if (File.Exists(mmlDllFilePath))
+                    {
+                        Global.ConfigJson.MikuMikuLibraryDllFilePath = mmlDllFilePath;
+                    }
+                }
+                else if (InstallMsg == WindowHelper.WindowCloseStatus.Cancel)
+                {
+                    ProcessHelper.TryStartProcess(MikuMikuLibraryHelper.MIKUMIKULIBRARY_URL_GITHUB);
+                }
+            }
+        }
+
         private async void ModuleGridHeader_Click(object sender, RoutedEventArgs e)
         {
             if (sender is not DataGridColumnHeader colHeader) return;
@@ -69,12 +136,12 @@ namespace DivaModManager.Features.Module
             switch (header)
             {
                 default:
-                    SortByField(viewModuleDataList => viewModuleDataList.CosID.ToString(), "");
+                    SortByField(viewModuleDataList => viewModuleDataList.Id.ToString(), "");
                     break;
             }
         }
 
-        ListSortDirection direction = ListSortDirection.Ascending;
+        ListSortDirection Direction = ListSortDirection.Ascending;
 
         private void SortByField(Func<ModuleTabView, string> selector, string fieldName)
         {
@@ -82,13 +149,13 @@ namespace DivaModManager.Features.Module
             var hasValue = viewModuleDataList.Where(x => !string.IsNullOrEmpty(selector(x)));
 
             var list = new ObservableCollection<ModuleTabView>(
-                (direction == ListSortDirection.Descending
+                (Direction == ListSortDirection.Descending
                     ? hasValue.OrderByDescending(selector, new NaturalSort())
                     : hasValue.OrderBy(selector, new NaturalSort()))
                 .Concat(noValue)
             );
 
-            direction = direction == ListSortDirection.Descending ? ListSortDirection.Ascending : ListSortDirection.Descending;
+            Direction = Direction == ListSortDirection.Descending ? ListSortDirection.Ascending : ListSortDirection.Descending;
         }
 
         #region ModFilterComboBox
@@ -137,6 +204,21 @@ namespace DivaModManager.Features.Module
 
         #endregion
 
+        #region CharaFilterComboBox
+
+        public int SearchCharaFilter;
+        private void CharaFilterComboBox_DropDownClosed(object sender, EventArgs e)
+        {
+            if (viewModuleDataListAll.Count != 0 && SearchCharaFilter != CharaFilterComboBox.SelectedIndex)
+            {
+                SearchCharaFilter = CharaFilterComboBox.SelectedIndex;
+                FilterSearch();
+                Util.DataGrid_ScrollToTop(ModuleGrid);
+            }
+        }
+
+        #endregion
+
         #region ConflictFilterComboBox
 
         public int SearchConflictFilter;
@@ -154,6 +236,7 @@ namespace DivaModManager.Features.Module
 
         private void FilterSearch()
         {
+            var direction = Direction;
             viewModuleDataList = viewModuleDataListAll;
             if (SearchModFilter != 0)
             {
@@ -167,16 +250,20 @@ namespace DivaModManager.Features.Module
             {
                 viewModuleDataList = viewModuleDataList.Where(x => x.KeyValue == SearchKeyFilter).ToList();
             }
+            if (SearchCharaFilter != 0)
+            {
+                viewModuleDataList = viewModuleDataList.Where(x => x.Chara == (MODULE_CHARA)Enum.Parse(typeof(MODULE_CHARA), SearchCharaFilter.ToString())).ToList();
+            }
             if (SearchConflictFilter != 0)
             {
                 var conflictIds = viewModuleDataList
-                    .Where(v => v.CosID.HasValue)
-                    .GroupBy(v => v.CosID.Value)
+                    .Where(v => v.Id != (int)ID.OTHER)
+                    .GroupBy(v => v.Id)
                     .Where(g => g.Count() > 1)
                     .Select(g => g.Key)
                     .ToList();
                 viewModuleDataList = viewModuleDataList
-                    .Where(v => v.CosID.HasValue && conflictIds.Contains(v.CosID.Value))
+                    .Where(v => v.Id != (int)ID.OTHER && conflictIds.Contains(v.Id))
                     .ToList();
             }
             ModuleGrid.ItemsSource = viewModuleDataList;
@@ -185,28 +272,36 @@ namespace DivaModManager.Features.Module
 
     public partial class ModuleTabView
     {
-
         public enum MODULE_CHARA
         {
-            NONE = 0,
-            MIKU,
+            MIKU = 1,       // コンボボックスの関係上、1から(enum参照に直す時に一緒に直す)
             RIN,
             LEN,
             LUKA,
             MEIKO,
             KAITO,
+            TETO,
             NERU,
             HAKU,
             SAKINE,
+            ALL,
+            OTHER = 65535,
         };
+        public enum ID
+        {
+            OTHER = -1,
+        }
 
-        public MODULE_CHARA Chara { get; set; } = MODULE_CHARA.NONE;
+        public MODULE_CHARA Chara { get; set; } = MODULE_CHARA.OTHER;
+        public int No { get; set; } = -1;       // module.n.xxx の "n"の部分(不要かも)
+        public bool HasError { get; set; } = false;
         public bool ViewFlg { get; set; } = false;
+        public int LoadPriority { get; set; } = -1;
         public string ModName { get; set; }
         public string ModuleFilePath { get; set; }
         public int Line { get; set; }
         public string ModPath { get; set; }
-        public int? CosID { get; set; } = null;
+        public int Id { get; set; } = (int)ID.OTHER;     // モジュールは"cos"、カスタマイズアイテムは"id"の値
         public string Key { get; set; }
         public string Value { get; set; }
         // 0 : ALL
@@ -220,28 +315,59 @@ namespace DivaModManager.Features.Module
         // 0 : ALL
         // 1 : xxx.xxx.attr
         // 2 : xxx.xxx.chara
-        // 3 : xxx.xxx.cos
-        // 4 : xxx.xxx.id
-        // 5 : xxx.xxx.name
-        // 6 : xxx.xxx.sort_index
+        // 3 : xxx.xxx.cos/id
+        // 4 : xxx.xxx.name
+        // 5 : xxx.xxx.sort_index
         public int KeyValue { get; set; }
 
         public ModuleTabView()
         {
         }
 
-        public void Set(string[] viewKeys, string modName, string moduleFilePath, int line, string modPath, List<string> keyList, string value)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="viewKeys"></param>
+        /// <param name="loadPriority"></param>
+        /// <param name="modName"></param>
+        /// <param name="moduleFilePath"></param>
+        /// <param name="line"></param>
+        /// <param name="no"></param>
+        /// <param name="modPath"></param>
+        /// <param name="keyList"></param>
+        /// <param name="value"></param>
+        public void Set(string[] viewKeys, int loadPriority, string modName, string moduleFilePath, int line, int no, string modPath, List<string> keyList, string value)
         {
+            LoadPriority = loadPriority;
             ModName = modName;
             ModuleFilePath = moduleFilePath;
             Line = line;
             ModPath = modPath;
-            if (keyList[keyList.Count-1] == "cos" && !string.IsNullOrWhiteSpace(value))
+            if (!string.IsNullOrWhiteSpace(value))
             {
-                var success = int.TryParse(value.Replace("COS_", ""), out int cosIDInt);
-                if (success)
+                if (keyList[0] == "module" && keyList[keyList.Count - 1] == "cos")
                 {
-                    CosID = cosIDInt;
+                    var success = int.TryParse(value.Replace("COS_", ""), out int cosIdTmp);
+                    if (success)
+                    {
+                        Id = cosIdTmp;
+                    }
+                }
+                else if (keyList[0] == "cstm_item" && keyList[keyList.Count - 1] == "id")
+                {
+                    var success = int.TryParse(value, out int IdTmp);
+                    if (success)
+                    {
+                        Id = IdTmp;
+                    }
+                }
+                else if (keyList[keyList.Count - 1] == "chara")
+                {
+                    var success = MODULE_CHARA.TryParse(value, out MODULE_CHARA charaTmp);
+                    if (success)
+                    {
+                        Chara = charaTmp;
+                    }
                 }
             }
             Key = string.Join(".", keyList);
@@ -251,6 +377,7 @@ namespace DivaModManager.Features.Module
                 if (Key.EndsWith(ViewKey))
                 {
                     ViewFlg = true;
+                    break;
                 }
             }
 
@@ -261,11 +388,12 @@ namespace DivaModManager.Features.Module
                 "attr" => 1,
                 "chara" => 2,
                 "cos" => 3,
-                "id" => 4,
-                "name" => 5,
-                "sort_index" => 6,
+                "id" => 3,
+                "name" => 4,
+                "sort_index" => 5,
                 _ => 0,
             };
+            No = no;
         }
     }
 }

@@ -129,6 +129,10 @@ namespace DivaModManager
                 DebugTabItem.Visibility = Visibility.Visible;
                 this.Title += $" (Debug)";
             }
+            else
+            {
+                DebugTabItem.Visibility = Visibility.Hidden;
+            }
         }
 
         public MainWindow([CallerMemberName] string caller = "")
@@ -627,13 +631,7 @@ namespace DivaModManager
             var enabledCount = Global.ModList_All.Count(x => x.enabled);
             var totalCount = Global.ModList_All.Count;
 
-            var stats = string.Empty;
             var infos = new List<string>();
-            if (Global.ConfigJson.CurrentConfig.FirstOpen && totalCount > 0)
-            {
-                stats = $"{enabledCount}/{totalCount} mods";
-            }
-            Stats.Text = stats;
 
             if (Global.ConfigJson.CurrentConfig.FirstOpen)
             {
@@ -648,6 +646,11 @@ namespace DivaModManager
                 infos.Add($"DivaModLoader(nothing)");
             }
             infos.Add($"DivaModManager by Enomoto v{App.Version}{App.TestVersion}");
+
+            if (Global.ConfigJson.CurrentConfig.FirstOpen && totalCount > 0)
+            {
+                infos.Add($"{enabledCount}/{totalCount} mods");
+            }
 
             InfoText = string.Join("\n", infos);
 
@@ -3838,7 +3841,7 @@ namespace DivaModManager
             ModuleTab.IsEnabled = isDMLInstalled;
             OptionTab.Visibility = isWine ? Visibility.Hidden : Visibility.Visible;
             OptionTab.IsEnabled = setEnabledFirst && !isWine;
-            DebugTabItem.Visibility = isWine ? Visibility.Hidden : Visibility.Visible;
+            DebugTabItem.Visibility = isWine ? Visibility.Hidden : (Logger.Mode != Features.Debug.Logger.DEBUG_MODE.NORMAL ? Visibility.Visible : Visibility.Hidden);
             DebugTabItem.IsEnabled = setEnabledFirst && !isWine;
 
             // 上部コントロール

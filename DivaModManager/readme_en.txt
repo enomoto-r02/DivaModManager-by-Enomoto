@@ -1,5 +1,5 @@
 
-DivaMoaManager by Enomoto v1.3.1.35 (beta3)
+DivaModManager by Enomoto v1.3.1.35 (beta4)
 
 ----- Note (Please read carefully!!) -------------------------
 
@@ -39,7 +39,7 @@ Specifically, the following changes have been made from the Windows version Diva
 
 ----- Verified Environments -------------------------
 
-### beta3
+### beta4
 - Windows 11 Home 25H2
 - Ubuntu 26.04 (on VMware Workstation) + Proton Experimental 11.0
 

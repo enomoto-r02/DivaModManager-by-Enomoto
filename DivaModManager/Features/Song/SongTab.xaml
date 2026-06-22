@@ -116,12 +116,12 @@
             </DataGrid.ColumnHeaderStyle>
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Mod Name" Binding="{Binding ModName}" MinWidth="30" Width="320" />
-                <!-- <DataGridTextColumn Header="Song File Path" Binding="{Binding SongFilePath}" MinWidth="30" Width="360" /> -->
-                <DataGridTextColumn Header="Line" Binding="{Binding Line}" MinWidth="30" Width="60" />
                 <DataGridTextColumn Header="Another Song" Binding="{Binding TypeValue}" MinWidth="30" Width="90" />
                 <DataGridTextColumn Header="Song ID" Binding="{Binding SongID}" MinWidth="30" Width="60" />
                 <DataGridTextColumn Header="Key" Binding="{Binding Key}" MinWidth="30" Width="300" />
                 <DataGridTextColumn Header="Value" Binding="{Binding Value}" MinWidth="30" Width="450" />
+                <DataGridTextColumn Header="Line" Binding="{Binding Line}" MinWidth="30" Width="60" />
+                <DataGridTextColumn Header="Song File Path" Binding="{Binding SongFilePath}" MinWidth="30" Width="360" />
             </DataGrid.Columns>
         </DataGrid>
     </Grid>

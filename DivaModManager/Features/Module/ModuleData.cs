@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using static DivaModManager.Features.Module.ModuleTabView;
 
 namespace DivaModManager.Features.Module
 {
@@ -58,12 +59,13 @@ namespace DivaModManager.Features.Module
         /// <summary>
         /// (mod name)フォルダのpv_dbまたはmod_pv_dbを読み込む
         /// </summary>
+        /// <param name="loadPriority"></param>
         /// <param name="targetModPath">
         /// ブランクの場合は"(略)\実行ファイル\BASE\rom_steam_region\rom\gm_module_id.bin"など
         /// それ以外の場合は"(略)\Hatsune Miku Project DIVA Mega Mix Plus\mods\(mod name)\rom\gm_customize_item_id.bin"など
         /// </param>
         /// <returns></returns>
-        public bool Load(string targetModPath = "")
+        public bool Load(int loadPriority, string targetModPath = "")
         {
             bool ret = false;
             Clear();
@@ -104,7 +106,7 @@ namespace DivaModManager.Features.Module
                                 relativePath = Path.Combine(BASE_REGION, appendFolderName, ITM_TBL_EXTRACT_FOLDER, ITM_TBL_NAME);
                                 pvDbPath = Path.Combine(basePath, relativePath);
 
-                                LoadDetail(pvDbPath, modFolderPath, relativePath);
+                                LoadDetail(loadPriority, pvDbPath, modFolderPath, relativePath);
                             }
                         }
                     }
@@ -118,10 +120,12 @@ namespace DivaModManager.Features.Module
         /// <summary>
         /// 
         /// </summary>
+        /// <param name="loadPriority"></param>
         /// <param name="pvDbPath"></param>
         /// <param name="modFolderPath"></param>
+        /// <param name="relativePath"></param>
         /// <returns></returns>
-        private bool LoadDetail(string pvDbPath, string modFolderPath, string relativePath)
+        private bool LoadDetail(int loadPriority, string pvDbPath, string modFolderPath, string relativePath)
         {
             bool ret = false;
             if (!FileHelper.FileExists(pvDbPath))
@@ -139,13 +143,45 @@ namespace DivaModManager.Features.Module
                 if (i == -1) continue;
                 var key = line.Substring(0, i).Split(".").ToList();
                 var value = line.Substring(i + 1);
+                var no = -1;
+                if (key.Count >= 2)
+                    int.TryParse(key[1], out no);
                 var moduleTabView = new ModuleTabView();
-                moduleTabView.Set(ModuleTab.ViewKeys, Path.GetFileName(modFolderPath), relativePath, lineCnt, modFolderPath, key, value);
+                moduleTabView.Set(ModuleTab.ViewKeys, loadPriority, Path.GetFileName(modFolderPath), relativePath, lineCnt, no, modFolderPath, key, value);
                 if (moduleTabView.ViewFlg)
                 {
                     moduleTabViewList.Add(moduleTabView);
                 }
             }
+
+            // IdとModuleFilePathで一意
+            foreach (var groupKeys in moduleTabViewList.GroupBy(x => new { x.No, x.ModuleFilePath }))
+            {
+                foreach (var groupKey in groupKeys)
+                {
+                    // CosID取得
+                    var cosId = (int)ID.OTHER;
+                    var cosIdTmpList = moduleTabViewList.Where(x => x.No == groupKey.No && x.ModuleFilePath == groupKey.ModuleFilePath && x.Id != -1).ToList().FirstOrDefault();
+                    if (cosIdTmpList != null)
+                    {
+                        cosId = (int)cosIdTmpList.Id;
+                    }
+                    // Chara取得
+                    var chara = MODULE_CHARA.OTHER;
+                    var charaTmpList = moduleTabViewList.Where(x => x.No == groupKey.No && x.ModuleFilePath == groupKey.ModuleFilePath && x.Chara != MODULE_CHARA.OTHER).ToList().FirstOrDefault();
+                    if (charaTmpList != null)
+                    {
+                        chara = (MODULE_CHARA)charaTmpList.Chara;
+                    }
+                    // CosIDとCharaを設定
+                    foreach (var moduleTabViewChara in moduleTabViewList.Where(x => x.No == groupKey.No && x.ModuleFilePath == groupKey.ModuleFilePath).ToList())
+                    {
+                        moduleTabViewChara.Chara = chara;
+                        moduleTabViewChara.Id = cosId;
+                    }
+                }
+            }
+
             return ret;
         }
     }

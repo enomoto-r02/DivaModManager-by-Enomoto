@@ -1,6 +1,7 @@
 ﻿using DivaModManager.Common.Config;
 using DivaModManager.Common.Helpers;
 using DivaModManager.Features.DML;
+using DivaModManager.Features.MikuMikuLibrary;
 using System.Diagnostics;
 using System.Threading;
 using System.Windows;
@@ -17,10 +18,6 @@ namespace DivaModManager.Features.Debug
         public DebugTab()
         {
             InitializeComponent();
-            if (Logger.Mode == Logger.DEBUG_MODE.DEVELOPER)
-            {
-                DeveloperStackPanel.Visibility = Visibility.Visible;
-            }
         }
         /// <summary>
         /// 無限ループで応答なし状態をシミュレート
@@ -67,6 +64,22 @@ namespace DivaModManager.Features.Debug
             ProcessHelper.TryStartProcess(ConfigJson.CONFIG_JSON_PATH);
             ProcessHelper.TryStartProcess(ConfigTomlDmm.CONFIG_E_TOML_PATH);
             ProcessHelper.TryStartProcess(ModLoader.CONFIG_TOML_PATH);
+        }
+
+        /// <summary>
+        /// MikuMikuLibrary動作確認用
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void MMLLoadButton_Click(object sender, RoutedEventArgs e)
+        {
+            string MeInfo = Logger.GetMeInfo(new StackFrame());
+            string ParamInfo = $"id:{Thread.CurrentThread.ManagedThreadId}";
+            Logger.WriteLine(string.Join(" ", MeInfo, $"Start."), LoggerType.Debug, param: ParamInfo);
+            MikuMikuLibraryHelper.Test_Extract();
+            Logger.WriteLine(string.Join(" ", MeInfo, $"End."), LoggerType.Debug, param: ParamInfo);
+
+
         }
     }
 }

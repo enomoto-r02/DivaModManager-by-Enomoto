@@ -22,7 +22,7 @@ namespace DivaModManager
     {
         public static readonly string Version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
 
-        public static readonly string TestVersion = " (beta3)";
+        public static readonly string TestVersion = " (beta4)";
 
         [DllImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -90,6 +90,12 @@ namespace DivaModManager
 
             SetLanguage();
 
+            if (Global.ConfigToml.GitHubSposorsWindow || Global.IsUpdateConfigVersion)
+            {
+                var resWindow = WindowHelper.DMMWindowOpenAsync(87).Result;
+                if (resWindow == WindowHelper.WindowCloseStatus.YesCheck) { Global.ConfigToml.GitHubSposorsWindow = false; }
+            }
+
             if ((int)Logger.Mode >= (int)Logger.DEBUG_MODE.DEBUG && Global.ConfigToml.DebugDialog)
             {
                 var resWindow = WindowHelper.DMMWindowOpenAsync(42).Result;
@@ -97,7 +103,7 @@ namespace DivaModManager
             }
 
             Extractor.InitSevenZipLocal();
-            Extractor.InitWinRar();
+            //Extractor.InitWinRar();
 
             RegistryConfig.UpdateGBHandler();
             InitHttpClientSetting();

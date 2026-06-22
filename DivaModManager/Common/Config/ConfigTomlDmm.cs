@@ -428,6 +428,16 @@ namespace DivaModManager.Common.Config
         }
         private bool? _ConflictModWhenCreateScreenShot { get; set; } = true;
 
+        [DataMember(Name = "github_sponsors_window")]
+        [DataMemberCommentEN("Display the GitHub Sponsor window at startup.\nDefault : true")]
+        [DataMemberCommentJP("起動時にGitHubスポンサーウィンドウを表示する。\nDefault : true")]
+        public bool GitHubSposorsWindow
+        {
+            get { return _GitHubSposorsWindow != null && (bool)_GitHubSposorsWindow; }
+            set { _GitHubSposorsWindow = value; }
+        }
+        private bool? _GitHubSposorsWindow { get; set; } = true;
+
         public ConfigTomlDmm()
         {
         }
@@ -464,6 +474,7 @@ namespace DivaModManager.Common.Config
                     {
                         var backupFilePath = FileHelper.CopyFile(CONFIG_E_TOML_PATH, oldVersion: Global.ConfigToml.CurrentVersion, IsOriginalFileDelete: true);
                         Global.ConfigToml.CurrentVersion = App.Version;
+                        Global.IsUpdateConfigVersion = true;
                     }
                     ret = true;
                 }

@@ -46,6 +46,9 @@ public static class Global
     public static readonly string temporaryLocationDML = Path.Combine(downloadBaseLocation, "DML");
     public static readonly string temporaryLocationDMM = Path.Combine(downloadBaseLocation, "DMM");
 
+    public static readonly string MIKU_MIKU_LIBRALY_DIRECTORY = "MikuMikuLibrary";
+    public static readonly string MIKU_MIKU_LIBRALY_DLL = "MikuMikuLibrary.dll";
+
     public static ConfigJson ConfigJson { get; set; } = new();
     public static ConfigTomlDmm ConfigToml { get; set; } = new();
     public static WindowLogger? WindowLogger { get; set; }
@@ -65,6 +68,8 @@ public static class Global
     public static readonly string BIT_OS_DIR_NAME = Environment.Is64BitOperatingSystem ? "x64" : "x86";
     public static bool IsMainWindowLoaded { get; set; } = false;
     public static bool IsModGridLoaded { get; set; } = false;
+    // 今回の起動でConfigを更新したか(最新バージョンの起動時にtrue)
+    public static bool IsUpdateConfigVersion { get; set; } = false;
 
     public static string ModsFolder
     {
