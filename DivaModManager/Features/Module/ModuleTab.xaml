@@ -52,7 +52,8 @@
             <ComboBoxItem Content="Key Filter"/>
             <ComboBoxItem Content="xxx.xxx.attr"/>
             <ComboBoxItem Content="xxx.xxx.chara"/>
-            <ComboBoxItem Content="xxx.xxx.cos/id" IsSelected="True"/>
+            <ComboBoxItem Content="xxx.xxx.cos" IsSelected="True"/>
+            <ComboBoxItem Content="xxx.xxx.id"/>
             <ComboBoxItem Content="xxx.xxx.name"/>
             <ComboBoxItem Content="xxx.xxx.sort_index"/>
         </ComboBox>

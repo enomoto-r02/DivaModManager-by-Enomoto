@@ -315,9 +315,10 @@ namespace DivaModManager.Features.Module
         // 0 : ALL
         // 1 : xxx.xxx.attr
         // 2 : xxx.xxx.chara
-        // 3 : xxx.xxx.cos/id
-        // 4 : xxx.xxx.name
-        // 5 : xxx.xxx.sort_index
+        // 3 : xxx.xxx.cos
+        // 4 : xxx.xxx.id
+        // 5 : xxx.xxx.name
+        // 6 : xxx.xxx.sort_index
         public int KeyValue { get; set; }
 
         public ModuleTabView()
@@ -388,9 +389,9 @@ namespace DivaModManager.Features.Module
                 "attr" => 1,
                 "chara" => 2,
                 "cos" => 3,
-                "id" => 3,
-                "name" => 4,
-                "sort_index" => 5,
+                "id" => 4,
+                "name" => 5,
+                "sort_index" => 6,
                 _ => 0,
             };
             No = no;
