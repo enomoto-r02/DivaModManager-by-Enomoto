@@ -22,7 +22,7 @@ namespace DivaModManager
     {
         public static readonly string Version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
 
-        public static readonly string TestVersion = " (beta5)";
+        public static readonly string TestVersion = " (beta6)";
 
         [DllImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
