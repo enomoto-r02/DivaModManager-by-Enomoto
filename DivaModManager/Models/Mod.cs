@@ -51,9 +51,9 @@ namespace DivaModManager.Models
             metadataManager = new MetadataManager(this);
             var ret = await metadataManager.InitMetadataAsync(this);
 
-            var homepage = metadataManager.metadata.homepage?.DnsSafeHost;
-            if (!string.IsNullOrEmpty(homepage))
-                _site = Metadata.HOSTS.Where(x => x.Value == homepage).FirstOrDefault().Key;
+            var homepage = metadataManager.metadata?.homepage;
+            if (homepage != null && !string.IsNullOrEmpty(homepage.ToString()) && !string.IsNullOrWhiteSpace(homepage.DnsSafeHost.ToString()))
+                _site = Metadata.HOSTS.Where(x => x.Value == homepage.ToString()).FirstOrDefault().Key;
             else
                 _site = "-";
 
