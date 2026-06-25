@@ -2,11 +2,13 @@
 using DivaModManager.Common.Helpers;
 using DivaModManager.Features.Debug;
 using DivaModManager.Features.Download;
+using DivaModManager.Features.Extract;
 using DivaModManager.Misk;
 using Octokit;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Eventing.Reader;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -68,22 +70,66 @@ namespace DivaModManager.Features.DMM
                     notification.Activate();
                     if (notification.YesNo)
                     {
-                        string downloadUrl = release.Assets.First().BrowserDownloadUrl;
-                        string fileName = release.Assets.First().Name;
+                        string downloadUrl = string.Empty;
+                        string fileName = string.Empty;
+                        if (release.Assets.Count > 1)
+                        {
+                            List<int> messageNoList = new();
+                            List<string> dataList = new();
+
+                            // v1.3.1.35以降なら選択可能
+                            foreach (var asset in release.Assets)
+                            {
+                                messageNoList.Add(88);
+                                dataList.Add(asset.Name);
+                            }
+                            messageNoList.Add(34);
+
+                            var sel = await WindowHelper.DMMWindowChoiceOpenAsync(messageNoList, dataList: dataList);
+                            if (sel == -1)
+                            {
+                                return false;
+                            }
+                            downloadUrl = release.Assets[sel].BrowserDownloadUrl;
+                            fileName = release.Assets[sel].Name;
+                        }
+                        else
+                        {
+                            downloadUrl = release.Assets.First().BrowserDownloadUrl;
+                            fileName = release.Assets.First().Name;
+                        }
+
+                        if (string.IsNullOrEmpty(downloadUrl) || string.IsNullOrEmpty(fileName))
+                        {
+                            var AutomaticFailedMsg = App.Current.Dispatcher.Invoke(() => WindowHelper.DMMWindowOpen(89));
+                            if (AutomaticFailedMsg == WindowHelper.WindowCloseStatus.Yes)
+                            {
+                                ProcessHelper.TryStartProcess("https://github.com/enomoto-r02/DivaModManager-by-Enomoto/releases");
+                            }
+                            return false;
+                        }
                         // Download the update
                         await DownloadDMM(downloadUrl, fileName, onlineVersion, new Progress<DownloadProgress>(ReportUpdateProgress), cancellationToken);
+
                         // Extract the downloaded update to Downloads\DMMe
                         var extractDir = Path.Combine(Global.assemblyLocation, "Downloads", "DMMe");
                         var downloadedZip = Path.Combine(Global.assemblyLocation, "Downloads", "DMMe", $"{onlineVersion}.zip");
                         await ZipExtractor.ExtractAsync(downloadedZip, extractDir);
-                        MessageBox.Show($"Update downloaded and extracted to {extractDir}!\nPlease manually overwrite the existing application files.", "Notification", MessageBoxButton.OK);
+                        if (App.Current.Dispatcher.Invoke(() => WindowHelper.DMMWindowOpen(90)) == WindowHelper.WindowCloseStatus.Yes)
+                        {
+                            ProcessHelper.TryStartProcess(extractDir);
+                        }
                         return false;
                     }
                     else
+                    {
                         Logger.WriteLine($"Update for DivaModManager by Enomoto {onlineVersion} cancelled.", LoggerType.Info);
+                    }
                 }
                 else
+                { 
                     Logger.WriteLine($"No update for DivaModManager by Enomoto {onlineVersion} available.", LoggerType.Info);
+                }
             }
             catch (AggregateException)
             {
@@ -91,7 +137,6 @@ namespace DivaModManager.Features.DMM
                 var resultWindow = WindowHelper.DMMWindowOpenAsync(25, replaceList);
                 if (resultWindow.Result == WindowHelper.WindowCloseStatus.Yes)
                 {
-                    // GitHubClientのどこかにありそうだけど、面倒だからベタ書き
                     ProcessHelper.TryStartProcess("https://github.com/enomoto-r02/DivaModManager-by-Enomoto/releases");
                 }
                 return false;

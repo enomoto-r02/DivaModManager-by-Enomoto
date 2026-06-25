@@ -91,6 +91,9 @@ namespace DivaModManager.Common.Config
         public string SevenZipConsoleLastUseHashSHA256 { get; set; } = string.Empty;
         // 7z.exe Confirmation Date: 2026.05.21
         public static Version SEVENZIP_INCLUDE_PRODUCT_VERSION { get; set; } = new("26.01");
+        public bool GBCacheUse { get; set; }
+        public bool DMACacheUse { get; set; }
+        [JsonIgnore]
         public string MikuMikuLibraryDllFilePath { get; set; } = string.Empty;
 
         public static bool InitConfig([CallerMemberName] string caller = "")

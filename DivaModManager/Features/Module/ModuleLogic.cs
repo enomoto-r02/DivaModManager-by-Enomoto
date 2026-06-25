@@ -1,4 +1,6 @@
-﻿namespace DivaModManager.Features.Module
+﻿using System.Threading.Tasks;
+
+namespace DivaModManager.Features.Module
 {
     public static class ModuleLogic
     {
@@ -30,6 +32,31 @@
 
             ret = true;
             return ret;
+        }
+
+        public static async Task<bool> InitAsync(ModuleTab moduleTab)
+        {
+            moduleTab.Clear();
+
+            await Task.Run(() =>
+            {
+                var loadPriority = 0;
+
+                Global.GameBase.moduleData.Load(loadPriority);
+
+                foreach (var mod in Global.ModList_All)
+                {
+                    if (mod.enabled)
+                    {
+                        loadPriority++;
+                        mod.moduleData.Load(loadPriority, mod.directory_path);
+                    }
+                }
+            });
+
+            moduleTab.View();
+
+            return true;
         }
 
         public static bool Clear(ModuleTab moduleTab)

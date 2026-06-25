@@ -105,7 +105,7 @@
                             <ImageBrush ImageSource="{Binding Path=Image, Converter={StaticResource ImageCache}, ConverterParameter=24}"/>
                         </Rectangle.OpacityMask>
                     </Rectangle>
-                    <Image Name="LoadingBar" Grid.Row="0" gif:ImageBehavior.AnimatedSource="/Assets/load.gif" Panel.ZIndex="1" VerticalAlignment="Center" HorizontalAlignment="Center" Height="100"/>
+                    <Image Name="LoadingBar" Grid.Row="0" gif:ImageBehavior.AnimatedSource="pack://application:,,,/Assets/load.gif" Panel.ZIndex="1" VerticalAlignment="Center" HorizontalAlignment="Center" Height="100"/>
                     <!-- Row 1: Title -->
                     <TextBlock x:Name="Title" FontFamily="{StaticResource DmmFont}" Margin="5" Grid.Row="1" FontWeight="Normal" TextTrimming="WordEllipsis" Background="Transparent" VerticalAlignment="Center"  Foreground="#f2f2f2" Text="{Binding Path=Title}"/>
                     <Popup PlacementTarget="{Binding ElementName=Title}" IsOpen="{Binding IsMouseDirectlyOver, ElementName=Title, Mode=OneWay}" AllowsTransparency="True">
@@ -122,8 +122,6 @@
                     <!-- Row 2: Author -->
                     <StackPanel Grid.Row="2" Margin="10,-5,10,5" Orientation="Horizontal">
                         <Image VerticalAlignment="Center" Source="{Binding Path=Owner.Avatar}" Margin="0,0,10,0" Height="35"/>
-                        <TextBlock VerticalAlignment="Center" FontFamily="{StaticResource DmmFont}" Foreground="#909090" Text="{Binding Path=Owner.Name}"/>
-                        <Image VerticalAlignment="Center" Source="{Binding Path=Owner.Avatar, Converter={StaticResource ImageCache}, ConverterParameter=24}" Margin="0,0,10,0" Height="35"/>
                         <TextBlock VerticalAlignment="Center" FontFamily="{StaticResource DmmFont}" Foreground="#909090" Text="{Binding Path=Owner.Name}"/>
                         <Image VerticalAlignment="Center" Source="{Binding Path=Owner.Upic, Converter={StaticResource ImageCache}, ConverterParameter=24}" Height="25"/>
                     </StackPanel>
@@ -388,7 +386,7 @@
                             </Style>
                         </Image.Style>
                     </Image>
-                    <Image Name="DMALoadingBar" Grid.Row="0" gif:ImageBehavior.AnimatedSource="/Assets/load.gif" Panel.ZIndex="1" VerticalAlignment="Center" HorizontalAlignment="Center" Height="100"/>
+                    <Image Name="DMALoadingBar" Grid.Row="0" gif:ImageBehavior.AnimatedSource="pack://application:,,,/Assets/load.gif" Panel.ZIndex="1" VerticalAlignment="Center" HorizontalAlignment="Center" Height="100"/>
                     <!-- Row 1: Title -->
                     <TextBlock x:Name="Title" FontFamily="{StaticResource DmmFont}" Margin="5" Grid.Row="1" FontWeight="Normal" TextTrimming="WordEllipsis" Background="Transparent" VerticalAlignment="Center"  Foreground="#f2f2f2" Text="{Binding Path=Name}"/>
                     <Popup PlacementTarget="{Binding ElementName=Title}" IsOpen="{Binding IsMouseDirectlyOver, ElementName=Title, Mode=OneWay}" AllowsTransparency="True">
@@ -593,7 +591,7 @@
                 </Popup>
             </StackPanel>
             <StackPanel Background="Transparent" Margin="5,0,5,0" Orientation="Horizontal" x:Name="DmmFolderButton" PreviewMouseLeftButtonDown="DmmFolder_Click" Cursor="Hand">
-                <Image x:Name="DmmFolder" Source="/Assets/load.gif" Height="30" Width="30" Stretch="Uniform"/>
+                <Image x:Name="DmmFolder" Source="pack://application:,,,/Assets/load.gif" Height="30" Width="30" Stretch="Uniform"/>
                 <Popup IsOpen="{Binding IsMouseDirectlyOver, ElementName=DmmFolder, Mode=OneWay}" AllowsTransparency="True">
                     <Border CornerRadius="5" Panel.ZIndex="0" Margin="10">
                         <Border.BorderBrush>
@@ -985,11 +983,11 @@
                                         <BlurBitmapEffect Radius="40"/>
                                     </Image.BitmapEffect>
                                 </Image>
-                                <Image Grid.Row="2" gif:ImageBehavior.AnimatedSource="/Assets/load.gif" Panel.ZIndex="-1" VerticalAlignment="Center" HorizontalAlignment="Center" Height="90"/>
+                                <Image Grid.Row="2" gif:ImageBehavior.AnimatedSource="pack://application:,,,/Assets/load.gif" Panel.ZIndex="-1" VerticalAlignment="Center" HorizontalAlignment="Center" Height="90"/>
 
                                 <Button Grid.Column="0" Grid.Row="0" Name="ModPreviewLeftButton" Click="ModPreviewLeftButton_Click" Panel.ZIndex="2" Opacity="0.0" BorderBrush="Transparent" FocusVisualStyle="{x:Null}"></Button>
                                 <Button Grid.Column="1" Grid.Row="0" Name="ModPreviewRightButton" Click="ModPreviewRightButton_Click" Panel.ZIndex="2" Opacity="0.0" BorderBrush="Transparent" FocusVisualStyle="{x:Null}"></Button>
-                                <Image Grid.Row="0" Grid.ColumnSpan="2" gif:ImageBehavior.AnimatedSource="/Assets/load.gif" VerticalAlignment="Center" HorizontalAlignment="Center" Height="90"/>
+                                <Image Grid.Row="0" Grid.ColumnSpan="2" gif:ImageBehavior.AnimatedSource="pack://application:,,,/Assets/load.gif" VerticalAlignment="Center" HorizontalAlignment="Center" Height="90"/>
                                 <RichTextBox Name="DescriptionWindow" Grid.Row="2" Block.LineHeight="1" FontSize="15" FontFamily="{StaticResource DmmFont}" Padding="10"
                                     Margin="3,3,3,3" Foreground="#F2F2F2" Background="#202020" BorderBrush="#424242" ClipToBounds="False" VerticalContentAlignment="Center" 
                                     VerticalAlignment="Stretch" VerticalScrollBarVisibility="Auto" IsReadOnly="True" Grid.ColumnSpan="5" IsDocumentEnabled="True"/>
@@ -1056,7 +1054,7 @@
                                     </Grid.ColumnDefinitions>
                                     <Button HorizontalAlignment="Right" VerticalAlignment="Center" FontFamily="{StaticResource DmmFont}" Click="GBImageLeft_Click" Name="GBBigImageLeft" Content="&lt;" Height="50" Width="50" FontWeight="SemiBold" FontSize="18"/>
                                     <Image Grid.Column="1" Name="GBBigScreenshot" Stretch="Uniform" Margin="20,0,20,0" VerticalAlignment="Center"/>
-                                    <Image Grid.Column="1" gif:ImageBehavior.AnimatedSource="/Assets/load.gif" Panel.ZIndex="-1" VerticalAlignment="Center" HorizontalAlignment="Center" Height="90"/>
+                                    <Image Grid.Column="1" gif:ImageBehavior.AnimatedSource="pack://application:,,,/Assets/load.gif" Panel.ZIndex="-1" VerticalAlignment="Center" HorizontalAlignment="Center" Height="90"/>
                                     <Button Grid.Column="2" HorizontalAlignment="Left" FontFamily="{StaticResource DmmFont}" VerticalAlignment="Center" Click="GBImageRight_Click" Name="GBBigImageRight" Content=">" Height="50" Width="50" FontWeight="SemiBold" FontSize="18"/>
                                 </Grid>
                                 <TextBlock Name="GBBigCaptionText" FontFamily="{StaticResource DmmFont}" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="18" Foreground="#f2f2f2" Padding="5"/>
@@ -1103,7 +1101,7 @@
                                 </Grid.ColumnDefinitions>
                                 <Button HorizontalAlignment="Right" VerticalAlignment="Center" Click="GBImageLeft_Click" Name="GBImageLeft" FontFamily="{StaticResource DmmFont}" Content="&lt;" Height="50" Width="50" FontWeight="SemiBold" FontSize="18"/>
                                 <Image Grid.Column="1" Cursor="Hand" PreviewMouseLeftButtonDown="GBImage_Click" Name="GBScreenshot" Stretch="Uniform" MaxHeight="400" Margin="20,0,20,0" VerticalAlignment="Center"/>
-                                <Image Grid.Column="1" gif:ImageBehavior.AnimatedSource="/Assets/load.gif" Panel.ZIndex="-1" VerticalAlignment="Center" HorizontalAlignment="Center" Height="90"/>
+                                <Image Grid.Column="1" gif:ImageBehavior.AnimatedSource="pack://application:,,,/Assets/load.gif" Panel.ZIndex="-1" VerticalAlignment="Center" HorizontalAlignment="Center" Height="90"/>
                                 <Button Grid.Column="2" HorizontalAlignment="Left" VerticalAlignment="Center" Click="GBImageRight_Click" Name="GBImageRight" FontFamily="{StaticResource DmmFont}" Content=">" Height="50" Width="50" FontWeight="SemiBold" FontSize="18"/>
                             </Grid>
                             <TextBlock Name="GBCaptionText" FontFamily="{StaticResource DmmFont}" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="18" Foreground="#f2f2f2" Padding="5"/>
@@ -1203,6 +1201,17 @@
                         </Border>
                     </Popup>
 
+                    <DockPanel x:Name="GBControlPanelBottomLeft" Grid.Row="2" VerticalAlignment="Center"  HorizontalAlignment="Left" Grid.ColumnSpan="3">
+                        <CheckBox Name="GBCacheUseCheckBox" IsEnabled="True" Checked="GBCacheUseCheckBox_Checked" Unchecked="GBCacheUseCheckBox_Unchecked" Margin="10" VerticalAlignment="Center" Content="Cache Use" FontFamily="{StaticResource DmmFont}" Foreground="#f2f2f2" IsChecked="True"/>
+                        <Button Click="GBClearCacheButton_Click" Name="GBClearCacheButton" Content="Clear Cache" FontFamily="{StaticResource DmmFont}" FontSize="18"  Height="35" Width="120" Background="#181818" BorderBrush="#252525" IsEnabled="False" Foreground="#f2f2f2" Margin="5" >
+                            <Button.Resources>
+                                <Style TargetType="{x:Type Border}">
+                                    <Setter Property="CornerRadius" Value="5"/>
+                                </Style>
+                            </Button.Resources>
+                        </Button>
+                    </DockPanel>
+
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Grid.ColumnSpan="6" Grid.Row="2">
                         <Button IsEnabled="False" FontFamily="{StaticResource DmmFont}" Name="GBPageLeft" Click="GBPageLeft_Click" Content="&lt;" HorizontalAlignment="Right" Margin="10,0,10,0" FontSize="18"  Height="35" Width="35" Background="#181818" BorderBrush="#252525" Foreground="#f2f2f2"/>
                         <TextBlock Name="GBPageText" Text="Page 1" Foreground="#f2f2f2" VerticalAlignment="Center" HorizontalAlignment="Center" FontFamily="{StaticResource DmmFont}" FontSize="18" />
@@ -1210,13 +1219,6 @@
                         <ComboBox IsEnabled="False" Margin="10,0,10,0" FontFamily="{StaticResource DmmFont}" Name="GBPageBox" SelectionChanged="GBPageBox_SelectionChanged" Height="35" VerticalAlignment="Center"/>
                     </StackPanel>
                     <StackPanel Margin="5,5,10,5" Grid.ColumnSpan="6" Orientation="Horizontal" HorizontalAlignment="Right" Grid.Row="2">
-                        <Button Margin="0,0,15,0" Click="GBClearCacheButton_Click" Name="GBClearCacheButton" Content="Clear Cache" HorizontalAlignment="center" FontFamily="{StaticResource DmmFont}" FontSize="18"  Height="35" Width="120" Background="#181818" BorderBrush="#252525" IsEnabled="False" Foreground="#f2f2f2">
-                            <Button.Resources>
-                                <Style TargetType="{x:Type Border}">
-                                    <Setter Property="CornerRadius" Value="5"/>
-                                </Style>
-                            </Button.Resources>
-                        </Button>
                         <TextBlock Margin="0,0,15,0" FontFamily="{StaticResource DmmFont}" Foreground="#f2f2f2" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="18" FontWeight="Normal">
                             Per Page:
                         </TextBlock>
@@ -1229,7 +1231,7 @@
                         </ComboBox>
                     </StackPanel>
 
-                    <Image Name="GBLoadingBar" Grid.ColumnSpan="8" Grid.Row="1" gif:ImageBehavior.AnimatedSource="/Assets/load.gif" Panel.ZIndex="1" VerticalAlignment="Center" HorizontalAlignment="Center" Height="150"/>
+                    <Image Name="GBLoadingBar" Grid.ColumnSpan="8" Grid.Row="1" gif:ImageBehavior.AnimatedSource="pack://application:,,,/Assets/load.gif" Panel.ZIndex="1" VerticalAlignment="Center" HorizontalAlignment="Center" Height="150"/>
                     <StackPanel Name="GBErrorPanel" Grid.ColumnSpan="8" Grid.Row="1" Panel.ZIndex="1" HorizontalAlignment="Center" VerticalAlignment="Center">
                         <TextBlock Name="GBBrowserMessage" HorizontalAlignment="Center" FontFamily="{StaticResource DmmFont}" Opacity="1" Background="Transparent" Foreground="#f2f2f2" FontWeight="Normal" TextWrapping="Wrap" Width="800" TextAlignment="Center" FontSize="25"/>
                         <Button Margin="10" Click="GBBrowserRefreshButton_Click" Name="GBBrowserRefreshButton" Content="Retry" HorizontalAlignment="center" FontFamily="{StaticResource DmmFont}" FontSize="18" Height="40" Width="140" Background="#181818" BorderBrush="#252525" Foreground="#f2f2f2">
@@ -1337,6 +1339,17 @@
                         </Popup>
                     </StackPanel>
 
+                    <DockPanel x:Name="DMAControlPanelBottomLeft" Grid.Row="2" VerticalAlignment="Center"  HorizontalAlignment="Left" Grid.ColumnSpan="3">
+                        <CheckBox Name="DMACacheUseCheckBox" IsEnabled="True" Checked="DMACacheUseCheckBox_Checked" Unchecked="DMACacheUseCheckBox_Unchecked" Margin="10" VerticalAlignment="Center" Content="Cache Use" FontFamily="{StaticResource DmmFont}" Foreground="#f2f2f2" IsChecked="True"/>
+                        <Button Click="DMAClearCacheButton_Click" Name="DMAClearCacheButton" Content="Clear Cache" FontFamily="{StaticResource DmmFont}" FontSize="18"  Height="35" Width="120" Background="#181818" BorderBrush="#252525" IsEnabled="False" Foreground="#f2f2f2" Margin="5" >
+                            <Button.Resources>
+                                <Style TargetType="{x:Type Border}">
+                                    <Setter Property="CornerRadius" Value="5"/>
+                                </Style>
+                            </Button.Resources>
+                        </Button>
+                    </DockPanel>
+
                     <StackPanel x:Name="DMAControlPanelBottomCenter" Orientation="Horizontal" HorizontalAlignment="Center" Grid.Row="2" Grid.ColumnSpan="4" VerticalAlignment="Center">
                         <Button IsEnabled="False" FontFamily="{StaticResource DmmFont}" Name="DMAPageLeft" Click="DMADecrementPage" Content="&lt;" HorizontalAlignment="Right" Margin="10,0,10,0" FontSize="18" Height="35" Width="35" Background="#181818" BorderBrush="#252525" Foreground="#f2f2f2"/>
                         <TextBlock Name="DMAPage" Text="Page 1" Foreground="#f2f2f2" VerticalAlignment="Center" HorizontalAlignment="Center" FontFamily="{StaticResource DmmFont}" FontSize="18" />
@@ -1345,13 +1358,6 @@
                     </StackPanel>
 
                     <StackPanel x:Name="DMAControlPanelBottomRight" Orientation="Horizontal" HorizontalAlignment="Right" Grid.Row="2" Grid.ColumnSpan="4" VerticalAlignment="Center">
-                        <Button Margin="0,0,15,0" Click="DMAClearCacheButton_Click" Name="DMAClearCacheButton" Content="Clear Cache" HorizontalAlignment="center" FontFamily="{StaticResource DmmFont}" FontSize="18"  Height="35" Width="120" Background="#181818" BorderBrush="#252525" IsEnabled="False" Foreground="#f2f2f2">
-                            <Button.Resources>
-                                <Style TargetType="{x:Type Border}">
-                                    <Setter Property="CornerRadius" Value="5"/>
-                                </Style>
-                            </Button.Resources>
-                        </Button>
                         <TextBlock Margin="0,0,15,0" FontFamily="{StaticResource DmmFont}" Foreground="#f2f2f2" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="18" FontWeight="Normal">
                             Per Page:
                         </TextBlock>
@@ -1385,7 +1391,7 @@
                                 </Grid.ColumnDefinitions>
                                 <Button HorizontalAlignment="Right" VerticalAlignment="Center" FontFamily="{StaticResource DmmFont}" Click="DMAImageLeft_Click" Name="DMABigImageLeft" Content="&lt;" Height="50" Width="50" FontWeight="SemiBold" FontSize="18"/>
                                 <Image Grid.Column="1" Name="DMABigScreenshot" Stretch="Uniform" Margin="20,0,20,0" VerticalAlignment="Center"/>
-                                <Image Grid.Column="1" gif:ImageBehavior.AnimatedSource="/Assets/load.gif" Panel.ZIndex="-1" VerticalAlignment="Center" HorizontalAlignment="Center" Height="90"/>
+                                <Image Grid.Column="1" gif:ImageBehavior.AnimatedSource="pack://application:,,,/Assets/load.gif" Panel.ZIndex="-1" VerticalAlignment="Center" HorizontalAlignment="Center" Height="90"/>
                                 <Button Grid.Column="2" HorizontalAlignment="Left" FontFamily="{StaticResource DmmFont}" VerticalAlignment="Center" Click="DMAImageRight_Click" Name="DMABigImageRight" Content=">" Height="50" Width="50" FontWeight="SemiBold" FontSize="20"/>
                             </Grid>
                         </Border>
@@ -1429,7 +1435,7 @@
                             </Grid.ColumnDefinitions>
                             <Button HorizontalAlignment="Right" VerticalAlignment="Center" Click="DMAImageLeft_Click" Name="DMAImageLeft" FontFamily="{StaticResource DmmFont}" Content="&lt;" Height="50" Width="50" FontWeight="SemiBold" FontSize="20"/>
                             <Image Grid.Column="1" Cursor="Hand" PreviewMouseLeftButtonDown="DMAImage_Click" Name="DMAScreenshot" Stretch="Uniform" MaxHeight="400" Margin="20,0,20,0" VerticalAlignment="Center"/>
-                            <Image Grid.Column="1" gif:ImageBehavior.AnimatedSource="/Assets/load.gif" Panel.ZIndex="-1" VerticalAlignment="Center" HorizontalAlignment="Center" Height="90"/>
+                            <Image Grid.Column="1" gif:ImageBehavior.AnimatedSource="pack://application:,,,/Assets/load.gif" Panel.ZIndex="-1" VerticalAlignment="Center" HorizontalAlignment="Center" Height="90"/>
                             <Button Grid.Column="2" HorizontalAlignment="Left" VerticalAlignment="Center" Click="DMAImageRight_Click" Name="DMAImageRight" FontFamily="{StaticResource DmmFont}" Content=">" Height="50" Width="50" FontWeight="SemiBold" FontSize="20"/>
                         </Grid>
                         <Border Grid.Row="1" Grid.ColumnSpan="2" Background="#404040"/>
@@ -1462,7 +1468,7 @@
                     </Grid>
 
                     <StackPanel Name="DMALoadPanel" Grid.ColumnSpan="4" Grid.Row="1" Panel.ZIndex="1" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Visible">
-                        <Image Name="DMALoadingBar" gif:ImageBehavior.AnimatedSource="/Assets/load.gif" VerticalAlignment="Center" HorizontalAlignment="Center" Height="150"/>
+                        <Image Name="DMALoadingBar" gif:ImageBehavior.AnimatedSource="pack://application:,,,/Assets/load.gif" VerticalAlignment="Center" HorizontalAlignment="Center" Height="150"/>
                     </StackPanel>
                     <StackPanel Name="DMAErrorPanel" Grid.ColumnSpan="4" Grid.Row="1" Panel.ZIndex="1" HorizontalAlignment="Center" VerticalAlignment="Center" >
                         <TextBlock Name="DMABrowserMessage" HorizontalAlignment="Center" FontFamily="{StaticResource DmmFont}" Background="Transparent" Foreground="#f2f2f2" TextWrapping="Wrap" Width="800" TextAlignment="Center" FontSize="25"/>
@@ -1507,9 +1513,11 @@
                     </Border>
                 </Grid>
             </TabItem>
-            <TabItem Name="SongTab" Selector.Selected="SongTab_TabSelected" Selector.Unselected="SongTab_TabUnselected" FontSize="18" HorizontalAlignment="Center" Header="Song" Height="30" VerticalAlignment="Bottom" Visibility="Visible">
+            <!--
+            <TabItem Name="SongTab" Selector.Selected="SongTab_TabSelected" Selector.Unselected="SongTab_TabUnselected" FontSize="18" HorizontalAlignment="Center" Header="Song" Height="30" VerticalAlignment="Bottom" Visibility="Collapsed">
                 <song:SongTab/>
             </TabItem>
+            -->
             <TabItem Name="ModuleTab" Selector.Selected="ModuleTab_TabSelected" Selector.Unselected="ModuleTab_TabUnselected" FontSize="18" HorizontalAlignment="Center" Header="Module" Height="30" VerticalAlignment="Bottom" Visibility="Visible">
                 <module:ModuleTab/>
             </TabItem>

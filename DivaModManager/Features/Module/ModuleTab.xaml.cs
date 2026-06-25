@@ -42,6 +42,8 @@ namespace DivaModManager.Features.Module
         public ModuleTab()
         {
             InitializeComponent();
+            if (DesignerProperties.GetIsInDesignMode(this))
+                return;
         }
 
         public void View()
@@ -70,7 +72,7 @@ namespace DivaModManager.Features.Module
             SearchConflictFilter = 0;
             ConflictFilterComboBox.SelectedIndex = 0;
 
-            FilterSearch();
+            FilterSearch(true);
         }
 
         public void Clear()
@@ -234,7 +236,7 @@ namespace DivaModManager.Features.Module
 
         #endregion
 
-        private void FilterSearch()
+        private void FilterSearch(bool viewInit = false)
         {
             var direction = Direction;
             viewModuleDataList = viewModuleDataListAll;
@@ -267,6 +269,11 @@ namespace DivaModManager.Features.Module
                     .ToList();
             }
             ModuleGrid.ItemsSource = viewModuleDataList;
+
+            if (viewInit)
+            {
+                var InstallMsg = App.Current.Dispatcher.BeginInvoke(() => WindowHelper.DMMWindowOpen(27));
+            }
         }
     }
 

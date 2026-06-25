@@ -54,10 +54,15 @@ namespace DivaModManager
         }
 
         #region Cache constants (後日外部ファイル化予定)
-        private const int GB_API_CACHE_HOURS = 3;       // -1 で永続
-        private const int GB_IMAGE_CACHE_HOURS = 72;    // -1 で永続
-        private const int DMA_API_CACHE_HOURS = 3;      // -1 で永続
-        private const int DMA_IMAGE_CACHE_HOURS = 72;   // -1 で永続
+        private const int GB_API_CACHE_HOURS_DEFAULT = 3;       // -1 で永続
+        private const int GB_IMAGE_CACHE_HOURS_DEFAULT = 72;    // -1 で永続
+        private const int DMA_API_CACHE_HOURS_DEFAULT = 3;      // -1 で永続
+        private const int DMA_IMAGE_CACHE_HOURS_DEFAULT = 72;   // -1 で永続
+
+        private int GB_API_CACHE_HOURS = GB_API_CACHE_HOURS_DEFAULT;
+        private int GB_IMAGE_CACHE_HOURS = GB_IMAGE_CACHE_HOURS_DEFAULT;
+        private int DMA_API_CACHE_HOURS = DMA_API_CACHE_HOURS_DEFAULT;
+        private int DMA_IMAGE_CACHE_HOURS = DMA_IMAGE_CACHE_HOURS_DEFAULT;
         #endregion
 
         private FlowDocument defaultFlow = new();
@@ -213,6 +218,9 @@ namespace DivaModManager
                 ModGrid.Columns[(int)Column.Category].Visibility = (Visibility)Global.ConfigJson.CategoryColumnVisible;
                 ModGrid.Columns[(int)Column.Size].Visibility = (Visibility)Global.ConfigJson.SizeColumnVisible;
                 ModGrid.Columns[(int)Column.Note].Visibility = (Visibility)Global.ConfigJson.NoteColumnVisible;
+
+                GBCacheUseCheckBox.IsChecked = Global.ConfigJson.GBCacheUse;
+                DMACacheUseCheckBox.IsChecked = Global.ConfigJson.DMACacheUse;
 
                 Global.games = new List<string>();
 
@@ -1193,28 +1201,36 @@ namespace DivaModManager
 
                 try
                 {
-                    await WorkManager.RunAsync(async () =>
+                    string[] fileList = (string[])e.Data.GetData(DataFormats.FileDrop, false);
+                    if (fileList?.Length == 1 && fileList[0] == Path.Combine(Global.assemblyLocation, "update.txt"))
                     {
-                        string[] fileList = (string[])e.Data.GetData(DataFormats.FileDrop, false);
-                        foreach (var filePath in fileList)
+                        App.Current.Dispatcher.Invoke(() => { WindowHelper.DMMWindowOpen(27); });
+                    }
+                    else
+                    {
+
+                        await WorkManager.RunAsync(async () =>
                         {
-                            var parentPath = Directory.GetParent(Path.GetFullPath(filePath)).FullName;
-                            if (!Logger.MaskAddDropFilePathList.Contains(parentPath)) Logger.MaskAddDropFilePathList.Add(parentPath);
-
-                            var fileName = Path.GetFileName(filePath);
-                            Logger.WriteLine($"Expanding the dropped file. [{fileName}]", LoggerType.Info);
-
-                            var extract = new ExtractInfo()
+                            foreach (var filePath in fileList)
                             {
-                                Site = ExtractInfo.SITE.LOCAL,
-                                Type = ExtractInfo.TYPE.DROP,
-                            };
-                            MoveInfoData moveInfo = new() { FullPath = $"{filePath}", Status = ExtractInfo.EXTRACT_STATUS.DOWNLOAD_FILE };
-                            extract.MoveInfoList.Add(moveInfo);
+                                var parentPath = Directory.GetParent(Path.GetFullPath(filePath)).FullName;
+                                if (!Logger.MaskAddDropFilePathList.Contains(parentPath)) Logger.MaskAddDropFilePathList.Add(parentPath);
 
-                            await Task.Run(() => Extractor.ExtractMain(extract));
-                        }
-                    });
+                                var fileName = Path.GetFileName(filePath);
+                                Logger.WriteLine($"Expanding the dropped file. [{fileName}]", LoggerType.Info);
+
+                                var extract = new ExtractInfo()
+                                {
+                                    Site = ExtractInfo.SITE.LOCAL,
+                                    Type = ExtractInfo.TYPE.DROP,
+                                };
+                                MoveInfoData moveInfo = new() { FullPath = $"{filePath}", Status = ExtractInfo.EXTRACT_STATUS.DOWNLOAD_FILE };
+                                extract.MoveInfoList.Add(moveInfo);
+
+                                await Task.Run(() => Extractor.ExtractMain(extract));
+                            }
+                        });
+                    }
                 }
                 finally
                 {
@@ -3834,11 +3850,11 @@ namespace DivaModManager
             GBModBrowserTab.Visibility = Visibility.Visible;
             GBModBrowserTab.IsEnabled = isDMLInstalled | isEnableTabs;
             DMAModBrowserTab.Visibility = Visibility.Visible;
-            DMAModBrowserTab.IsEnabled = isDMLInstalled;
-            SongTab.Visibility = Visibility.Visible;
-            SongTab.IsEnabled = isDMLInstalled;
+            DMAModBrowserTab.IsEnabled = isDMLInstalled | isEnableTabs;
+            //SongTab.Visibility = Visibility.Visible;
+            //SongTab.IsEnabled = isDMLInstalled | isEnableTabs;
             ModuleTab.Visibility = Visibility.Visible;
-            ModuleTab.IsEnabled = isDMLInstalled;
+            ModuleTab.IsEnabled = isDMLInstalled | isEnableTabs;
             OptionTab.Visibility = isWine ? Visibility.Hidden : Visibility.Visible;
             OptionTab.IsEnabled = setEnabledFirst && !isWine;
             DebugTabItem.Visibility = isWine ? Visibility.Hidden : (Logger.Mode != Features.Debug.Logger.DEBUG_MODE.NORMAL ? Visibility.Visible : Visibility.Hidden);
@@ -3878,6 +3894,7 @@ namespace DivaModManager
             GBPageRight.IsEnabled = FeedGenerator.CurrentFeed == null ? false : isDMLInstalled && page < FeedGenerator.CurrentFeed.TotalPages;
             GBPageBox.IsEnabled = isDMLInstalled;
             GBPerPageBox.IsEnabled = isDMLInstalled;
+            GBCacheUseCheckBox.IsEnabled = isDMLInstalled;
             GBClearCacheButton.IsEnabled = isDMLInstalled;
             GBNSFWCheckbox.IsEnabled = isDMLInstalled;
 
@@ -3885,6 +3902,7 @@ namespace DivaModManager
             DMASearchButton.IsEnabled = isDMLInstalled;
             DMASortBox.IsEnabled = isDMLInstalled;
             DMAFilterBox.IsEnabled = isDMLInstalled;
+            DMACacheUseCheckBox.IsEnabled = isDMLInstalled;
             DMAClearCacheButton.IsEnabled = isDMLInstalled;
             DMAPageLeft.IsEnabled = isDMLInstalled && DMApage > 1;
             DMAPageRight.IsEnabled = DMAFeedGenerator.CurrentFeed == null ? false : isDMLInstalled && DMApage < DMAFeedGenerator.CurrentFeed.TotalPages;
@@ -4077,13 +4095,21 @@ namespace DivaModManager
             }
         }
 
-        private void SongTab_TabSelected(object sender, RoutedEventArgs e)
+        private async void SongTab_TabSelected(object sender, RoutedEventArgs e)
         {
             var tabItem = sender as TabItem;
             var msg = App.Current.Dispatcher.Invoke(() => WindowHelper.DMMWindowOpen(82));
             if (msg == WindowHelper.WindowCloseStatus.Yes)
             {
-                SongLogic.Init((SongTab)tabItem.Content);
+                IsEnabledControls(false, isEnableTabs: true);
+
+                var songTab = (SongTab)tabItem.Content;
+                //songTab.LoadingBar.Visibility = Visibility.Visible;
+
+                await SongLogic.InitAsync(songTab);
+
+                //songTab.LoadingBar.Visibility = Visibility.Collapsed;
+                IsEnabledControls(true);
             }
             else
             {
@@ -4093,13 +4119,21 @@ namespace DivaModManager
             }
         }
 
-        private void ModuleTab_TabSelected(object sender, RoutedEventArgs e)
+        private async void ModuleTab_TabSelected(object sender, RoutedEventArgs e)
         {
             var tabItem = sender as TabItem;
             var msg = App.Current.Dispatcher.Invoke(() => WindowHelper.DMMWindowOpen(83));
             if (msg == WindowHelper.WindowCloseStatus.Yes)
             {
-                ModuleLogic.Init((ModuleTab)tabItem.Content);
+                IsEnabledControls(false, isEnableTabs: true);
+
+                var moduleTab = (ModuleTab)tabItem.Content;
+                //moduleTab.LoadingBar.Visibility = Visibility.Visible;
+
+                await ModuleLogic.InitAsync(moduleTab);
+
+                //moduleTab.LoadingBar.Visibility = Visibility.Collapsed;
+                IsEnabledControls(true);
             }
             else
             {
@@ -4242,6 +4276,30 @@ namespace DivaModManager
         private void LoadoutBox_DropDownClosed(object sender, EventArgs e)
         {
             // LoadoutBox_DropDownOpenedから呼び出されるため実装
+        }
+        private void GBCacheUseCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            GB_API_CACHE_HOURS = GB_API_CACHE_HOURS_DEFAULT;
+            GB_IMAGE_CACHE_HOURS = GB_IMAGE_CACHE_HOURS_DEFAULT;
+            Global.ConfigJson.GBCacheUse = true;
+        }
+        private void GBCacheUseCheckBox_Unchecked(object sender, RoutedEventArgs e)
+        {
+            GB_API_CACHE_HOURS = 0;
+            GB_IMAGE_CACHE_HOURS = 0;
+            Global.ConfigJson.GBCacheUse = false;
+        }
+        private void DMACacheUseCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            DMA_API_CACHE_HOURS = DMA_API_CACHE_HOURS_DEFAULT;
+            DMA_IMAGE_CACHE_HOURS = DMA_IMAGE_CACHE_HOURS_DEFAULT;
+            Global.ConfigJson.DMACacheUse = true;
+        }
+        private void DMACacheUseCheckBox_Unchecked(object sender, RoutedEventArgs e)
+        {
+            DMA_API_CACHE_HOURS = 0;
+            DMA_IMAGE_CACHE_HOURS = 0;
+            Global.ConfigJson.DMACacheUse = false;
         }
     }
 }

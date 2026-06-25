@@ -124,5 +124,10 @@
                 <DataGridTextColumn Header="Song File Path" Binding="{Binding SongFilePath}" MinWidth="30" Width="360" />
             </DataGrid.Columns>
         </DataGrid>
+        <!--
+        <Image Name="LoadingBar" gif:ImageBehavior.AnimatedSource="pack://application:,,,/Assets/load.gif"
+               Panel.ZIndex="10" VerticalAlignment="Center" HorizontalAlignment="Center" Height="150"
+               Visibility="Collapsed"/>
+        -->
     </Grid>
 </UserControl>
