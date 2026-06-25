@@ -195,7 +195,7 @@ namespace DivaModManager.Common.Helpers
         /// <param name="name"></param>
         /// <returns></returns>
         public static async Task<int> DMMWindowChoiceOpenAsync(
-            List<int> message_no_list, int message_no_cancel = -1, List<string> replaceList = null)
+            List<int> message_no_list, int message_no_cancel = -1, List<string> replaceList = null, List<string> dataList = null)
         {
             string MeInfo = Logger.GetMeInfo(new StackFrame());
             string ParamInfo = $"message_no_list:{Util.GetListToParamString(message_no_list)}, message_no_cancel:{message_no_cancel}, replaceList:{Util.GetListToParamString(replaceList)}, id:{Thread.CurrentThread.ManagedThreadId}";
@@ -205,13 +205,13 @@ namespace DivaModManager.Common.Helpers
 
             if (Application.Current.Dispatcher.CheckAccess())
             {
-                ret = DMMWindowChoiceOpen(message_no_list, message_no_cancel, replaceList);
+                ret = DMMWindowChoiceOpen(message_no_list, message_no_cancel, replaceList, dataList);
             }
             else
             {
                 await Application.Current.Dispatcher.InvokeAsync(() =>
                 {
-                    ret = DMMWindowChoiceOpen(message_no_list, message_no_cancel, replaceList);
+                    ret = DMMWindowChoiceOpen(message_no_list, message_no_cancel, replaceList, dataList);
                 });
             }
 
@@ -227,7 +227,7 @@ namespace DivaModManager.Common.Helpers
         /// <param name="message_no_cancel"></param>
         /// <param name="replaceList"></param>
         /// <returns></returns>
-        public static int DMMWindowChoiceOpen(List<int> message_no_list, int message_no_cancel = -1, List<string> replaceList = null)
+        public static int DMMWindowChoiceOpen(List<int> message_no_list, int message_no_cancel = -1, List<string> replaceList = null, List<string> dataList = null)
         {
             string MeInfo = Logger.GetMeInfo(new StackFrame());
             string ParamInfo = $"message_no_list:{Util.GetListToParamString(message_no_list)}, message_no_cancel:{message_no_cancel}, replaceList:{Util.GetListToParamString(replaceList)}, id:{Thread.CurrentThread.ManagedThreadId}";
@@ -242,7 +242,7 @@ namespace DivaModManager.Common.Helpers
                 var info = WindowList.MessageWindowNo(message_no_list[i], replaceList);
                 if (info.WindowType.ToString().ToUpper() == WindowInfo.MESSAGE_WINDOW.Choice.ToString().ToUpper())
                 {
-                    DmmChoiceModel item1 = new DmmChoiceModel() { MessageInfo = info.Info(), MessageText = info.Context(), Index = i };
+                    DmmChoiceModel item1 = new DmmChoiceModel() { MessageInfo = info.Info(), MessageText = info.Context().Replace("{data}", dataList?[i]), Index = i };
                     choices.Add(item1);
                 }
                 infoList.Add(WindowList.MessageWindowNo(message_no_list[i], replaceList));

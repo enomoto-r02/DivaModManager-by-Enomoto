@@ -5,6 +5,7 @@
     <TargetFramework>net10.0-windows10.0.17763.0</TargetFramework>
     <RootNamespace>DivaModManager</RootNamespace>
     <UseWPF>true</UseWPF>
+    <NoWarn>$(NoWarn);XDG0003</NoWarn>
     <ApplicationIcon>Assets\miku.ico</ApplicationIcon>
     <AssemblyName>DivaModManager</AssemblyName>
     <AssemblyVersion>1.3.1.35</AssemblyVersion>
@@ -49,6 +50,7 @@
     <None Remove="Downloads\Do not place files under this folder" />
     <None Remove="GameBanana.png" />
     <None Remove="License.txt" />
+    <None Remove="update.txt" />
     <None Remove="x64\7z.dll" />
   </ItemGroup>
 
@@ -194,6 +196,18 @@
     <None Update="BASE\diva_main_region\Place the data extracted from the game here">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="BASE\PathList.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="BASE\PathTree.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="ErrorReportTemplate Example%28EN%29.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="ErrorReportTemplate%28EN%29.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="ErrorReportTemplate\ErrorReportTemplate Example%28EN%29.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -214,6 +228,12 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="ErrorReportTemplate\エラー報告用テンプレート(JP).txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="エラー報告用テンプレート 記入例%28JP%29.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="エラー報告用テンプレート%28JP%29.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>

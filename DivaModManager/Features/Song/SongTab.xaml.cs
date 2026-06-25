@@ -41,6 +41,8 @@ namespace DivaModManager.Features.Song
         public SongTab()
         {
             InitializeComponent();
+            if (DesignerProperties.GetIsInDesignMode(this))
+                return;
         }
 
         public void View()
@@ -63,7 +65,7 @@ namespace DivaModManager.Features.Song
             SearchKeyFilter = 11;
             KeyFilterComboBox.SelectedIndex = 11;
 
-            FilterSearch();
+            FilterSearch(true);
         }
 
         public void Clear()
@@ -166,7 +168,7 @@ namespace DivaModManager.Features.Song
 
         #endregion
 
-        private void FilterSearch()
+        private void FilterSearch(bool viewInit = false)
         {
             viewSongDataList = viewSongDataListAll;
             if (SearchModFilter != 0)
@@ -195,7 +197,10 @@ namespace DivaModManager.Features.Song
             }
             SongGrid.ItemsSource = viewSongDataList;
 
-            var InstallMsg = App.Current.Dispatcher.BeginInvoke(() => WindowHelper.DMMWindowOpen(27));
+            if (viewInit)
+            {
+                var InstallMsg = App.Current.Dispatcher.BeginInvoke(() => WindowHelper.DMMWindowOpen(27));
+            }
         }
     }
 

@@ -1,4 +1,6 @@
-﻿namespace DivaModManager.Features.Song
+﻿using System.Threading.Tasks;
+
+namespace DivaModManager.Features.Song
 {
     public static class SongLogic
     {
@@ -28,6 +30,28 @@
 
             ret = true;
             return ret;
+        }
+
+        public static async Task<bool> InitAsync(SongTab songTab)
+        {
+            songTab.Clear();
+
+            await Task.Run(() =>
+            {
+                Global.GameBase.songData.Load();
+
+                foreach (var mod in Global.ModList_All)
+                {
+                    if (mod.enabled)
+                    {
+                        mod.songData.Load(mod.directory_path);
+                    }
+                }
+            });
+
+            songTab.View();
+
+            return true;
         }
 
         public static bool Clear(SongTab songTab)
