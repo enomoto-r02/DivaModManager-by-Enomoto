@@ -38,7 +38,7 @@ namespace DivaModManager.Common.Helpers
             DMM_LOG,
             DMM_SEVEN_ZIP,
             WIN_RAR,
-            DMM_CHCHE,
+            DMM_CACHE,
         }
 
         /// <summary>
@@ -70,7 +70,7 @@ namespace DivaModManager.Common.Helpers
                     || isDivaModDirectory == DIVA_PATH_RESULT.DML_TEMP_FILE
                     || isDivaModDirectory == DIVA_PATH_RESULT.DML_TEMP_DIRECTORY
                     || isDivaModDirectory == DIVA_PATH_RESULT.DMM_LOG
-                    || isDivaModDirectory == DIVA_PATH_RESULT.DMM_CHCHE)
+                    || isDivaModDirectory == DIVA_PATH_RESULT.DMM_CACHE)
                 {
                     if (TryFindUnsafeFileSystemReference(deleteFilePath, out var unsafeReference))
                     {
@@ -138,7 +138,8 @@ namespace DivaModManager.Common.Helpers
                 var isDivaModDirectory = IsDivaModFileOrDirectory(deleteDirectoryPath);
                 if (isDivaModDirectory == DIVA_PATH_RESULT.TEMP_DIRECTORY
                     || isDivaModDirectory == DIVA_PATH_RESULT.MODS_DIRECTORY
-                    || isDivaModDirectory == DIVA_PATH_RESULT.DML_TEMP_DIRECTORY)
+                    || isDivaModDirectory == DIVA_PATH_RESULT.DML_TEMP_DIRECTORY
+                    || isDivaModDirectory == DIVA_PATH_RESULT.DMM_CACHE)
                 {
                     if (TryFindUnsafeFileSystemReference(deleteDirectoryPath, out var unsafeReference))
                     {
@@ -386,18 +387,6 @@ namespace DivaModManager.Common.Helpers
             string ParamInfo = $"caller:{caller}, id:{Thread.CurrentThread.ManagedThreadId}, targetPath:{targetPath}";
             // Logger.WriteLine($"{MeInfo} Start.", LoggerType.Debug);
 
-            var checkTmpDirectoryResult = false;
-            var checkDownloadFileResult = false;
-            var checkModsResult = false;
-            var checkSettingResult = false;
-            var checkDmmLogResult = false;
-            var checkDmmSevenZipResult = false;
-            var checkWinRarResult = false;
-            var checkDmlDownloadResult = false;
-            var checkDmlTempFileResult = false;
-            var checkDmlTmpDirectoryResult = false;
-            var checkDmmCacheDirectoryResult = false;
-
             var ret = DIVA_PATH_RESULT.NOT;
             var targetFullPath = Path.GetFullPath(targetPath);
 
@@ -436,54 +425,62 @@ namespace DivaModManager.Common.Helpers
 
             // tmp directory
             var checkTmpDirectoryPath = Path.GetFullPath(Path.Combine(Global.assemblyLocation, "Downloads", "temp_"));
-            checkTmpDirectoryResult =
+            var checkTmpDirectoryResult =
                 StartsWith(targetFullPath, checkTmpDirectoryPath);
 
             // chech directory
-            var checkCacheDirectoryPath = Path.GetFullPath(Path.Combine(Global.assemblyLocation, "chech"));
-            checkDmmCacheDirectoryResult =
-                StartsWith(targetFullPath, checkCacheDirectoryPath);
+            var checkCacheGbApiDirectoryPath = Path.GetFullPath(Path.Combine(Global.assemblyLocation, "cache", "gb_api"));
+            var checkGbCacheDirectoryResult =
+                StartsWith(targetFullPath, checkCacheGbApiDirectoryPath);
+
+            var checkCacheDmaApiDirectoryPath = Path.GetFullPath(Path.Combine(Global.assemblyLocation, "cache", "dma_api"));
+            var checkDmaCacheDirectoryResult =
+                StartsWith(targetFullPath, checkCacheDmaApiDirectoryPath);
+
+            var checkCacheImageDirectoryPath = Path.GetFullPath(Path.Combine(Global.assemblyLocation, "cache", "images"));
+            var checkImageCacheDirectoryResult =
+                StartsWith(targetFullPath, checkCacheImageDirectoryPath);
 
             // download file
             var checkDownloadFilePath = Path.Combine(Global.assemblyLocation, "Downloads");
-            checkDownloadFileResult =
+            var checkDownloadFileResult =
                 PathStartsWith(targetFullPath, Path.GetFullPath(checkDownloadFilePath));
 
             // mods
-            checkModsResult =
+            var checkModsResult =
                 FileHelper.PathStartsWith(targetFullPath, Path.GetFullPath(Global.ModsFolder))
                 // Config.jsonの"ModsFolder"は最後にGlobal.sが付与されていないので、パス長で判定
                 && targetFullPath.Length > TrimEndingDirectorySeparators(Path.GetFullPath(Global.ModsFolder)).Length;
 
             // setting
-            checkSettingResult = PathsEqual(targetFullPath, Path.GetFullPath(ConfigTomlDmm.CONFIG_E_TOML_PATH));
+            var checkSettingResult = PathsEqual(targetFullPath, Path.GetFullPath(ConfigTomlDmm.CONFIG_E_TOML_PATH));
 
             // log
-            checkDmmLogResult =
+            var checkDmmLogResult =
                 PathsEqual(targetFullPath, Path.GetFullPath(Global.textLogLocation))
                 || PathsEqual(targetFullPath, Path.GetFullPath(Global.textLogBackgroundLocation));
 
             // 7z.exe
-            checkDmmSevenZipResult = PathsEqual(targetFullPath, Path.GetFullPath(Extractor.SEVENZIP_CONSOLE_EXE_LOCAL_PATH));
+            var checkDmmSevenZipResult = PathsEqual(targetFullPath, Path.GetFullPath(Extractor.SEVENZIP_CONSOLE_EXE_LOCAL_PATH));
 
             // Rar.exe
-            //checkWinRarResult = _targetFullPath == (!string.IsNullOrEmpty(Global.ConfigJson?.WinRarConsolePath) ? Path.GetFullPath(Global.ConfigJson.WinRarConsolePath).ToLowerInvariant() : null);
+            //var checkWinRarResult = _targetFullPath == (!string.IsNullOrEmpty(Global.ConfigJson?.WinRarConsolePath) ? Path.GetFullPath(Global.ConfigJson.WinRarConsolePath).ToLowerInvariant() : null);
 
             // DML Download File
-            checkDmlDownloadResult = FileHelper.PathStartsWith(targetFullPath, Path.GetFullPath(Global.ConfigJson.GetGameLocation()));
+            var checkDmlDownloadResult = FileHelper.PathStartsWith(targetFullPath, Path.GetFullPath(Global.ConfigJson.GetGameLocation()));
 
             // DML Temp File
-            checkDmlTempFileResult = FileHelper.PathStartsWith(targetFullPath, Path.GetFullPath(Global.temporaryLocationDML));
+            var checkDmlTempFileResult = FileHelper.PathStartsWith(targetFullPath, Path.GetFullPath(Global.temporaryLocationDML));
 
             // DML Temp Directory
-            checkDmlTmpDirectoryResult = StartsWith(targetFullPath,
+            var checkDmlTmpDirectoryResult = StartsWith(targetFullPath,
                 Path.GetFullPath(Path.Combine(Global.temporaryLocationDML, "temp_")));
 
             // 削除判定の順番は重要なので注意(上位のフォルダほどチェックは後に！)
             if (checkTmpDirectoryResult)
                 ret = Directory.Exists(targetFullPath) ? DIVA_PATH_RESULT.TEMP_DIRECTORY : DIVA_PATH_RESULT.NOT;
-            if (checkDmmCacheDirectoryResult)
-                ret = DIVA_PATH_RESULT.DMM_CHCHE;
+            if (checkDmaCacheDirectoryResult || checkGbCacheDirectoryResult || checkImageCacheDirectoryResult)
+                ret = DIVA_PATH_RESULT.DMM_CACHE;
             else if (checkDmlTmpDirectoryResult)
                 ret = Directory.Exists(targetFullPath) ? DIVA_PATH_RESULT.DML_TEMP_DIRECTORY : DIVA_PATH_RESULT.DML_TEMP_FILE;
             else if (checkModsResult)
@@ -496,8 +493,8 @@ namespace DivaModManager.Common.Helpers
                 ret = DIVA_PATH_RESULT.DMM_LOG;
             else if (checkDmmSevenZipResult)
                 ret = DIVA_PATH_RESULT.DMM_SEVEN_ZIP;
-            else if (checkWinRarResult)
-                ret = DIVA_PATH_RESULT.WIN_RAR;
+            //else if (checkWinRarResult)
+            //    ret = DIVA_PATH_RESULT.WIN_RAR;
             else if (checkDmlDownloadResult)
                 ret = Directory.Exists(targetFullPath) ? DIVA_PATH_RESULT.DML_DOWNLOAD_FILE : DIVA_PATH_RESULT.NOT;
             else if (checkDownloadFileResult)
